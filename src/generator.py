@@ -3261,7 +3261,18 @@ class ResponseGenerator:
                 continue
 
             # Factual-template guard: prevent discovery deflection and force grounded answer.
-            if selected_template_key == "answer_with_facts":
+            # Covers answer_with_facts (non-autonomous) AND autonomous_respond for factual
+            # turns (after fix: autonomous flow no longer routes to answer_with_facts, but the
+            # deflection risk remains — state_gated_rules can override question_instruction).
+            _is_factual_turn_guard = (
+                selected_template_key == "answer_with_facts"
+                or (
+                    selected_template_key == "autonomous_respond"
+                    and _is_autonomous
+                    and self._is_direct_factual_request(intent, user_message)
+                )
+            )
+            if _is_factual_turn_guard:
                 _bundle_query = bool(re.search(
                     r'(?:комплект|всё\s+вместе|все\s+вместе'
                     r'|касса.*сканер|сканер.*принтер|принтер.*вес)',
@@ -3277,12 +3288,20 @@ class ResponseGenerator:
                 _needs_fallback = _deflective or (_bundle_query and not _bundle_anchor_present)
 
                 if attempt == 0 and _needs_fallback:
-                    logger.info("answer_with_facts_deflection_retry", response=response[:100])
-                    prompt += (
-                        "\n\nВАЖНО: это factual-запрос. Нужен ПРЯМОЙ ответ по БАЗЕ ЗНАНИЙ."
-                        " НЕ задавай встречных вопросов и не проси рассказать подробнее."
-                        " Дай 1-2 конкретных факта (при наличии — цифры/названия)."
-                    )
+                    if selected_template_key == "autonomous_respond":
+                        logger.info("autonomous_factual_deflection_retry", response=response[:100])
+                        prompt += (
+                            "\n\nВАЖНО: Клиент задал конкретный вопрос. Ответь на него по фактам"
+                            " из БАЗЫ ЗНАНИЙ. Не уклоняйся встречным вопросом — сначала дай"
+                            " прямой ответ."
+                        )
+                    else:
+                        logger.info("answer_with_facts_deflection_retry", response=response[:100])
+                        prompt += (
+                            "\n\nВАЖНО: это factual-запрос. Нужен ПРЯМОЙ ответ по БАЗЕ ЗНАНИЙ."
+                            " НЕ задавай встречных вопросов и не проси рассказать подробнее."
+                            " Дай 1-2 конкретных факта (при наличии — цифры/названия)."
+                        )
                     continue
 
                 if _needs_fallback:

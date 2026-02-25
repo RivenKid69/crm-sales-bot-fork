@@ -1,0 +1,744 @@
+{
+  "label": "post",
+  "timestamp": "20260225_121010",
+  "pass": 10,
+  "fail": 0,
+  "bug2_fires": 0,
+  "results": [
+    {
+      "dialog": {
+        "id": "B01",
+        "name": "Kaspi integration question mid-discovery ('?' + factual keyword)",
+        "description": "Exact bug example: client builds context → asks factual q with ? → template must stay autonomous_respond",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, пожалуйста, какой вопрос по системе или бизнес-задаче вас волнует?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "У меня продуктовый магазин в Алматы, 3 кассира",
+            "bot": "Ага, продуктовый магазин — это класс! А что сейчас с товарами напрягает больше всего — часто ли бывает пересортица?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "company_size": 3,
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Понял, так что насчёт интеграции с Kaspi?",
+            "bot": "У нас доступна интеграция с Kaspi.kz для синхронизации товаров, заказов и остатков в реальном времени. Также поддерживается интеграция с Kaspi Магазин для автоматической передачи заказов и оплаты в программу. Эти интеграции предназначены для единого учёта онлайн-продаж.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "company_size": 3,
+              "business_type": "розничная торговля"
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B02",
+        "name": "'Как работает' textual_factual trigger mid-qualification",
+        "description": "textual_factual='как работает' fires _is_direct_factual_request → must stay autonomous_respond",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, коллега по настройке Wipon для розницы в Казахстане. Чем именно хотите оптимизировать работу — подбором товара?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Рассматриваем автоматизацию сети из 4 точек, Алматы и Астана",
+            "bot": "Вам важно объединить точки Алматы и Астану в одну систему? А что сейчас мешает синхронизировать товары, продажи?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "urgency": "not_urgent"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "У нас сейчас Excel, хотим ПО",
+            "bot": "Да, в Wipon можно полностью заменить Excel — есть товарный учёт, склад, приёмки и остатки без кассы. А что именно в Excel сейчас больше всего ручного и долгого?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "urgency": "not_urgent",
+              "current_tools": "Excel",
+              "desired_outcome": "внедрить ПО"
+            }
+          },
+          {
+            "turn": 4,
+            "user": "Как работает интеграция с бухгалтерией?",
+            "bot": "Wipon интегрируется с 1С для автоматического обмена данными с бухгалтерским контуром. Поддерживается выгрузка данных в 1С, импорт справочников из 1С, а также синхронизация остатков и продаж. Настройка интеграции не требует отдельного программиста и упрощает бухгалтерский учёт.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "urgency": "not_urgent",
+              "current_tools": "Excel",
+              "desired_outcome": "внедрить ПО",
+              "role": "finance"
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T4] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B03",
+        "name": "'Есть ли' textual_factual trigger — spin context must survive",
+        "description": "textual_factual='есть ли' — bot must answer AND use collected_data context",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. Расскажите, пожалуйста, что именно хотели бы узнать о нашей системе для вашего бизнеса?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Один магазин, продукты, касса нужна",
+            "bot": "Понимаю! А что именно сейчас больше всего мешает: например, часто теряете товар на складе, либо касса не удобная, либо аналитика продаж не помогает принимать решения?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Есть ли у вас поддержка ОФД?",
+            "bot": "Поддержка ОФД доступна только в составе программы Wipon. Сервис передаёт фискальные данные в КГД с возможностью контроля статусов через личный кабинет. Для подключения ОФД требуется регистрация кассы с использованием ЭЦП.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "business_type": "розничная торговля"
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B04",
+        "name": "Price question mid-dialog — factual_intent=True, spin context preserved",
+        "description": "price_question intent = factual_intent → must stay autonomous_respond not answer_with_facts",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, коллега по Wipon для казахстанского розничного бизнеса. Какие именно задачи вы хотите автоматизировать в первую очередь?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Небольшой магазин одежды, одна точка",
+            "bot": "А что именно не устраивает в текущем учёте одежды? Сложно ли сейчас следить за остатками на складе или отслеживать, что лучше продаётся?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Нас 2 человека работает",
+            "bot": "А сейчас на кассе и учёте что-то одно или всё ручками ведёте? Что быстрее всего надо автоматизировать, чтобы не тратить время?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля",
+              "company_size": 2
+            }
+          },
+          {
+            "turn": 4,
+            "user": "Сколько стоит Mini в месяц?",
+            "bot": "Тариф Mini стоит 5 000 ₸ в месяц для одной торговой точки. Подходит для небольшого магазина одежды с базовыми потребностями в учёте и онлайн-кассе.",
+            "state": "autonomous_negotiation",
+            "action": "autonomous_respond",
+            "spin_phase": "negotiation",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "pass",
+            "collected_data": {
+              "business_type": "розничная торговля",
+              "company_size": 2,
+              "negotiation_phase_entered": true
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T4] OK: template=autonomous_respond (state=autonomous_negotiation, spin=negotiation)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B05",
+        "name": "'Можно ли' textual_factual — qualification phase spin context not lost",
+        "description": "textual_factual='можно ли' triggers function — must not switch template",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант Wipon. Чем именно хотите автоматизировать?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Хотим автоматизировать кофейню, 1 точка",
+            "bot": "О, кофейня! А что сейчас больше всего мешает быстро и без ошибок принимать заказы и учитывать расходники?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "pain_point": "автоматизация",
+              "pain_category": "manual_work"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Нам важно работать с Kaspi Pay",
+            "bot": "Wipon поддерживает интеграцию с Kaspi Pay на тарифе Lite (стоимость — 150 000 ₸ в год). Это позволяет принимать платежи через Kaspi без комиссий и в автоматическом режиме. А как планируете использовать Kaspi Pay: для онлайн-заказов?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "pain_point": "автоматизация",
+              "pain_category": "manual_work",
+              "desired_outcome": "интеграция Kaspi Pay",
+              "value_acknowledged": true
+            }
+          },
+          {
+            "turn": 4,
+            "user": "Можно ли платить в рассрочку?",
+            "bot": "Да, тарифы Wipon можно оплачивать в рассрочку с разбивкой платежа на части. Также в рассрочку доступна оплата программы ТИС (265 000 ₸/год, ежемесячный платеж — 22 084 ₸). Уточните, какой из вариантов вас интересует.",
+            "state": "autonomous_negotiation",
+            "action": "autonomous_respond",
+            "spin_phase": "negotiation",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "pain_point": "автоматизация",
+              "pain_category": "manual_work",
+              "desired_outcome": "интеграция Kaspi Pay",
+              "value_acknowledged": true,
+              "negotiation_phase_entered": true
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T4] OK: template=autonomous_respond (state=autonomous_negotiation, spin=negotiation)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B06",
+        "name": "SPIN flow continuity: factual answer then next turn must continue SPIN correctly",
+        "description": "After factual turn in autonomous_respond, next turn should NOT reset spin/collected context",
+        "check": "no_context_reset",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант Wipon. Расскажите, что именно вас заинтересовало в нашей системе?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Магазин детской одежды, Нур-Султан, 2 кассы",
+            "bot": "Да, детская одежда — динамичная ниша! А что сейчас больше всего мешает быстро разобраться с заказами?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Какой тариф подходит для 2 касс?",
+            "bot": "Для двух касс подходит тариф Lite (150 000 ₸/год) или Standard (220 000 ₸/год), в зависимости от масштаба бизнеса и сложности операций. Lite ограничен 1 складом, а Standard поддерживает до 3 складов и расширенные налоговые режимы (ТИС, Розничный налог, СНР 2026).",
+            "state": "autonomous_negotiation",
+            "action": "autonomous_respond",
+            "spin_phase": "negotiation",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "business_type": "розничная торговля",
+              "negotiation_phase_entered": true
+            }
+          },
+          {
+            "turn": 4,
+            "user": "Понял, а у вас есть маркировка?",
+            "bot": "Да, в Wipon поддерживается обязательная маркировка товаров по требованиям Республики Казахстан. Система позволяет сканировать QR-коды и штрихкоды, обеспечивает прослеживаемость товаров от производителя до продажи и автоматически проверяет маркировку при продаже. Поддерживаются маркируемые категории, включая алкоголь и табак.",
+            "state": "autonomous_negotiation",
+            "action": "autonomous_respond",
+            "spin_phase": "negotiation",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "business_type": "розничная торговля",
+              "negotiation_phase_entered": true
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_negotiation, spin=negotiation)",
+          "[T4] OK: template=autonomous_respond (state=autonomous_negotiation, spin=negotiation)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B07",
+        "name": "Deflection guard: bot deflects with discovery question instead of answering",
+        "description": "state_gated_rules (discovery) vs question_instruction (DIRECT FACTUAL) — deflection guard (Fix 2) must catch it",
+        "check": "no_deflection_on_factual",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант Wipon. Расскажите, пожалуйста, что именно интересует в нашей системе для вашего бизнеса?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Что вы продаёте?",
+            "bot": "Мы предлагаем программу для автоматизации торговли — Wipon. Это единая система, которая объединяет учёт, кассу и управление магазином, подходящая для магазинов разного масштаба, включая продуктовые магазины. В системе доступны автоматизация продаж, учёта и кассы, а также аналитика, включая отчёт о топ продаваемых товарах с указанием их доли в выручке.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {}
+          },
+          {
+            "turn": 3,
+            "user": "Какие тарифы существуют у Wipon?",
+            "bot": "У Wipon существуют четыре тарифных плана: Mini (5 000 ₸ в месяц), Lite (150 000 ₸ в год), Standard (220 000 ₸ в год) и Pro (500 000 ₸ в год). Тариф Mini предназначен для одной торговой точки, Lite — также для одной точки, Standard — для трёх точек, а Pro — для пяти точек.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {}
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B08",
+        "name": "Bundle query + factual — deflection guard Fix 2 must cover autonomous_respond",
+        "description": "Bundle query in autonomous flow — deflection guard should fire for autonomous_respond",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, коллега по подбору решений для розничного бизнеса в Казахстане. Опишите, пожалуйста, какие задачи вы хотите автоматизировать в магазине?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Магазин электроники, хочу всё сразу — кассу и оборудование",
+            "bot": "А серийный номер вашего оборудования уже есть? Или касса еще не куплена? Это важно, чтобы правильно подобрать тариф и избежать лишних затрат.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Что входит в комплект и сколько это стоит?",
+            "bot": "В стандартный комплект входит моноблок Wipon POS i3, ручной сканер штрих-кода с подставкой и чековый принтер за 168 000 ₸ (единоразово). Программа учета подключается отдельно.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "business_type": "розничная торговля"
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B09",
+        "name": "Presentation phase factual question — all context vars still injected",
+        "description": "Later SPIN phase: goal/spin_phase/collected_data must all be present in prompt context",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант Wipon. Расскажите, что именно вас интересует в нашей системе для вашего розничного бизнеса?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Сеть из 5 магазинов, уже есть касса другой марки, хотим мигрировать",
+            "bot": "А миграция с другой кассы обычно вызывает какие-то боли? Например, данные не синхронизируются, или что-то из старой системы приходится ручками вводить?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Нас 10 сотрудников в разных точках",
+            "bot": "А у вас сейчас в каждой точке свои книги?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля",
+              "company_size": 10,
+              "role": "employee"
+            }
+          },
+          {
+            "turn": 4,
+            "user": "Важен контроль остатков в реальном времени",
+            "bot": "Контроль остатков в реальном времени у нас на высшем уровне — все изменения отображаются сразу после сканирования или ручного внесения. А что сейчас больше всего напрягает в учете товаров?",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "business_type": "розничная торговля",
+              "company_size": 10,
+              "role": "employee",
+              "pain_point": "отсутствие контроля остатков в реальном времени",
+              "pain_category": "no_control",
+              "desired_outcome": "контроль остатков в реальном времени"
+            }
+          },
+          {
+            "turn": 5,
+            "user": "Чем отличается Standard от Pro?",
+            "bot": "Тариф Standard поддерживает до 3 складов и работу с розничными/оптовыми ценами. Тариф Pro предназначен для сетей магазинов с отдельным учётом по каждой точке и сводной аналитикой по всей сети.",
+            "state": "autonomous_discovery",
+            "action": "autonomous_respond",
+            "spin_phase": "discovery",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "business_type": "розничная торговля",
+              "company_size": 10,
+              "role": "employee",
+              "pain_point": "отсутствие контроля остатков в реальном времени",
+              "pain_category": "no_control",
+              "desired_outcome": "контроль остатков в реальном времени"
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T4] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)",
+          "[T5] OK: template=autonomous_respond (state=autonomous_discovery, spin=discovery)"
+        ]
+      }
+    },
+    {
+      "dialog": {
+        "id": "B10",
+        "name": "Closing phase factual question — must stay in closing, not lose terminal data",
+        "description": "In autonomous_closing, factual question must NOT lose closing context (contact/IIN required)",
+        "check": "template_autonomous_respond",
+        "turns": [
+          {
+            "turn": 1,
+            "user": "Здравствуйте",
+            "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант Wipon. А что именно хотели бы узнать о нашей системе для вашего бизнеса?",
+            "state": "greeting",
+            "action": "greet_back",
+            "spin_phase": null,
+            "template_key": "greet_back",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {}
+          },
+          {
+            "turn": 2,
+            "user": "Хочу подключиться, готов оформить",
+            "bot": "Для вашего бизнеса есть тариф Mini от 5 000 ₸/мес — онлайн-касса + фискализация. А что сейчас больше всего напрягает в работе? Оставьте, пожалуйста, телефон или email.",
+            "state": "autonomous_closing",
+            "action": "autonomous_respond",
+            "spin_phase": "closing",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "value_acknowledged": true,
+              "closing_phase_entered": true
+            }
+          },
+          {
+            "turn": 3,
+            "user": "Это для магазина продуктов, 1 касса",
+            "bot": "Для одного продуктового магазина подойдёт тариф Mini — касса + фискализация за 5 000 ₸/месяц. А что у вас сейчас с учётом товара — всё вручную?",
+            "state": "autonomous_closing",
+            "action": "autonomous_respond",
+            "spin_phase": "closing",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "value_acknowledged": true,
+              "closing_phase_entered": true,
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 4,
+            "user": "Давайте оформим!",
+            "bot": "assertions: 1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 - 1.5.1 -. Коллега позвонит и оформит подключение — скажите номер?",
+            "state": "autonomous_closing",
+            "action": "autonomous_respond",
+            "spin_phase": "closing",
+            "template_key": "autonomous_respond",
+            "verifier_used": false,
+            "verifier_verdict": "not_run",
+            "collected_data": {
+              "value_acknowledged": true,
+              "closing_phase_entered": true,
+              "business_type": "розничная торговля"
+            }
+          },
+          {
+            "turn": 5,
+            "user": "А насчёт рассрочки — какие условия?",
+            "bot": "Оборудование и тариф можно оформить в рассрочку до 24 месяцев без переплат. Рассрочка оформляется через банки-партнёры. Готовы подключить?",
+            "state": "autonomous_closing",
+            "action": "autonomous_respond",
+            "spin_phase": "closing",
+            "template_key": "autonomous_respond",
+            "verifier_used": true,
+            "verifier_verdict": "fail",
+            "collected_data": {
+              "value_acknowledged": true,
+              "closing_phase_entered": true,
+              "business_type": "розничная торговля"
+            }
+          }
+        ]
+      },
+      "eval": {
+        "verdict": "PASS",
+        "issues": [],
+        "observations": [
+          "[T2] OK: template=autonomous_respond (state=autonomous_closing, spin=closing)",
+          "[T3] OK: template=autonomous_respond (state=autonomous_closing, spin=closing)",
+          "[T4] OK: template=autonomous_respond (state=autonomous_closing, spin=closing)",
+          "[T5] OK: template=autonomous_respond (state=autonomous_closing, spin=closing)"
+        ]
+      }
+    }
+  ]
+}
