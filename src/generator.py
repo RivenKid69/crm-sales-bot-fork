@@ -2048,9 +2048,15 @@ class ResponseGenerator:
             # In soft_close state, use soft_close template — don't keep pitching after refusal
             if state == "soft_close":
                 return "soft_close"
-            # For direct factual asks in autonomous flow, force concise factual template.
+            # answer_with_facts is only valid for NON-autonomous flow.
+            # In autonomous flow, autonomous_respond already injects {retrieved_facts} alongside
+            # {spin_phase}, {goal}, {collected_data}, {missing_data} and all dynamic variables.
+            # Switching to answer_with_facts strips all client context and turns the bot into a
+            # stateless FAQ responder mid-dialog (BUG: any ? + factual keyword triggered this).
+            # The FactualVerifier still runs post-generation via _is_factual_scope (unchanged).
             if (
-                intent != "greeting"
+                not is_autonomous_flow
+                and intent != "greeting"
                 and self._is_direct_factual_request(intent, str(context.get("user_message", "") or ""))
             ):
                 return "answer_with_facts"
