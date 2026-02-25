@@ -2,6 +2,7 @@
 venv/
 .venv/
 env/
+.tmp_tok_env/
 .tmp_tokenv/
 
 # Python
