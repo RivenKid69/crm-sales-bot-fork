@@ -149,6 +149,67 @@ class TestQueryRewriter:
         assert result == message
         llm.generate.assert_not_called()
 
+    def test_numeric_selection_resolved_deterministically(self):
+        llm = MagicMock()
+        rewriter = QueryRewriter(llm=llm, rewrite_min_words=4)
+
+        history = [
+            {
+                "user": "Расскажите про Pro",
+                "bot": (
+                    "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n"
+                    "1) Тариф Pro\n"
+                    "2) Комплект Pro\n"
+                    "3) Модуль Pro УКМ\n"
+                    "Ответьте номером 1-3 или напишите вариант словами."
+                ),
+            }
+        ]
+
+        result = rewriter.rewrite(user_message="2", history=history)
+
+        assert result == "Расскажите про Pro. Уточнение клиента: Комплект Pro."
+        llm.generate.assert_not_called()
+
+    def test_text_selection_resolved_by_option_markers(self):
+        llm = MagicMock()
+        rewriter = QueryRewriter(llm=llm, rewrite_min_words=4)
+
+        history = [
+            {
+                "user": "Расскажите про Pro",
+                "bot": (
+                    "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n"
+                    "1) Модуль Pro УКМ\n"
+                    "2) Тариф Pro\n"
+                    "3) Комплект Pro\n"
+                    "Ответьте номером 1-3 или напишите вариант словами."
+                ),
+            }
+        ]
+
+        result = rewriter.rewrite(user_message="Для алкоголя и маркировки", history=history)
+
+        assert result == "Расскажите про Pro. Уточнение клиента: Модуль Pro УКМ."
+        llm.generate.assert_not_called()
+
+    def test_selection_fallback_to_regular_rewrite_when_prompt_not_parseable(self):
+        llm = MagicMock()
+        llm.generate.return_value = "Сколько стоит тариф Pro?"
+        rewriter = QueryRewriter(llm=llm, rewrite_min_words=4)
+
+        history = [
+            {
+                "user": "Расскажите про Pro",
+                "bot": "Уточните подробнее, что вас интересует.",
+            }
+        ]
+
+        result = rewriter.rewrite(user_message="2", history=history)
+
+        assert result == "Сколько стоит тариф Pro?"
+        llm.generate.assert_called_once()
+
 
 class TestComplexityDetector:
     def test_simple_query_is_not_complex(self):
@@ -382,6 +443,56 @@ class TestEnhancedRetrievalPipeline:
         assert facts == "[faq/base]\nSTATE\n"
         assert urls == [{"url": "https://state", "label": "state"}]
         assert keys == ["faq/base"]
+        llm.generate.assert_not_called()
+
+    def test_selection_answer_bypasses_skip_fast_path(self, monkeypatch):
+        import src.knowledge.enhanced_retrieval as er
+
+        llm = MagicMock()
+        llm.generate_structured.return_value = DecompositionResult(is_complex=False, sub_queries=[])
+        pipeline = EnhancedRetrievalPipeline(llm=llm, category_router=None)
+
+        rewritten = "Расскажите про Pro. Уточнение клиента: Тариф Pro."
+        tariff = _mk_result("pricing", "pro_tariff", "Тариф Pro — 500 000 ₸/год.")
+        retriever = FakeRetriever({
+            (rewritten, None): [tariff],
+        })
+        monkeypatch.setattr(er, "get_retriever", lambda: retriever)
+        monkeypatch.setattr(
+            er,
+            "get_reranker",
+            lambda: SimpleNamespace(
+                is_available=lambda: False,
+                rerank=lambda query, results, top_k=5: list(results)[:top_k],
+            ),
+        )
+        monkeypatch.setattr(er, "load_facts_for_state", lambda **kwargs: ("", [], []))
+
+        facts, _, keys = pipeline.retrieve(
+            user_message="2",
+            intent="greeting",
+            state="autonomous_discovery",
+            flow_config=SimpleNamespace(states={}),
+            kb=object(),
+            recently_used_keys=set(),
+            history=[
+                {
+                    "user": "Расскажите про Pro",
+                    "bot": (
+                        "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n"
+                        "1) Модуль Pro УКМ\n"
+                        "2) Тариф Pro\n"
+                        "3) Комплект Pro\n"
+                        "Ответьте номером 1-3 или напишите вариант словами."
+                    ),
+                }
+            ],
+        )
+
+        assert "[pricing/pro_tariff]" in facts
+        assert keys == ["pricing/pro_tariff"]
+        assert retriever.calls
+        assert retriever.calls[0]["query"] == rewritten
         llm.generate.assert_not_called()
 
     def test_decomposition_failure_preserves_base_results(self, monkeypatch):

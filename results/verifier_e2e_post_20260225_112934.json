@@ -1,0 +1,484 @@
+{
+  "label": "post",
+  "timestamp": "20260225_112934",
+  "scenarios": [
+    {
+      "id": "D01",
+      "name": "General features — paraphrase should pass verifier (Change 1)",
+      "area": "Change1",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. Расскажите, пожалуйста, что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Чем занимается ваша система?",
+          "bot": "Wipon — это облачная система, объединяющая онлайн-кассу и учёт в одном сервисе. Она предназначена для учёта продаж, контроля остатков товаров, работы с маркированными категориями (включая алкоголь, табак и другие) и аналитики. Включает фискализацию чеков через операторов фискальных данных (ОФД) и интеграцию с банками, Kaspi, а также торговыми информационными системами (ТИС).",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Какие интеграции с банками у вас есть?",
+          "bot": "Wipon интегрируется с основными банками Казахстана: Kaspi, Halyk, Jusan, Forte, BCC и другими. Оплата через терминал передаётся автоматически, фиксируется чек и синхронизируются данные с ОФД без ручного ввода. Поддерживается интернет-эквайринг и автоматическая сверка оплат.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D02",
+      "name": "Price question Mini — numeric grounding must stay strict (Change 1)",
+      "area": "Change1",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, и я помогу вам разобраться с Wipon — это современная система для розничных магазинов в Казахстане, которая объединяет кассу и учёт в одном месте. А что именно хотели бы узнать или решить?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "У нас небольшой продуктовый магазин, 1 касса",
+          "bot": "Ого, продуктовый магазин — это ж такое! А как сейчас с товаром возитесь — ручками в экселе или всё-таки как-то по-другому?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит тариф Mini?",
+          "bot": "Тариф Mini стоит 5 000 тенге в месяц. Он подходит для одной торговой точки с базовым функционалом: онлайн-касса, фискализация чеков и учёт продаж. В тарифе недоступны возвраты, счёт на оплату, отчёты, налоговые формы и часть складских операций.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D03",
+      "name": "Support 24/7 — forbidden phrase stripped not whole response (Change 4+5)",
+      "area": "Change4+5",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по Wipon. Что конкретно интересует в нашей системе для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Есть ли у вас техническая поддержка?",
+          "bot": "Да, техподдержка включена во все тарифы Wipon. При сбое кассы предусмотрено удалённое подключение для быстрого восстановления работы. Консультации можно получить по телефону.",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "А поддержка работает 24/7?",
+          "bot": "Поддержка работает до 00:00 в будни и до 21:00 в выходные. Онлайн-кассы и система Wipon доступны круглосуточно для непрерывной работы бизнеса. В случае сбоя ночью в будни специалисты подключатся удалённо.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D04",
+      "name": "Multi-turn context — verifier should see dialog history (Change 2)",
+      "area": "Change2",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, коллега по настройке и запуску Wipon для бизнеса в Казахстане. Расскажите, с чем конкретно столкнулись?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "У нас сеть из 5 магазинов по Алматы",
+          "bot": "Развернутая сеть из 5 магазинов — это уже не просто автоматизация, а стратегия. А что именно вызывает больше всего головной боли в работе с текущими системами? Например, синхронизация данных между точками, отчеты или что-то с поставщиками?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Нас интересует тариф Pro для сети",
+          "bot": "Тарифа Pro в БАЗЕ ЗНАНИЙ нет — есть только Standard и Mini. А что именно не устраивает в текущих тариф вашей сети?",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Что конкретно входит в Pro для нашего масштаба?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Комплект Pro\n2) Тариф Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D05",
+      "name": "Objection about price — rewrite fallback should preserve context (Change 3)",
+      "area": "Change3",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. Расскажите, что вас интересует в нашей системе для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "У нас небольшой магазин",
+          "bot": "А вы сейчас что-то автоматизировали или всё на бумаге/в голове? Что именно мешает работать быстро и без ошибок?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Мне кажется ваша система дороговата",
+          "bot": "Ваш учёт сейчас скорее всего ведётся вручную или через разрозненные программы, что занимает кучу времени. А что сейчас сложнее всего контролировать в вашем бизнесе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Что входит в базовый тариф за эту цену?",
+          "bot": "В базовом тарифе Mini за 5 000 ₸ в месяц включены онлайн-касса с фискализацией чеков, учёт продаж и приём наличных/безналичных платежей. Работает с ПК или моноблоком. Обучение программе в этом тарифе не предусмотрено.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D06",
+      "name": "Features comparison — paraphrase of comparative statements (Change 1)",
+      "area": "Change1",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. А что именно в нашей системе вас заинтересовало?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Чем ваша система лучше обычной кассы?",
+          "bot": "Wipon — это утверждённая государством торгово-информационная система (ТИС) для ИП на упрощёнке, которая официально расширяет лимиты по НДС и доходу. В отличие от обычных программ учёта, она не только ведёт учёт, но и позволяет увеличить налоговые пределы, оставаясь в упрощённом режиме.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "У вас есть учёт склада?",
+          "bot": "В Wipon есть полный складской учёт: управление товарами, остатками, закупками и перемещениями, а также проведение ревизий для контроля недостач. Все складские операции синхронизируются с кассой в реальном времени. Учёт доступен через мобильное приложение для управления складом в любом месте.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D07",
+      "name": "Data security question — phrase strip not full replace (Change 4+5)",
+      "area": "Change4+5",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, коллега по автоматизации розницы для казахстанских предпринимателей. Давайте уточним, на какой именно момент в работе вашего магазина хотели бы обратить внимание?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Как вы обеспечиваете безопасность данных?",
+          "bot": "Безопасность данных в Wipon обеспечивается следующими мерами: Шифрование: данные передаются с использованием TLS 1.3, а при хранении применяется AES-256. Хранение: данные размещаются в сертифицированных дата-центрах Казахстана, соответствующих законодательству РК о персональных данных. Контроль доступа: реализованы двухфакторная авторизация (2FA), разграничение прав доступа, ведение журнала действий и автоматическая блокировка при подозрительной активности.",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Где хранятся данные, на серверах в Казахстане?",
+          "bot": "Данные в Wipon хранятся в защищённых дата-центрах Казахстана, соответствующих законодательству Республики Казахстан о персональных данных. Также автоматически создаются резервные копии с географическим распределением.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D08",
+      "name": "Detailed SPIN flow — history context helps verifier (Change 2)",
+      "area": "Change2",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по Wipon. Расскажите, пожалуйста, в чём именно нужна помощь с системой?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Мы занимаемся розничной торговлей, 3 кассы",
+          "bot": "а что сейчас больше всего напрягает в работе с тремя кассами?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Больше всего проблемы с учётом товаров",
+          "bot": "В Wipon товарный учёт включён во все тарифы — отслеживаются остатки, приёмки и списания без лишних ручных операций. А что конкретно с учетом не устраивает сейчас — ручной ввод?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 4,
+          "user": "Какой тариф лучше подойдёт нам?",
+          "bot": "Для трёх торговых точек подходит тариф Standard за 220 000 ₸/год. Он включает учёт остатков, работу со складами, аналитику и налоговые режимы, что закрывает задачи розничной торговли с несколькими точками. Если потребуется больше складов или оптовые цены, можно рассмотреть тариф Pro (до 5 точек).",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 5,
+          "user": "Расскажи подробнее про Standard",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Standard»:\n1) Комплект Standard\n2) Тариф Standard\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D09",
+      "name": "Reports & export — rewrite_response fallback quality (Change 3)",
+      "area": "Change3",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. А что именно вас интересует в нашей системе для вашего розничного бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Какие отчёты можно строить в системе?",
+          "bot": "В системе Wipon можно формировать отчёты по продажам за любой период, анализировать прибыльность товаров с помощью ABC-анализа и следить за выручкой, прибылью и расходами. Доступны налоговые формы 910, 913, 200, СНТ и ЭСФ с автоматическим расчётом налогов. Также доступна аналитика по складу: остатки, движения, оборот, недостачи и списания.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "А можно ли экспортировать отчёты в Excel?",
+          "bot": "В системе Wipon отчёты можно выгружать в Excel и PDF одной кнопкой для дальнейшего анализа.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    },
+    {
+      "id": "D10",
+      "name": "Full pipeline: closing flow + factual question (all Changes)",
+      "area": "All",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, хочу подключиться",
+          "bot": "Звучит интересно! А что именно хотите автоматизировать — кассовый учёт, товарные остатки или что-то другое?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 2,
+          "user": "Сколько стоит тариф Mini на год?",
+          "bot": "В KB_CONTEXT указана только ежемесячная цена тарифа Mini — 5 000 ₸/месяц. Годовая стоимость не указана.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        },
+        {
+          "turn": 3,
+          "user": "Хорошо, мой телефон 87015551234",
+          "bot": "Как к вам обращаться? А что именно вас подвигло искать решение для своей точки?",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "verifier_used": false,
+          "verifier_changed": false,
+          "verifier_verdict": "",
+          "verifier_reason_codes": []
+        }
+      ]
+    }
+  ]
+}

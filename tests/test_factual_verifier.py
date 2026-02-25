@@ -227,3 +227,65 @@ def test_generator_post_process_removes_colleague_fallback_without_facts(monkeyp
         retrieved_facts="",
     )
     assert "уточню у коллег" not in processed.lower()
+
+
+def test_fact_disambiguation_stage_skips_factual_verifier(monkeypatch):
+    from src.generator import ResponseGenerator
+
+    class _FakeSection:
+        def __init__(self):
+            self.priority = 5
+            self.facts = "Wipon overview."
+
+    class _FakeRetriever:
+        def __init__(self):
+            self.kb = type("KB", (), {
+                "sections": [_FakeSection()],
+                "company_name": "Wipon",
+                "company_description": "CRM",
+            })()
+
+    class _Flow:
+        name = "autonomous"
+
+        def get_template(self, _key: str):
+            return None
+
+    monkeypatch.setattr("src.generator.get_retriever", lambda: _FakeRetriever())
+    flags.set_override("response_boundary_validator", False)
+    flags.set_override("response_factual_verifier", True)
+    flags.set_override("response_fact_disambiguation", True)
+    flags.set_override("response_diversity", False)
+    flags.set_override("apology_system", False)
+
+    llm = _StructuredLLM([
+        {
+            "verdict": "pass",
+            "checks": [{"claim": "stub", "supported": True, "evidence_quote": "stub"}],
+            "rewritten_response": "",
+            "confidence": 0.9,
+        }
+    ])
+    generator = ResponseGenerator(llm=llm, flow=_Flow())
+    processed, events = generator.post_process_only(
+        response="Тариф Pro — хороший вариант.",
+        context={
+            "intent": "price_question",
+            "state": "autonomous_discovery",
+            "user_message": "Расскажите про pro",
+            "history": [],
+            "collected_data": {},
+        },
+        requested_action="autonomous_respond",
+        selected_template_key="autonomous_respond",
+        retrieved_facts=(
+            "[pricing/pro_tariff]\nТариф Pro — 500 000 ₸/год.\n"
+            "[equipment/pro_kit]\nКомплект PRO — оборудование для высокой нагрузки.\n"
+            "[products/pro_ukm]\nWipon PRO УКМ — модуль маркировки и акцизной продукции.\n"
+        ),
+    )
+
+    assert "Ответьте номером 1-3" in processed
+    assert any(event.get("stage") == "fact_disambiguation" for event in events)
+    assert all(event.get("stage") != "factual_verifier" for event in events)
+    assert llm.calls == 0

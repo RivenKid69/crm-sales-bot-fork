@@ -139,6 +139,7 @@ class FeatureFlags:
         "response_boundary_retry": True,          # Single targeted retry on detected violations
         "response_boundary_fallback": True,       # Deterministic fallback if retry still violates boundary
         "response_factual_verifier": True,        # Same-model isolated factual verifier on autonomous factual turns
+        "response_fact_disambiguation": False,    # Clarify conflicting factual entities before answering
 
         # === Question Deduplication: Prevent Re-asking Already Answered Questions ===
         "question_deduplication": True,           # Фильтрация вопросов по collected_data
@@ -275,6 +276,9 @@ class FeatureFlags:
         ],
         "response_factual_verifier_all": [
             "response_factual_verifier"
+        ],
+        "response_fact_disambiguation_all": [
+            "response_fact_disambiguation"
         ],
         # Lost Question Fix groups
         "lost_question_fix": [
@@ -526,6 +530,11 @@ class FeatureFlags:
     def response_factual_verifier(self) -> bool:
         """Включён ли isolated same-model factual verifier"""
         return self.is_enabled("response_factual_verifier")
+
+    @property
+    def response_fact_disambiguation(self) -> bool:
+        """Включено ли deterministic fact disambiguation для conflict entities"""
+        return self.is_enabled("response_fact_disambiguation")
 
     # =========================================================================
     # Context Policy flags (PLAN_CONTEXT_POLICY.md)

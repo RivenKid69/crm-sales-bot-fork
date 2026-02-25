@@ -45,6 +45,12 @@ DEFAULTS = {
             "email", "excel", "whatsapp", "telegram", "hr"
         ],
     },
+    "fact_disambiguation": {
+        "strict_mode": True,
+        "max_options": 3,
+        "max_context_sections": 5,
+        "max_clarification_repeats": 2,
+    },
     "classifier": {
         "weights": {
             "root_match": 1.0,

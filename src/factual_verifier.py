@@ -86,6 +86,7 @@ class FactualVerifier:
         retrieved_facts: str,
         intent: str,
         state: str,
+        dialog_history: Optional[List[dict]] = None,
     ) -> VerificationResult:
         original = str(candidate_response or "").strip()
         facts_text = str(retrieved_facts or "").strip()
@@ -130,6 +131,7 @@ class FactualVerifier:
             intent=intent,
             state=state,
             allow_rewrite=self.rewrite_on_fail,
+            dialog_history=dialog_history,
         )
         if first is None:
             return VerificationResult(
@@ -171,6 +173,7 @@ class FactualVerifier:
                 intent=intent,
                 state=state,
                 allow_rewrite=False,
+                dialog_history=dialog_history,
             )
             if second is not None and second.verdict == "pass":
                 cleaned_rewrite = self._ensure_no_forbidden_fallback(
@@ -189,6 +192,25 @@ class FactualVerifier:
             reason_codes.append("rewrite_failed")
         elif self.rewrite_on_fail:
             reason_codes.append("rewrite_empty")
+
+        # Change 3: use rewritten_response from pass 1 as fallback before db_only
+        # rewritten is LLM-generated with KB context — better than 2 raw sentences
+        if rewritten:
+            cleaned_fallback = self._ensure_no_forbidden_fallback(
+                rewritten,
+                user_message=user_message,
+                retrieved_facts=facts_text,
+            )
+            if len(cleaned_fallback) > 30:
+                reason_codes.append("pass1_rewrite_fallback")
+                return VerificationResult(
+                    final_response=cleaned_fallback,
+                    changed=(cleaned_fallback != original),
+                    verifier_used=True,
+                    verifier_verdict="fail",
+                    reason_codes=reason_codes,
+                    fallback_required=False,
+                )
 
         db_only_response = self._build_db_only_response(
             user_message=user_message,
@@ -213,6 +235,7 @@ class FactualVerifier:
         intent: str,
         state: str,
         allow_rewrite: bool,
+        dialog_history: Optional[List[dict]] = None,
     ) -> Optional[VerifierOutput]:
         mode = "rewrite" if allow_rewrite else "verify_only"
         prompt = self._build_prompt(
@@ -222,6 +245,7 @@ class FactualVerifier:
             intent=intent,
             state=state,
             mode=mode,
+            dialog_history=dialog_history,
         )
         try:
             result = self.llm.generate_structured(
@@ -248,6 +272,7 @@ class FactualVerifier:
         intent: str,
         state: str,
         mode: str,
+        dialog_history: Optional[List[dict]] = None,
     ) -> str:
         rewrite_policy = (
             "Если verdict=fail, перепиши ответ строго по фактам из KB. "
@@ -257,16 +282,40 @@ class FactualVerifier:
             else "НЕ переписывай ответ: поле rewritten_response оставь пустым."
         )
 
+        history_block = ""
+        if dialog_history:
+            lines = []
+            for entry in dialog_history[-4:]:
+                user_txt = str(entry.get("user", "") or "").strip()
+                bot_txt = str(entry.get("bot", "") or "").strip()
+                if not user_txt and not bot_txt:
+                    continue
+                block = ""
+                if user_txt:
+                    block += f"Клиент: {user_txt[:200]}\n"
+                if bot_txt:
+                    block += f"Бот: {bot_txt[:200]}\n"
+                if block:
+                    lines.append(block.strip())
+            if lines:
+                history_block = "ИСТОРИЯ (последние ходы):\n" + "\n".join(lines) + "\n\n"
+
         return (
             "Ты factual-verifier для ответа менеджера.\n"
             "Проверь ТОЛЬКО соответствие ответа фактам из KB_CONTEXT.\n"
             "Нельзя использовать внешние знания.\n"
-            "Считай утверждение supported=true только если есть явное подтверждение в KB_CONTEXT.\n"
+            "Правила проверки утверждений:\n"
+            "  supported=true: прямое подтверждение в KB, парафраз KB, логический вывод из KB без добавления новых чисел.\n"
+            "  supported=false: утверждение явно противоречит KB ИЛИ добавляет конкретные цифры/названия/даты которых нет в KB.\n"
+            "  НЕ ПРОВЕРЯТЬ: разговорные конструкции, оценки, переходы, риторические фразы\n"
+            "  (например: «отлично подойдёт», «хороший выбор», «давайте разберёмся», «для вашего формата»).\n"
+            "  Это не фактические утверждения — игнорировать при проверке claims.\n"
             f"Проанализируй до {self.max_claims} самых значимых утверждений (цены, тарифы, интеграции, сроки, ограничения).\n"
             f"{rewrite_policy}\n"
             "Ответ должен быть в JSON по схеме.\n\n"
             f"INTENT: {intent}\n"
             f"STATE: {state}\n"
+            f"{history_block}"
             f"USER_MESSAGE:\n{user_message}\n\n"
             f"CANDIDATE_RESPONSE:\n{candidate_response}\n\n"
             f"KB_CONTEXT:\n{retrieved_facts}\n"
@@ -280,8 +329,14 @@ class FactualVerifier:
         retrieved_facts: str,
     ) -> str:
         text = str(response or "").strip()
-        if text and not self._FORBIDDEN_FALLBACK_RE.search(text):
+        if not text or not self._FORBIDDEN_FALLBACK_RE.search(text):
             return text
+        # Strip only the forbidden phrase, preserve the rest of the content
+        stripped = self._FORBIDDEN_FALLBACK_RE.sub("", text)
+        stripped = re.sub(r"\s{2,}", " ", stripped).strip(" ,.")
+        if len(stripped) > 30:
+            return stripped
+        # Response was only the forbidden phrase — use DB safety net
         return self._build_db_only_response(
             user_message=user_message,
             retrieved_facts=retrieved_facts,

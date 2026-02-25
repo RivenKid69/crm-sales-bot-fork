@@ -1936,6 +1936,44 @@ class ResponseGenerator:
             return True
         return action.startswith("answer_") or action.startswith("calculate_")
 
+    def _should_attempt_fact_disambiguation(
+        self,
+        *,
+        context: Dict[str, Any],
+        requested_action: str,
+        retrieved_facts: str,
+        is_autonomous: bool,
+    ) -> bool:
+        """Gate deterministic fact disambiguation for ambiguous factual turns."""
+        if not is_autonomous:
+            return False
+        if not flags.is_enabled("response_fact_disambiguation"):
+            return False
+        if not str(retrieved_facts or "").strip():
+            return False
+
+        action = str(requested_action or "")
+        allowed_action = (
+            action in {"autonomous_respond", "continue_current_goal"}
+            or action.startswith("answer_")
+        )
+        if not allowed_action:
+            return False
+
+        user_message = str(context.get("user_message", "") or "")
+        intent = str(context.get("intent", "") or "")
+        if self._is_direct_factual_request(intent, user_message):
+            return True
+
+        if self._is_factual_action(action):
+            return True
+
+        return bool(re.search(
+            r"(?:какой|какие|сколько|тариф|комплект|модул|про\b|standard|lite|mini)",
+            user_message,
+            re.IGNORECASE,
+        ))
+
     @staticmethod
     def _is_direct_factual_request(intent: str, user_message: str) -> bool:
         """Return True for direct factual asks that must be answered before discovery probing."""
@@ -1962,6 +2000,28 @@ class ResponseGenerator:
             or normalized_intent in {"payment_terms", "company_info_question", "experience_question"}
         )
         return factual_intent or textual_factual
+
+    def _resolve_fact_disambiguation_user_message(
+        self,
+        user_message: str,
+        history: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
+        text = str(user_message or "").strip()
+        if not text:
+            return ""
+        if not history:
+            return text
+        try:
+            from src.knowledge.enhanced_retrieval import QueryRewriter
+
+            rewriter = QueryRewriter(llm=self.llm, rewrite_min_words=1)
+            resolved = rewriter.resolve_fact_disambiguation_selection(
+                user_message=text,
+                history=history,
+            )
+            return resolved or text
+        except Exception:
+            return text
 
     def _select_template_key(self, intent: str, action: str, context: Dict[str, Any]) -> str:
         """
@@ -2101,9 +2161,11 @@ class ResponseGenerator:
         user_message = str(context.get("user_message", "") or "")
         action = str(context.get("action", "autonomous_respond") or "autonomous_respond")
         history = context.get("history", []) or []
+        user_message = self._resolve_fact_disambiguation_user_message(user_message, history)
         collected = context.get("collected_data", {}) or {}
         working_context = dict(context)
         working_context["state"] = state
+        working_context["user_message"] = user_message
 
         _is_autonomous = bool(
             self._flow
@@ -2315,6 +2377,12 @@ class ResponseGenerator:
         intent = context.get("intent", "")
         state = context.get("state", "")
         user_message = context.get("user_message", "")
+        history = context.get("history", []) or []
+        resolved_user_message = self._resolve_fact_disambiguation_user_message(user_message, history)
+        if resolved_user_message and resolved_user_message != user_message:
+            context = dict(context)
+            context["user_message"] = resolved_user_message
+            user_message = resolved_user_message
 
         # Prompt/policy exfiltration guard: never route such requests through LLM.
         # Keep response deterministic and safe while redirecting to business context.
@@ -3846,6 +3914,38 @@ class ResponseGenerator:
         processed = self._ensure_apology(processed, context)
 
         validation_events: List[Dict[str, Any]] = []
+        _is_autonomous = bool(self._flow and self._flow.name == "autonomous")
+        self._reset_factual_verifier_meta()
+        fact_disambiguated = False
+
+        if self._should_attempt_fact_disambiguation(
+            context=context,
+            requested_action=requested_action,
+            retrieved_facts=str(retrieved_facts or ""),
+            is_autonomous=_is_autonomous,
+        ):
+            try:
+                from src.knowledge.fact_disambiguation import detect_fact_disambiguation
+
+                decision = detect_fact_disambiguation(
+                    user_message=str(context.get("user_message", "") or ""),
+                    retrieved_facts=str(retrieved_facts or ""),
+                    history=context.get("history", []),
+                )
+                if decision.should_disambiguate and decision.clarification_text:
+                    processed = decision.clarification_text
+                    fact_disambiguated = True
+                    validation_events.append(
+                        {
+                            "stage": "fact_disambiguation",
+                            "triggered": True,
+                            "family": decision.family,
+                            "options": list(decision.options),
+                            "reason_codes": list(decision.reason_codes),
+                        }
+                    )
+            except Exception as exc:  # pragma: no cover - defensive fail-open
+                logger.warning("fact_disambiguation_postprocess_failed", error=str(exc))
 
         # Isolated same-model factual verifier for factual turns.
         _is_factual_scope = bool(
@@ -3854,8 +3954,11 @@ class ResponseGenerator:
                 str(context.get("user_message", "") or ""),
             )
         )
-        self._reset_factual_verifier_meta()
-        if _is_factual_scope and str(retrieved_facts or "").strip():
+        if (
+            not fact_disambiguated
+            and _is_factual_scope
+            and str(retrieved_facts or "").strip()
+        ):
             verifier = self._ensure_factual_verifier()
             if verifier is not None and verifier.is_enabled():
                 vr = verifier.verify_and_rewrite(
@@ -3864,6 +3967,7 @@ class ResponseGenerator:
                     retrieved_facts=str(retrieved_facts or ""),
                     intent=str(context.get("intent", "") or ""),
                     state=str(context.get("state", "") or ""),
+                    dialog_history=context.get("history", []) or [],
                 )
                 self._last_factual_verifier_meta = {
                     "factual_verifier_used": vr.verifier_used,
@@ -3884,9 +3988,9 @@ class ResponseGenerator:
                     processed = vr.final_response
 
         # Strip markdown formatting from autonomous responses (plain text chat)
-        _is_autonomous = bool(self._flow and self._flow.name == "autonomous")
         if _is_autonomous:
-            processed = self._strip_markdown(processed)
+            if not fact_disambiguated:
+                processed = self._strip_markdown(processed)
             processed = self._fix_language_mismatch(
                 processed, str(context.get("user_message", "") or "")
             )
@@ -3898,13 +4002,15 @@ class ResponseGenerator:
             processed = self._strip_fabricated_claims(processed)
             processed = self._strip_ungrounded_modules(processed, str(retrieved_facts or ""))
             processed = self._strip_ungrounded_integrations(processed, str(retrieved_facts or ""))
-            processed = self._simplify_or_questions(processed)
-            processed = self._truncate_to_max_sentences(processed, max_sentences=3)
-            processed = self._enforce_word_limit(processed)
+            if not fact_disambiguated:
+                processed = self._simplify_or_questions(processed)
+                processed = self._truncate_to_max_sentences(processed, max_sentences=3)
+                processed = self._enforce_word_limit(processed)
 
-        processed = self._compress_repeated_price_response(processed, context)
+        if not fact_disambiguated:
+            processed = self._compress_repeated_price_response(processed, context)
         processed = self._enforce_enterprise_tis_quote(processed, context)
-        if self._should_force_no_question(context):
+        if not fact_disambiguated and self._should_force_no_question(context):
             processed = self._strip_trailing_question(processed)
         processed = self._enforce_no_contact_boundaries(processed, context)
         if self._is_low_quality_artifact(processed):
@@ -3922,7 +4028,7 @@ class ResponseGenerator:
             and not getattr(rd, 'should_offer_exit', False)
             and not getattr(rd, 'prioritize_contact', False)
         )
-        if should_strip:
+        if should_strip and not fact_disambiguated:
             processed = self._strip_trailing_question(processed)
 
         processed = self._enforce_no_colleague_fallback(
@@ -4696,10 +4802,14 @@ class ResponseGenerator:
 
     def _enforce_no_colleague_fallback(self, response: str, retrieved_facts: str, user_message: str) -> str:
         text = str(response or "").strip()
-        if not text:
+        if not text or not self._COLLEAGUE_FALLBACK_RE.search(text):
             return text
-        if not self._COLLEAGUE_FALLBACK_RE.search(text):
-            return text
+        # Strip only the forbidden phrase, preserve the rest of the content
+        stripped = self._COLLEAGUE_FALLBACK_RE.sub("", text)
+        stripped = re.sub(r"\s{2,}", " ", stripped).strip(" ,.")
+        if len(stripped) > 30:
+            return stripped
+        # Response was only the forbidden phrase — use DB safety net
         return self._db_grounded_response_from_facts(
             user_message=str(user_message or ""),
             retrieved_facts=str(retrieved_facts or ""),
