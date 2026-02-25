@@ -27,6 +27,12 @@ from .retriever import SKIP_RETRIEVAL_INTENTS, SearchResult, get_retriever
 
 T = TypeVar("T", bound=BaseModel)
 
+# Strip KB editor-only annotations before sending facts to LLM.
+# "⚠️ НЕ ПУТАТЬ: ..." lines are metadata for KB editors, not for the LLM.
+_KB_META_STRIP_RE = re.compile(
+    r"(?m)^\s*(?:•\s*)?⚠️\s*НЕ\s+ПУТАТЬ:[^\n]*\n?",
+)
+
 
 class LLMProtocol(Protocol):
     def generate(self, prompt: str, **kwargs: Any) -> str:
@@ -64,6 +70,23 @@ class QueryRewriter:
         r"^(?:переписанный запрос|самостоятельный запрос|запрос)[:\-\s]+",
         re.IGNORECASE,
     )
+    _SELECTION_RE = re.compile(
+        r"^\s*(?:"
+        r"(?P<num>[1-3])"
+        r"|(?P<ord>перв(?:ый|ое|ую|ая)|втор(?:ой|ое|ую|ая)|трет(?:ий|ье|ью|ья))"
+        r")\s*(?:вариант|пункт)?\s*$",
+        re.IGNORECASE,
+    )
+    _NUMBERED_OPTION_RE = re.compile(r"^\s*([1-3])[\)\.\-]\s*(.+?)\s*$", re.MULTILINE)
+    _FACT_DISAMBIG_PROMPT_RE = re.compile(
+        r"уточните,\s*пожалуйста,\s*что\s+вы\s+имеете\s+в\s+виду",
+        re.IGNORECASE,
+    )
+    _OPTION_HINT_PATTERNS: Tuple[Tuple[str, re.Pattern], ...] = (
+        ("module", re.compile(r"(?:модул|укм|маркиров|акциз|алкогол)", re.IGNORECASE)),
+        ("kit", re.compile(r"(?:комплект|оборудован|моноблок|сканер|принтер|кассов)", re.IGNORECASE)),
+        ("tariff", re.compile(r"(?:тариф|подписк|в\s+год|за\s+год)", re.IGNORECASE)),
+    )
 
     def __init__(self, llm: LLMProtocol, rewrite_min_words: int = 4):
         self.llm = llm
@@ -81,10 +104,18 @@ class QueryRewriter:
         original = (user_message or "").strip()
         if not original:
             return ""
+
+        history = history or []
+        deterministic = self.resolve_fact_disambiguation_selection(
+            user_message=original,
+            history=history,
+        )
+        if deterministic:
+            return deterministic
+
         if not self.should_rewrite(original):
             return original
 
-        history = history or []
         if not history:
             # Without context we cannot safely resolve references.
             return original
@@ -111,10 +142,12 @@ class QueryRewriter:
             return original
 
         # Safety: reject rewrites that dropped most key terms from the original query.
-        orig_words = set(original.lower().split()) - self._STOP_WORDS
-        rew_words = set(cleaned.lower().split()) - self._STOP_WORDS
+        orig_words = self._lexical_terms(original) - self._STOP_WORDS
+        rew_words = self._lexical_terms(cleaned) - self._STOP_WORDS
         overlap = len(orig_words & rew_words) / len(orig_words) if orig_words else 1.0
-        if orig_words and overlap < 0.3:
+        # Short numeric/ordinal answers ("2", "второй") and terse follow-ups are valid
+        # rewrite targets with naturally low lexical overlap.
+        if len(orig_words) >= 3 and overlap < 0.2:
             logger.warning(
                 "QueryRewriter diverged, using original",
                 original=original,
@@ -122,6 +155,116 @@ class QueryRewriter:
             )
             return original
         return cleaned
+
+    def resolve_fact_disambiguation_selection(
+        self,
+        *,
+        user_message: str,
+        history: Optional[Sequence[Dict[str, Any]]] = None,
+    ) -> Optional[str]:
+        return self._rewrite_fact_disambiguation_selection(
+            answer=(user_message or "").strip(),
+            history=history or [],
+        )
+
+    def _rewrite_fact_disambiguation_selection(
+        self,
+        *,
+        answer: str,
+        history: Sequence[Dict[str, Any]],
+    ) -> Optional[str]:
+        if not history:
+            return None
+
+        for turn in reversed(list(history)):
+            bot_text = str((turn or {}).get("bot", "") or "")
+            user_text = str((turn or {}).get("user", "") or "").strip()
+            if not bot_text or not user_text:
+                continue
+            if not self._FACT_DISAMBIG_PROMPT_RE.search(bot_text):
+                break  # last bot turn was not a disambiguation → nothing to resolve
+
+            options = self._extract_numbered_options(bot_text)
+            if not options:
+                continue
+            selection_index = self._selection_index(answer)
+            if selection_index is None:
+                selection_index = self._semantic_option_index(answer, options)
+            if selection_index is None:
+                continue
+            if selection_index >= len(options):
+                continue
+
+            selected = options[selection_index]
+            rewritten = f"{user_text}. Уточнение клиента: {selected}."
+            logger.info(
+                "fact_disambiguation_selection_resolved",
+                selected_option=selected,
+                base_query=user_text[:160],
+            )
+            return rewritten
+
+        return None
+
+    @classmethod
+    def _selection_index(cls, answer: str) -> Optional[int]:
+        text = (answer or "").strip().lower()
+        if not text:
+            return None
+        match = cls._SELECTION_RE.match(text)
+        if not match:
+            return None
+        num = match.group("num")
+        if num is not None:
+            idx = int(num) - 1
+            if 0 <= idx <= 2:
+                return idx
+            return None
+        ordinal = str(match.group("ord") or "").lower()
+        if ordinal.startswith("перв"):
+            return 0
+        if ordinal.startswith("втор"):
+            return 1
+        if ordinal.startswith("трет"):
+            return 2
+        return None
+
+    @classmethod
+    def _extract_numbered_options(cls, bot_text: str) -> List[str]:
+        options: List[str] = []
+        for match in cls._NUMBERED_OPTION_RE.finditer(bot_text or ""):
+            options.append(match.group(2).strip())
+        return options
+
+    @classmethod
+    def _semantic_option_index(cls, answer: str, options: Sequence[str]) -> Optional[int]:
+        text = str(answer or "").strip()
+        if len(text) < 3:
+            return None
+
+        matches: List[int] = []
+        for idx, option in enumerate(options):
+            option_text = str(option or "").lower()
+            option_type: Optional[str] = None
+            if "модул" in option_text or "укм" in option_text:
+                option_type = "module"
+            elif "комплект" in option_text or "оборуд" in option_text:
+                option_type = "kit"
+            elif "тариф" in option_text:
+                option_type = "tariff"
+            if not option_type:
+                continue
+            for typ, pattern in cls._OPTION_HINT_PATTERNS:
+                if typ != option_type:
+                    continue
+                if pattern.search(text):
+                    matches.append(idx)
+                    break
+
+        unique = sorted(set(matches))
+        if len(unique) == 1:
+            return unique[0]
+        return None
 
     def _format_last_turns(self, history: List[Dict[str, Any]]) -> str:
         lines: List[str] = []
@@ -148,6 +291,10 @@ class QueryRewriter:
     @staticmethod
     def _word_count(text: str) -> int:
         return len(re.findall(r"[A-Za-zА-Яа-яЁё0-9]+", text))
+
+    @staticmethod
+    def _lexical_terms(text: str) -> Set[str]:
+        return set(re.findall(r"[A-Za-zА-Яа-яЁё0-9]+", str(text or "").lower()))
 
 
 class ComplexityDetector:
@@ -422,6 +569,11 @@ class EnhancedRetrievalPipeline:
     ) -> Tuple[str, List[Dict[str, str]], List[str]]:
         recently_used = set(recently_used_keys or set())
         history = history or []
+        selection_resolved_query = self.query_rewriter.resolve_fact_disambiguation_selection(
+            user_message=user_message,
+            history=history,
+        )
+        has_disambiguation_selection = bool(selection_resolved_query)
 
         # [0] Fast path for non-factual intents.
         if intent in SKIP_RETRIEVAL_INTENTS:
@@ -440,7 +592,9 @@ class EnhancedRetrievalPipeline:
                 r'|хочу\s+(?:узнать|понять)|интересует|подскаж)',
                 _msg_lower,
             ))
-            if _has_question:
+            if has_disambiguation_selection:
+                pass  # selection answer must go through query-driven retrieval
+            elif _has_question:
                 pass  # Fall through to full retrieval — message has explicit question
             # If ANY secondary intent needs KB data → DON'T skip
             elif secondary_intents and not set(secondary_intents).issubset(self._SOCIAL_ONLY_SECONDARY):
@@ -458,7 +612,10 @@ class EnhancedRetrievalPipeline:
         is_direct_factual_turn = self._is_direct_factual_turn(intent=intent, user_message=user_message)
 
         # [1] Rewrite follow-up query when needed.
-        rewritten_query = self.query_rewriter.rewrite(user_message=user_message, history=history)
+        rewritten_query = selection_resolved_query or self.query_rewriter.rewrite(
+            user_message=user_message,
+            history=history,
+        )
 
         # [2] Category routing (optional).
         categories = None
@@ -683,7 +840,8 @@ class EnhancedRetrievalPipeline:
                 continue
             seen_fact_keys.add(key)
 
-            section_text = f"[{section.category}/{section.topic}]\n{section.facts}\n"
+            clean_facts = _KB_META_STRIP_RE.sub("", section.facts or "")
+            section_text = f"[{section.category}/{section.topic}]\n{clean_facts}\n"
             section_len = len(section_text)
 
             if total_chars + section_len > self.max_kb_chars:

@@ -90,7 +90,7 @@ category_router:
 # ENHANCED RETRIEVAL (Autonomous query-driven retrieval)
 # -----------------------------------------------------------------------------
 enhanced_retrieval:
-  max_kb_chars: 10000
+  max_kb_chars: 25000
   top_k_per_sub_query: 5
   max_sub_queries: 4
   min_complexity_length: 30
@@ -112,6 +112,15 @@ factual_verifier:
   max_claims: 6
   rewrite_on_fail: true
   fallback_on_failed_rewrite: false
+
+# -----------------------------------------------------------------------------
+# FACT DISAMBIGUATION (Deterministic clarification on conflicting KB entities)
+# -----------------------------------------------------------------------------
+fact_disambiguation:
+  strict_mode: true
+  max_options: 3
+  max_context_sections: 5
+  max_clarification_repeats: 2
 
 # -----------------------------------------------------------------------------
 # GENERATOR (Генерация ответов)
@@ -338,6 +347,7 @@ feature_flags:
   cta_generator: true         # Генерация Call-to-Action
   autonomous_flow: true       # LLM-driven sales flow
   response_factual_verifier: true  # Isolated same-model factual verifier
+  response_fact_disambiguation: true  # Clarify ambiguous factual entities
 
 # -----------------------------------------------------------------------------
 # PHONE VALIDATION (Валидация телефонных номеров)

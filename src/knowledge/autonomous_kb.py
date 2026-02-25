@@ -16,12 +16,18 @@ talking points.
 """
 
 import logging
+import re
 from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
 # Max characters for KB facts (state backfill).
 MAX_KB_CHARS = 10_000
+
+# Strip KB editor-only annotations before sending facts to LLM.
+_KB_META_STRIP_RE = re.compile(
+    r"(?m)^\s*(?:•\s*)?⚠️\s*НЕ\s+ПУТАТЬ:[^\n]*\n?",
+)
 
 
 def load_facts_for_state(
@@ -115,7 +121,8 @@ def load_facts_for_state(
     for section in all_sections:
         if section.sensitive:
             continue
-        section_text = f"[{section.category}/{section.topic}]\n{section.facts}\n"
+        clean_facts = _KB_META_STRIP_RE.sub("", section.facts or "")
+        section_text = f"[{section.category}/{section.topic}]\n{clean_facts}\n"
         section_len = len(section_text)
 
         if total_chars + section_len > MAX_KB_CHARS:

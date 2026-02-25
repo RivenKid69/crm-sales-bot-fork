@@ -1,0 +1,345 @@
+{
+  "label": "pre",
+  "timestamp": "20260225_102226",
+  "scenarios": [
+    {
+      "id": "D01",
+      "name": "Price question - Mini (Fix3: pricing signal → tariff, no disambig)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по Wipon. Чем именно хотите улучшить работу своего розничного бизнеса в Казахстане?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Хочу автоматизировать небольшой магазин продуктов",
+          "bot": "О, продуктовый магазин! А что сейчас больше всего напрягает: ручной учёт товаров?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит Mini?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Mini»:\n1) Тариф Mini\n2) Комплект Mini\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_presentation",
+          "action": "autonomous_respond",
+          "spin_phase": "presentation",
+          "has_disambiguation": true
+        }
+      ]
+    },
+    {
+      "id": "D02",
+      "name": "What-includes Mini (Fix3: no signal, 1 family → SHOULD disambig)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. Скажите, что именно вы хотите узнать о нашей системе для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Интересует ваше решение для магазина",
+          "bot": "Интересно! А что именно хотите автоматизировать в магазине — учёт товара, продажи?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 3,
+          "user": "Что включает Mini?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Mini»:\n1) Комплект Mini\n2) Модуль Mini\n3) Тариф Mini\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": true
+        }
+      ]
+    },
+    {
+      "id": "D03",
+      "name": "Tell me about Pro - disambiguation then Standard (Fix4: per-family)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, коллега по торговым системам Wipon. Подскажите, какие именно задачи в магазине хотите оптимизировать —?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите про Pro",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Модуль Pro УКМ\n2) Тариф Pro\n3) Комплект Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": true
+        },
+        {
+          "turn": 3,
+          "user": "1",
+          "bot": "Wipon PRO УКМ — узкоспециализированный программный модуль для акцизной продукции и маркировки. Фискализация: модуль нужен для подключения и регистрации фискального оборудования с передачей данных в ОФД.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 4,
+          "user": "А что по Standard?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Standard»:\n1) Комплект Standard\n2) Тариф Standard\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": true
+        }
+      ]
+    },
+    {
+      "id": "D04",
+      "name": "Lite vs Standard comparison (Fix3: 2 families → tariff, no disambig)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по Wipon. Подскажите, пожалуйста, чем именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Что рациональнее взять: Lite или Standard?",
+          "bot": "Lite и Standard в Wipon различаются числом точек и прайс-листов при одинаково неограниченной номенклатуре. Lite и Standard отличаются лимитами и глубиной функционала.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        }
+      ]
+    },
+    {
+      "id": "D05",
+      "name": "Standard vs Pro difference (Fix3: 2 families → tariff, no disambig)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш консультант по системе Wipon для розничных точек в Казахстане. Поделитесь, пожалуйста, чем именно вас заинтересовало в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "У меня несколько точек, интересно",
+          "bot": "Несколько торговых точек в Wipon — централизованное управление из одного аккаунта. Несколько точек продаж в Wipon — централизованный учёт в одном аккаунте.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 3,
+          "user": "Чем Standard отличается от Pro?",
+          "bot": "Тарифы для магазина одежды — выбор между Standard и Pro. Если бюджет не покрывает Pro, в Wipon выбирают Standard или подключают Pro в рассрочку по согласованным условиям.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        }
+      ]
+    },
+    {
+      "id": "D06",
+      "name": "Equipment question (Fix3: equipment signal → kit, no disambig)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по системе Wipon. Что именно хотели бы узнать о нашей системе для вашего розничного бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Что за оборудование входит в комплект Standard?",
+          "bot": "В комплект Standard входит сенсорный моноблок Wipon POS i3, ручной сканер штрих-кода с подставкой и чековый принтер. Программа учета подключается отдельно. Цена комплекта — 168 000 тенге единоразово.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        }
+      ]
+    },
+    {
+      "id": "D07",
+      "name": "Disambiguation + normal bot turn + old disambig NOT applied (Fix5)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, и я помогу разобраться с выбором системы для вашего бизнеса. Поделитесь, пожалуйста, какой формат работы вас интересует — одиночный магазин?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите про Lite",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Mini»:\n1) Комплект Mini\n2) Тариф Mini\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": true
+        },
+        {
+          "turn": 3,
+          "user": "2",
+          "bot": "Только услуги: тариф Mini или Lite. Тариф Mini — базовый ежемесячный тариф Wipon для одной торговой точки.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 4,
+          "user": "Отлично, а теперь про ваши услуги поддержки",
+          "bot": "Наши услуги поддержки работают ежедневно с 9:00 до 18:00 по Казахстану — через чат в приложении или звонок по телефону. Срочные вопросы решаем максимум в 30 минут.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 5,
+          "user": "Что входит в Standard?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Standard»:\n1) Комплект Standard\n2) Тариф Standard\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": true
+        }
+      ]
+    },
+    {
+      "id": "D08",
+      "name": "НЕ ПУТАТЬ leak check (Fix2: stripped from answer to client)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по Wipon. Расскажите, что именно вас заинтересовало в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите о тарифе Pro",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Модуль Pro УКМ\n2) Тариф Pro\n3) Комплект Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": true
+        },
+        {
+          "turn": 3,
+          "user": "1",
+          "bot": "Wipon PRO УКМ — узкоспециализированный программный модуль для акцизной продукции и маркировки. ЭТО МОДУЛЬ, НЕ ПРОГРАММНЫЙ ТАРИФ И НЕ КОМПЛЕКТ ОБОРУДОВАНИЯ.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 4,
+          "user": "Какие ограничения у Pro?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Модуль Pro УКМ\n2) Тариф Pro\n3) Комплект Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": true
+        }
+      ]
+    },
+    {
+      "id": "D09",
+      "name": "Full-content check (Fix1: 25000 chars, no truncation)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по системе Wipon. Расскажите, пожалуйста, с какой целью вы обратились?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "У меня магазин, интересует автоматизация",
+          "bot": "А, розница! Так что же именно сейчас руками делаете: учёт товара, оформление продаж или что-то другое особенно напрягает?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        },
+        {
+          "turn": 3,
+          "user": "Расскажите подробно обо всех тарифах",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Модуль Pro УКМ\n2) Тариф Pro\n3) Комплект Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "has_disambiguation": true
+        }
+      ]
+    },
+    {
+      "id": "D10",
+      "name": "Equipment monoblock + price question (both signals → None → disambig)",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, я помогу разобраться с Wipon. Подскажите, какую задачу решаете прямо сейчас – например, подбор тариф настройку учётной системы?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "has_disambiguation": false
+        },
+        {
+          "turn": 2,
+          "user": "Цена Pro и комплект Pro — в чём разница?",
+          "bot": "НЕ ПУТАТЬ: «Комплект PRO» (360 000 ₸ разово) — оборудование, «Wipon PRO УКМ» (12 000 ₸/год) — отдельный модуль. Комплект PRO — готовый кассовый комплект оборудования для точек с высоким оборотом и интенсивным потоком покупателей.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "has_disambiguation": false
+        }
+      ]
+    }
+  ]
+}
