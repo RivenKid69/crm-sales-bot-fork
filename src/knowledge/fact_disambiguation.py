@@ -99,6 +99,15 @@ _EQUIPMENT_SIGNAL_RE = re.compile(
 
 _CLARIFICATION_MARKER = "Ответьте номером 1-3 или напишите вариант словами."
 
+# Russian preposition "про" (= "about") is indistinguishable from the product name
+# "Про" by word-boundary rules alone.  When it appears before a NON-Pro product name
+# (mini/lite/standard/basic/business) it is definitively a preposition and must NOT
+# be counted as the Pro product family in step 3 of _detect_specific_type().
+_PRO_PREPOSITION_RE = re.compile(
+    r"\bпро\b(?=\s+(?:mini|мини|lite|лайт|standard|стандарт|basic|business)\b)",
+    re.IGNORECASE,
+)
+
 # Regex to extract the family name from a clarification prompt.
 _FAMILY_FROM_CLARIF_RE = re.compile(
     r"Уточните,\s*пожалуйста,\s*что\s+вы\s+имеете\s+в\s+виду\s+под\s+«([^»]+)»",
@@ -389,8 +398,11 @@ class FactDisambiguator:
 
         # Step 3: 2+ product families mentioned → client is comparing tariffs
         # (nobody asks "Комплект Lite или Комплект Standard?" — only tariffs are compared)
+        # Strip "про" when used as a preposition before a non-Pro product name
+        # (e.g. "расскажите про Mini" → "про" = about, NOT the Pro product)
+        msg_for_step3 = _PRO_PREPOSITION_RE.sub("", user_message)
         families_in_message = sum(
-            1 for _fam, pat in _FAMILY_PATTERNS if pat.search(user_message)
+            1 for _fam, pat in _FAMILY_PATTERNS if pat.search(msg_for_step3)
         )
         if families_in_message >= 2:
             return "tariff"
