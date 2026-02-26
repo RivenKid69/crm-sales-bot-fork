@@ -4062,6 +4062,30 @@ class ResponseGenerator:
             user_message=str(context.get("user_message", "") or ""),
         )
 
+        # Response boundary validation — Rule #8 (trial period) + LLM judge (capability claims)
+        if _is_autonomous and flags.is_enabled("response_boundary_validator"):
+            try:
+                from src.response_boundary_validator import boundary_validator
+                bv_context = {
+                    **context,
+                    "retrieved_facts": retrieved_facts,
+                    "factual_verified_grounded": (
+                        self._last_factual_verifier_meta.get("factual_verifier_verdict") == "pass"
+                    ),
+                }
+                bv_result = boundary_validator.validate_response(
+                    processed, bv_context, llm=self.llm
+                )
+                if bv_result.response != processed:
+                    processed = bv_result.response
+                    validation_events.append({
+                        "stage": "boundary_validator",
+                        "violations": bv_result.violations,
+                        "fallback_used": bv_result.fallback_used,
+                    })
+            except Exception as exc:  # pragma: no cover — fail-open
+                logger.warning("boundary_validator_post_process_failed", error=str(exc))
+
         return processed, validation_events
 
     def post_process_only(

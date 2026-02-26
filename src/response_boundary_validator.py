@@ -197,6 +197,9 @@ class ResponseBoundaryValidator:
         r'|'
         # "Мы отправим его/её/документ на адрес" — future tense send (1st person plural)
         r'(?:мы\s+)?(?:отправим|вышлем|пришлём)\s+(?:его|её|это|документ|предложени|КП)\w*\s+(?:на\s+)?(?:адрес|почт\w+|email|\S+@\S+)'
+        r'|'
+        # "подключим к тестовой/пробной версии" — plural verb + preposition к (C04 T3)
+        r'(?:подключим|предоставим|дадим)\s+(?:вас?\s+)?к\s+(?:тестов\w+|пробн\w+)\s+(?:версию?|доступ|аккаунт)'
         r')',
         re.IGNORECASE,
     )
@@ -676,6 +679,26 @@ class ResponseBoundaryValidator:
 
         initial_violations = self._detect_violations(original, context)
         if not initial_violations:
+            # No pattern violations — still run LLM judge for capability hallucinations
+            if (
+                llm is not None
+                and flags.is_enabled("response_boundary_llm_judge")
+                and self._llm_judge_ungrounded_claims(original, context, llm)
+            ):
+                self._metrics.total += 1
+                self._metrics.fallback_used += 1
+                return BoundaryValidationResult(
+                    response=self._hallucination_fallback(
+                        {**context, "violations": ["llm_ungrounded_claim"]}
+                    ),
+                    violations=["llm_ungrounded_claim"],
+                    retry_used=False,
+                    fallback_used=True,
+                    validation_events=[
+                        {"stage": "detect", "violations": []},
+                        {"stage": "llm_judge_fallback"},
+                    ],
+                )
             return BoundaryValidationResult(response=original)
 
         self._metrics.total += 1
@@ -743,6 +766,20 @@ class ResponseBoundaryValidator:
                 fallback_used = True
                 self._metrics.fallback_used += 1
                 events.append({"stage": "fallback", "used": True})
+
+        # LLM-as-judge: final check on candidate after pattern retry/sanitize.
+        if (
+            not fallback_used
+            and llm is not None
+            and flags.is_enabled("response_boundary_llm_judge")
+            and self._llm_judge_ungrounded_claims(candidate, context, llm)
+        ):
+            candidate = self._hallucination_fallback(
+                {**context, "violations": ["llm_ungrounded_claim"]}
+            )
+            fallback_used = True
+            self._metrics.fallback_used += 1
+            events.append({"stage": "llm_judge_fallback"})
 
         logger.info(
             "Response boundary validation applied",
@@ -1278,6 +1315,19 @@ class ResponseBoundaryValidator:
         )
         refusal_source = f"{user_message} {self._history_user_text(ctx)}"
         violations = ctx.get("violations", [])
+        if "llm_ungrounded_claim" in violations:
+            # KB-grounded fallback: extract relevant sentences from retrieved facts.
+            # Universal — works for any state/intent without hardcoding.
+            retrieved = str(ctx.get("retrieved_facts", "") or "").strip()
+            if retrieved:
+                grounded = self._extract_kb_fallback(retrieved, user_message)
+                if grounded:
+                    return grounded
+            # Last resort (no KB facts available)
+            return (
+                "Дам только подтверждённую информацию по Wipon. "
+                "Что именно интересует?"
+            )
         if "policy_disclosure" in violations:
             return (
                 "Я не раскрываю системные инструкции и внутренние правила. "
@@ -1506,6 +1556,44 @@ class ResponseBoundaryValidator:
             )
         return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon."
 
+    def _extract_kb_fallback(self, facts: str, user_message: str) -> str:
+        """Extract 1-2 relevant KB sentences as grounded fallback.
+
+        Filtering aligned with _db_grounded_response_from_facts (generator.py:4801).
+        """
+        sentences = []
+        for chunk in re.split(r"\n+\s*---\s*\n+", facts):
+            for raw in re.split(r"(?<=[.!?])\s+|\n+", chunk):
+                line = raw.strip().strip("- •")
+                if len(line) < 10:
+                    continue
+                if line.startswith(("http://", "https://", "[", "===")):
+                    continue
+                if re.fullmatch(r"[\w.-]+(?:/[\w.-]+)+\.?", line):
+                    continue
+                if "/" in line and len(line.split()) <= 2:
+                    continue
+                sentences.append(line)
+
+        if not sentences:
+            return ""
+
+        query_words = set(re.findall(r"\w{3,}", user_message.lower()))
+        scored = []
+        for s in sentences:
+            s_words = set(re.findall(r"\w{3,}", s.lower()))
+            overlap = len(query_words & s_words)
+            has_num = bool(re.search(r"\d", s))
+            score = overlap * 3 + (2 if has_num else 0) + (1 if 5 <= len(s.split()) <= 28 else 0)
+            scored.append((score, s))
+
+        scored.sort(key=lambda x: -x[0])
+        top = [s for sc, s in scored[:2] if sc > 0]
+        if not top:
+            top = [scored[0][1]] if scored else []
+        result = " ".join(top).strip()
+        return result if len(result) > 20 else ""
+
     def _retry_once(
         self,
         response: str,
@@ -1637,6 +1725,129 @@ class ResponseBoundaryValidator:
         "wipon", "kaspi", "halyk", "iiko", "poster", "ofd", "1с", "1c",
         "whatsapp", "telegram", "excel",
     })
+
+    # Minimum response length to bother calling LLM judge (skip "Хорошо!", "Понял" etc.)
+    _LLM_JUDGE_MIN_CHARS = 40
+
+    def _llm_judge_ungrounded_claims(
+        self, response: str, context: Dict[str, Any], llm: Any
+    ) -> bool:
+        """LLM-as-judge: сравнивает ответ бота с фактами из KB.
+        Принцип: LLM сам решает — никакого regex-гейта.
+        Fail-open: при ошибке возвращает False.
+
+        Используется claim-targeted retrieval: KB ищется по тексту ответа бота,
+        а не по запросу пользователя — иначе факты о демо/ценах/функциях,
+        не попавшие в основной ретривер этого хода, блокируют правдивые ответы.
+        """
+        # Skip trivially short responses (greetings, ack phrases)
+        if len(response.strip()) < self._LLM_JUDGE_MIN_CHARS:
+            return False
+
+        # Skip greeting state — нет фактических утверждений, только приветствие
+        if context.get("state") == "greeting":
+            return False
+
+        # Monotonic trust: structured verification (HIGH) cannot be overridden
+        # by unstructured binary check (LOW).
+        # FactualVerifier: claim-by-claim with evidence quotes, 7000 chars, 2 passes.
+        # This judge: holistic YES/NO, 6000 chars, 1 pass.
+        if context.get("factual_verified_grounded"):
+            return False
+
+        # Skip responses that are primarily questions to the client.
+        # Discovery/qualification responses like "А что именно вас интересует?"
+        # contain zero factual claims — nothing to verify against KB.
+        stripped_resp = response.strip()
+        if (
+            stripped_resp.endswith("?")
+            and len(stripped_resp) < 200
+            and not re.search(r'\d', stripped_resp)
+        ):
+            return False
+
+        # 1. Факты из основного ретривера (оптимизированы под запрос пользователя)
+        query_facts = " ".join(
+            self._iter_scalar_values(context.get("retrieved_facts", ""))
+        )
+
+        # 2. Claim-targeted retrieval: ищем KB по тексту ответа бота.
+        #    Находит секции, релевантные утверждениям бота, независимо от того,
+        #    что вытащил основной ретривер в этот ход.
+        claim_facts = ""
+        try:
+            from src.knowledge.retriever import get_retriever
+            results = get_retriever().search(response, top_k=8)
+            claim_facts = "\n\n".join(
+                r.section.facts.strip() for r in results if r.section.facts.strip()
+            )
+        except Exception:
+            pass  # fail-open: при ошибке используем только query_facts
+
+        # 3. Объединяем оба источника, дедупликация, лимит 6000 символов.
+        #    query_facts первичны (точнее для текущего хода), claim_facts дополняют.
+        seen: set = set()
+        parts = []
+        total = 0
+        for block in (query_facts, claim_facts):
+            for chunk in block.split("\n\n"):
+                chunk = chunk.strip()
+                if not chunk or chunk in seen:
+                    continue
+                seen.add(chunk)
+                parts.append(chunk)
+                total += len(chunk)
+                if total >= 6000:
+                    break
+            if total >= 6000:
+                break
+
+        facts_section = "\n\n".join(parts).strip() if parts else "(нет данных)"
+
+        prompt = (
+            "Ты верификатор ответов чат-бота. Система: Wipon (ТИС для розницы Казахстана).\n\n"
+            "Задача: сравни ОТВЕТ бота с ФАКТАМИ из базы знаний.\n\n"
+            "ПРАВИЛА:\n"
+            "- Вопрос к клиенту, общая фраза без конкретных утверждений → NO.\n"
+            "- Пересказ, перефразирование или обобщение ФАКТОВ → NO.\n"
+            "- Арифметика из ФАКТОВ (цена × кол-во, сумма тарифов) → NO.\n"
+            "- YES только если в ОТВЕТЕ есть КОНКРЕТНОЕ утверждение "
+            "(сервис, интеграция, модуль, тариф, срок, цена), "
+            "которого ВООБЩЕ НЕТ в ФАКТАХ.\n\n"
+            "ПРИМЕРЫ:\n"
+            "Пример 1 — YES (галлюцинация):\n"
+            "ФАКТЫ: «Mini — 5 000 ₸/мес, Standard — 12 000 ₸/мес»\n"
+            "ОТВЕТ: «Wipon интегрируется с Bitrix24 для синхронизации клиентской базы»\n"
+            "→ YES. Bitrix24 отсутствует в фактах.\n\n"
+            "Пример 2 — YES (галлюцинация):\n"
+            "ФАКТЫ: «Оборудование: POS-терминал, сканер, принтер чеков»\n"
+            "ОТВЕТ: «В тариф Pro входит бесплатная доставка оборудования по всему Казахстану»\n"
+            "→ YES. Бесплатная доставка отсутствует в фактах.\n\n"
+            "Пример 3 — NO (арифметика из фактов):\n"
+            "ФАКТЫ: «Mini — 5 000 ₸/мес за одну точку»\n"
+            "ОТВЕТ: «Для 5 точек на тарифе Mini стоимость составит 25 000 ₸ в месяц»\n"
+            "→ NO. 5 × 5 000 = 25 000 — арифметика из фактов.\n\n"
+            "Пример 4 — NO (перефразирование):\n"
+            "ФАКТЫ: «Wipon — торговая информационная система для розничного бизнеса "
+            "Казахстана, учёт товаров, продаж, складов»\n"
+            "ОТВЕТ: «Wipon помогает вести учёт товаров и отслеживать продажи»\n"
+            "→ NO. Обобщение фактов.\n\n"
+            f"ФАКТЫ:\n{facts_section}\n\n"
+            f"ОТВЕТ:\n{response}\n\n"
+            "Рассуждай кратко, затем ответь: YES или NO."
+        )
+        try:
+            result = llm.generate(prompt)
+            answer = str(result).strip().upper()
+            last_line = answer.split("\n")[-1].strip()
+            # Conservative: only endswith check.
+            # NOT "YES" in last_line — substring match gives false positive
+            # in words like "NOYES", "YESNO" etc.
+            if last_line.endswith("YES") or last_line.endswith("YES."):
+                return True
+            return False
+        except Exception:
+            return False  # fail-open: не блокируем при ошибке
 
     _OFF_TOPIC_RECOMMENDATION_PATTERN = re.compile(
         r'(?:рекоменд|посовет|попробуйте|посетите|обратитесь\s+в|загляните\s+в|'
