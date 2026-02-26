@@ -15,13 +15,16 @@
 #   ./scripts/start_ollama.sh
 #
 llm:
-  # Модель Ollama (Ministral 3 14B Instruct, Q8_0 квантизация)
-  model: "ministral-3:14b-instruct-2512-q8_0"
+  # Модель Qwen 3.5 27B Q5_K_M через llama-server (OpenAI-совместимый API)
+  model: "qwen3.5-27b"
 
-  # URL Ollama сервера (native API)
-  base_url: "http://localhost:11434"
+  # URL llama-server (OpenAI-compatible API)
+  base_url: "http://localhost:8080"
 
-  # Таймаут запроса в секундах (увеличен для Ollama)
+  # Формат API: "ollama" или "openai" (llama-server, vLLM, etc.)
+  api_format: "openai"
+
+  # Таймаут запроса в секундах
   timeout: 120
 
   # Режим стриминга (false для structured output)
@@ -241,6 +244,9 @@ objection:
 # CLASSIFIER (Классификация интентов)
 # -----------------------------------------------------------------------------
 classifier:
+  # Few-shot примеров для LLM классификатора (Qwen3.5-27B: 12-15 оптимально)
+  n_few_shot: 12
+
   # Веса для разных методов классификации
   weights:
     root_match: 1.0       # Совпадение по корню слова

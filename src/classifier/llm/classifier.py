@@ -3,6 +3,7 @@ from typing import Dict, Optional, Any
 
 from src.logger import logger
 from src.llm import OllamaClient
+from src.settings import settings
 from src.classifier.llm.schemas import ClassificationResult
 from src.classifier.llm.prompts import build_classification_prompt
 from src.classifier.extractors.extraction_validator import validate_extracted_data
@@ -31,6 +32,7 @@ class LLMClassifier:
         """
         self.vllm = vllm_client or OllamaClient()
         self.fallback = fallback_classifier
+        self._n_few_shot = settings.classifier.get_nested("n_few_shot", 12) if hasattr(settings, "classifier") else 12
 
         # Статистика
         self._llm_calls = 0
@@ -60,8 +62,8 @@ class LLMClassifier:
         self._llm_calls += 1
 
         try:
-            # Строим промпт
-            prompt = build_classification_prompt(message, context)
+            # Строим промпт (n_few_shot из settings.yaml)
+            prompt = build_classification_prompt(message, context, n_few_shot=self._n_few_shot)
 
             # Вызываем LLM с structured output
             result = self.vllm.generate_structured(prompt, ClassificationResult)

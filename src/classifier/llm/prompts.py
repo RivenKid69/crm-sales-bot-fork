@@ -536,8 +536,8 @@ def build_classification_prompt(
 
     context_str = "\n".join(context_parts) if context_parts else "Нет контекста"
 
-    # Получаем few-shot примеры для улучшения классификации
-    few_shot_section = get_few_shot_prompt(n_few_shot) if n_few_shot > 0 else ""
+    # Получаем few-shot примеры для улучшения классификации (context-aware)
+    few_shot_section = get_few_shot_prompt(n_few_shot, context) if n_few_shot > 0 else ""
 
     return f"""{SYSTEM_PROMPT}
 
