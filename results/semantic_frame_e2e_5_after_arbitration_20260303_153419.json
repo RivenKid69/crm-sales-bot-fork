@@ -1,0 +1,242 @@
+{
+  "timestamp": "2026-03-03T15:34:19.841344",
+  "summary": {
+    "dialogs_total": 5,
+    "turns_total": 6,
+    "non_price_target_turns": 5,
+    "tariff_drift_in_non_price_turns": 2,
+    "price_question_turns": 1,
+    "price_question_fallbacks": 0
+  },
+  "runs": [
+    {
+      "id": "SF01_product_fit_8_stores",
+      "turns": [
+        {
+          "user": "привет, у меня продуктовые магазины, 8 точек, какие ваши продукты мне наиболее подойдут?",
+          "bot": "Для сети из 8 продуктовых магазинов идеально подойдет тариф Wipon Pro, который позволяет управлять всеми точками из одного аккаунта с централизованным учетом, едиными ценами и аналитикой по сети. Система поддерживает неограниченное количество товаров, работу с весовым товаром (интеграция весов и печать ценников) и синхронизацию нескольких касс. Для оборудования мы предлагаем подбор комплектов под ваш формат: от POS-моноблоков до специализированных решений для весового товара (Quadro или Triple).",
+          "intent": "situation_provided",
+          "semantic_frame": {
+            "primary_goal": "unknown",
+            "asked_dimensions": [
+              "product_fit"
+            ],
+            "needs_direct_answer": false,
+            "has_question": false,
+            "price_requested": false,
+            "comparison_requested": false,
+            "recommended_intent": "situation_provided",
+            "recommended_confidence": 0.0,
+            "override_intent": false,
+            "confidence": 0.95,
+            "entities": {
+              "store_count": 8,
+              "employee_count": null,
+              "business_type": "продуктовые магазины"
+            },
+            "source": "llm"
+          },
+          "semantic_intent_arbitration": {
+            "applied": true,
+            "overridden": false,
+            "reason": "priority_pattern_protected",
+            "current_intent": "situation_provided"
+          },
+          "tariff_mention": true,
+          "explicit_price_q": false,
+          "safe_fallback": false
+        }
+      ]
+    },
+    {
+      "id": "SF02_features_non_price",
+      "turns": [
+        {
+          "user": "у нас 5 магазинов, какие функции помогут контролировать остатки и кассиров?",
+          "bot": "Для контроля остатков в сети из 5 магазинов Wipon предоставляет единое окно с остатками всех точек, автоматическую синхронизацию и уведомления о дефиците. Для контроля кассиров система фиксирует все операции (продажи, возвраты, отмены) под персональными логинами, позволяя быстро идентифицировать автора действия и выявлять ошибки. Также доступна аналитика эффективности сотрудников с метриками продаж и контроля нарушений.",
+          "intent": "question_features",
+          "semantic_frame": {
+            "primary_goal": "unknown",
+            "asked_dimensions": [
+              "features"
+            ],
+            "needs_direct_answer": false,
+            "has_question": false,
+            "price_requested": false,
+            "comparison_requested": false,
+            "recommended_intent": "question_features",
+            "recommended_confidence": 0.0,
+            "override_intent": false,
+            "confidence": 0.95,
+            "entities": {
+              "store_count": 5,
+              "employee_count": null,
+              "business_type": "магазин"
+            },
+            "source": "llm"
+          },
+          "semantic_intent_arbitration": {
+            "applied": true,
+            "overridden": false,
+            "reason": "priority_pattern_protected",
+            "current_intent": "question_features"
+          },
+          "tariff_mention": false,
+          "explicit_price_q": false,
+          "safe_fallback": false
+        }
+      ]
+    },
+    {
+      "id": "SF03_explicit_price",
+      "turns": [
+        {
+          "user": "у меня 8 точек",
+          "bot": "Восемь точек — это масштабный проект. Сейчас всё управляется централизованно?",
+          "intent": "situation_provided",
+          "semantic_frame": {
+            "primary_goal": "unknown",
+            "asked_dimensions": [],
+            "needs_direct_answer": false,
+            "has_question": false,
+            "price_requested": false,
+            "comparison_requested": false,
+            "recommended_intent": "situation_provided",
+            "recommended_confidence": 0.0,
+            "override_intent": false,
+            "confidence": 0.95,
+            "entities": {
+              "store_count": 8,
+              "employee_count": null,
+              "business_type": ""
+            },
+            "source": "llm"
+          },
+          "semantic_intent_arbitration": {
+            "applied": true,
+            "overridden": false,
+            "reason": "priority_pattern_protected",
+            "current_intent": "situation_provided"
+          },
+          "tariff_mention": false,
+          "explicit_price_q": false,
+          "safe_fallback": false
+        },
+        {
+          "user": "сколько стоит",
+          "bot": "Для восьми точек подходит ТИС: 220 000 ₸ за первую точку и 80 000 ₸ за каждую следующую в год. Это решение позволяет управлять всей сетью централизованно.",
+          "intent": "price_question",
+          "semantic_frame": {
+            "primary_goal": "unknown",
+            "asked_dimensions": [
+              "pricing"
+            ],
+            "needs_direct_answer": false,
+            "has_question": false,
+            "price_requested": true,
+            "comparison_requested": false,
+            "recommended_intent": "price_question",
+            "recommended_confidence": 0.0,
+            "override_intent": false,
+            "confidence": 0.95,
+            "entities": {
+              "store_count": null,
+              "employee_count": null,
+              "business_type": ""
+            },
+            "source": "llm"
+          },
+          "semantic_intent_arbitration": {
+            "applied": true,
+            "overridden": false,
+            "reason": "no_change",
+            "current_intent": "price_question",
+            "recommended_intent": "price_question"
+          },
+          "tariff_mention": true,
+          "explicit_price_q": true,
+          "safe_fallback": false
+        }
+      ]
+    },
+    {
+      "id": "SF04_integrations",
+      "turns": [
+        {
+          "user": "у меня 3 магазина, есть интеграция с kaspi и 1с?",
+          "bot": "Да, в Wipon есть интеграция с Kaspi (Kaspi.kz и Kaspi Магазин) для автоматической синхронизации товаров, заказов, остатков и оплат. Также поддерживается подключение к 1С через модуль ТИС для единого обмена данными между системами. Эти интеграции работают автоматически, исключая ручное дублирование операций.",
+          "intent": "question_integrations",
+          "semantic_frame": {
+            "primary_goal": "unknown",
+            "asked_dimensions": [
+              "integrations"
+            ],
+            "needs_direct_answer": false,
+            "has_question": false,
+            "price_requested": false,
+            "comparison_requested": false,
+            "recommended_intent": "question_integrations",
+            "recommended_confidence": 0.0,
+            "override_intent": false,
+            "confidence": 0.95,
+            "entities": {
+              "store_count": 3,
+              "employee_count": null,
+              "business_type": "магазин"
+            },
+            "source": "llm"
+          },
+          "semantic_intent_arbitration": {
+            "applied": true,
+            "overridden": false,
+            "reason": "priority_pattern_protected",
+            "current_intent": "question_integrations"
+          },
+          "tariff_mention": true,
+          "explicit_price_q": false,
+          "safe_fallback": false
+        }
+      ]
+    },
+    {
+      "id": "SF05_comparison_non_price",
+      "turns": [
+        {
+          "user": "для 8 точек что лучше по возможностям: стандарт или решение для сети?",
+          "bot": "Могу отвечать только по подтвержденным фактам из базы. Сейчас в контексте недостаточно данных для точного ответа.",
+          "intent": "situation_provided",
+          "semantic_frame": {
+            "primary_goal": "unknown",
+            "asked_dimensions": [
+              "comparison",
+              "product_fit"
+            ],
+            "needs_direct_answer": false,
+            "has_question": false,
+            "price_requested": false,
+            "comparison_requested": true,
+            "recommended_intent": "situation_provided",
+            "recommended_confidence": 0.0,
+            "override_intent": false,
+            "confidence": 0.95,
+            "entities": {
+              "store_count": 8,
+              "employee_count": null,
+              "business_type": ""
+            },
+            "source": "llm"
+          },
+          "semantic_intent_arbitration": {
+            "applied": true,
+            "overridden": false,
+            "reason": "priority_pattern_protected",
+            "current_intent": "situation_provided"
+          },
+          "tariff_mention": false,
+          "explicit_price_q": false,
+          "safe_fallback": true
+        }
+      ]
+    }
+  ]
+}

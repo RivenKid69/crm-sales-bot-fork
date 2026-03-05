@@ -24,7 +24,8 @@ _MEANINGFUL_FIELDS = frozenset({
     "timeline", "contact_info", "budget_range",
     "current_tools", "business_type", "users_count",
     "pain_impact", "financial_impact", "desired_outcome",
-    "urgency", "client_name",
+    "urgency", "client_name", "contact_name",
+    "city", "automation_before", "automation_now",
 })
 
 # Trivial fields excluded (don't indicate info_provided intent):

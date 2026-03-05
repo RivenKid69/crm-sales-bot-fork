@@ -19,6 +19,8 @@ Ollama Client для CRM Sales Bot.
     Этот проект использует Ollama для inference.
 """
 
+import json
+import re
 import time
 import uuid
 from dataclasses import dataclass
@@ -113,6 +115,12 @@ class OllamaClient:
     FALLBACK_RESPONSES: Dict[str, str] = LLM_FALLBACK_RESPONSES or {}
 
     DEFAULT_FALLBACK: str = LLM_DEFAULT_FALLBACK or "Произошла техническая ошибка."
+    _FACTUAL_PURPOSE_HINTS = ("factual", "pricing", "price", "tariff", "fact")
+    _FACTUAL_PROMPT_HINTS = (
+        "критическое правило по тарифам и ценам",
+        "критические правила фактологии",
+        "direct factual mode",
+    )
 
     def __init__(
         self,
@@ -120,27 +128,34 @@ class OllamaClient:
         base_url: Optional[str] = None,
         timeout: Optional[int] = None,
         enable_circuit_breaker: bool = True,
-        enable_retry: bool = True
+        enable_retry: bool = True,
+        api_format: Optional[str] = None,
     ):
         """
-        Инициализация Ollama клиента.
+        Инициализация LLM клиента.
 
         Args:
             model: Название модели (из settings если не указано)
-            base_url: URL Ollama API (из settings если не указано)
+            base_url: URL API (из settings если не указано)
             timeout: Таймаут запроса в секундах
             enable_circuit_breaker: Включить circuit breaker
             enable_retry: Включить retry с exponential backoff
+            api_format: "ollama" или "openai" (llama-server, vLLM)
         """
         self.model = model or settings.llm.model
         self.base_url = base_url or settings.llm.base_url
         self.timeout = timeout or settings.llm.timeout
+        self.api_format = api_format or getattr(settings.llm, 'api_format', 'ollama')
 
         self._enable_circuit_breaker = enable_circuit_breaker
         self._enable_retry = enable_retry
 
         self._circuit_breaker = CircuitBreakerState()
         self._stats = LLMStats()
+
+    @property
+    def _is_openai_api(self) -> bool:
+        return self.api_format == "openai"
 
     def reset(self) -> None:
         """Сбросить состояние для нового диалога"""
@@ -172,8 +187,8 @@ class OllamaClient:
         allow_fallback: bool = True,
         return_trace: bool = False,
         purpose: str = "structured_generation",
-        temperature: float = 0.1,
-        num_predict: int = 512,
+        temperature: float = 0.05,
+        num_predict: int = 2048,
     ) -> Union[Optional[T], Tuple[Optional[T], LLMTrace]]:
         """
         Генерация с гарантированным JSON через Ollama structured output.
@@ -223,37 +238,47 @@ class OllamaClient:
             try:
                 base_url_normalized = self.base_url.rstrip("/")
 
-                # Ollama native structured output через format
-                response = requests.post(
-                    f"{base_url_normalized}/api/chat",
-                    json={
+                if self._is_openai_api:
+                    # OpenAI-compatible API (llama-server, vLLM)
+                    request_body = {
                         "model": self.model,
                         "messages": [{"role": "user", "content": prompt}],
-                        "stream": False,
-                        "format": json_schema,  # Ollama: schema напрямую в format
-                        "options": {
-                            "temperature": temperature,
-                            "num_predict": num_predict,
-                        }
-                    },
-                    timeout=self.timeout
-                )
+                        "temperature": temperature,
+                        "max_tokens": num_predict,
+                        "response_format": {
+                            "type": "json_schema",
+                            "json_schema": {"name": "response", "strict": True, "schema": json_schema},
+                        },
+                    }
+                    response = requests.post(
+                        f"{base_url_normalized}/v1/chat/completions",
+                        json=request_body,
+                        timeout=self.timeout,
+                    )
+                else:
+                    # Ollama native structured output через format
+                    response = requests.post(
+                        f"{base_url_normalized}/api/chat",
+                        json={
+                            "model": self.model,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "stream": False,
+                            "think": False,
+                            "format": json_schema,  # Ollama: schema напрямую в format
+                            "options": {
+                                "temperature": temperature,
+                                "num_predict": num_predict,
+                                "num_ctx": 8192,
+                            }
+                        },
+                        timeout=self.timeout
+                    )
                 response.raise_for_status()
 
                 data = response.json()
-                message = data.get("message", {})
-                content = message.get("content", "")
+                content = self._extract_content(data)
 
-                # Support for models with thinking mode (qwen3, deepseek, etc.)
-                # If content is empty but thinking is present, use thinking
-                if not content:
-                    thinking = message.get("thinking", "")
-                    if thinking:
-                        content = thinking
-                    else:
-                        raise ValueError("Empty content in response from Ollama")
-
-                # Ollama гарантирует валидный JSON, валидируем через Pydantic
+                # Валидируем через Pydantic
                 elapsed_ms = (time.time() - start_time) * 1000
                 self._stats.successful_requests += 1
                 self._stats.total_response_time_ms += elapsed_ms
@@ -276,9 +301,15 @@ class OllamaClient:
             except requests.exceptions.RequestException as e:
                 last_error = e
                 logger.warning(f"Ollama structured error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
+            except requests.exceptions.ConnectionError as e:
+                last_error = e
+                logger.error(f"Ollama structured connection error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
             except Exception as e:
                 last_error = e
                 logger.error(f"Ollama structured unexpected error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
+                # Ошибка валидации Pydantic — retry бесполезен, LLM вернёт то же самое
+                if "validation error" in str(e).lower():
+                    break
 
             # Retry с backoff
             if attempt < max_attempts - 1:
@@ -370,11 +401,19 @@ class OllamaClient:
         last_error: Optional[Exception] = None
         delay = self.INITIAL_DELAY
         max_attempts = self.MAX_RETRIES if self._enable_retry else 1
+        temperature, num_predict = self._resolve_freeform_generation_options(
+            purpose=purpose,
+            prompt=prompt,
+        )
 
         for attempt in range(max_attempts):
             try:
                 # Используем _call_llm для совместимости с тестами
-                response_text = self._call_llm(prompt)
+                response_text = self._call_llm(
+                    prompt,
+                    temperature=temperature,
+                    num_predict=num_predict,
+                )
 
                 # Успех
                 elapsed_ms = (time.time() - start_time) * 1000
@@ -447,45 +486,109 @@ class OllamaClient:
     # INTERNAL LLM CALL METHOD
     # =========================================================================
 
-    def _call_llm(self, prompt: str) -> str:
+    def _resolve_freeform_generation_options(self, *, purpose: str, prompt: str) -> Tuple[float, int]:
+        """Resolve generation temperature/token budget by purpose.
+
+        Factual/pricing answers should be more deterministic than general chit-chat.
         """
-        Вызов Ollama API (для совместимости с тестами).
+        default_temperature = float(settings.get_nested("llm.generation.temperature", 0.55))
+        default_num_predict = int(settings.get_nested("llm.generation.num_predict", 384))
+        factual_temperature = float(settings.get_nested("llm.generation.factual_temperature", 0.2))
+        factual_num_predict = int(
+            settings.get_nested("llm.generation.factual_num_predict", default_num_predict)
+        )
+
+        purpose_low = str(purpose or "").lower()
+        prompt_low = str(prompt or "").lower()
+        is_factual = any(token in purpose_low for token in self._FACTUAL_PURPOSE_HINTS)
+        if not is_factual:
+            is_factual = any(marker in prompt_low for marker in self._FACTUAL_PROMPT_HINTS)
+
+        if is_factual:
+            return factual_temperature, factual_num_predict
+        return default_temperature, default_num_predict
+
+    def _call_llm(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.55,
+        num_predict: int = 384,
+    ) -> str:
+        """
+        Вызов LLM API (для совместимости с тестами).
 
         Внутренний метод без retry/circuit breaker.
         Тесты могут мокать этот метод.
         """
         base_url_normalized = self.base_url.rstrip("/")
 
-        # Ollama native API
-        response = requests.post(
-            f"{base_url_normalized}/api/chat",
-            json={
-                "model": self.model,
-                "messages": [{"role": "user", "content": prompt}],
-                "stream": False,
-                "options": {
-                    "temperature": 0.7,
-                    "num_predict": 256,
-                }
-            },
-            timeout=self.timeout
-        )
+        if self._is_openai_api:
+            # OpenAI-compatible API (llama-server, vLLM)
+            response = requests.post(
+                f"{base_url_normalized}/v1/chat/completions",
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": temperature,
+                    "max_tokens": num_predict,
+                },
+                timeout=self.timeout,
+            )
+        else:
+            # Ollama native API
+            response = requests.post(
+                f"{base_url_normalized}/api/chat",
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                    "think": False,
+                    "options": {
+                        "temperature": temperature,
+                        "num_predict": num_predict,
+                        "num_ctx": 8192,
+                    }
+                },
+                timeout=self.timeout
+            )
         response.raise_for_status()
 
         data = response.json()
-        message = data.get("message", {})
-        content = message.get("content", "")
+        return self._extract_content(data)
 
-        # Support for models with thinking mode (qwen3, deepseek, etc.)
-        # If content is empty but thinking is present, use thinking
-        if not content:
-            thinking = message.get("thinking", "")
-            if thinking:
-                content = thinking
-            else:
-                raise ValueError("Empty content in response from Ollama")
+    @staticmethod
+    def _strip_markdown_json(text: str) -> str:
+        """Strip ```json...``` markdown wrapper if present."""
+        m = re.match(r'^\s*```(?:json)?\s*\n?(.*?)\n?\s*```\s*$', text, re.DOTALL)
+        return m.group(1).strip() if m else text
 
-        return content
+    def _extract_content(self, data: dict) -> str:
+        """Извлечь content из ответа (Ollama или OpenAI формат)."""
+        if self._is_openai_api:
+            # OpenAI format: choices[0].message.content
+            choices = data.get("choices", [])
+            if not choices:
+                raise ValueError("Empty choices in OpenAI API response")
+            message = choices[0].get("message", {})
+            content = message.get("content", "")
+            if not content:
+                # reasoning_content for thinking models
+                content = message.get("reasoning_content", "")
+            if not content:
+                raise ValueError("Empty content in OpenAI API response")
+            return self._strip_markdown_json(content)
+        else:
+            # Ollama format: message.content
+            message = data.get("message", {})
+            content = message.get("content", "")
+            if not content:
+                thinking = message.get("thinking", "")
+                if thinking:
+                    content = thinking
+                else:
+                    raise ValueError("Empty content in response from Ollama")
+            return self._strip_markdown_json(content)
 
     # =========================================================================
     # CIRCUIT BREAKER
@@ -622,23 +725,27 @@ class OllamaClient:
 
     def health_check(self) -> bool:
         """
-        Проверка доступности Ollama.
+        Проверка доступности LLM сервера.
 
         Returns:
-            True если Ollama доступен и модель загружена
+            True если сервер доступен и модель загружена
         """
         try:
-            # Ollama tags endpoint для проверки доступности
             base_url_normalized = self.base_url.rstrip("/")
-            response = requests.get(f"{base_url_normalized}/api/tags", timeout=5)
-            if response.status_code != 200:
-                return False
 
-            # Проверяем что модель доступна
-            data = response.json()
-            models = [m.get("name", "") for m in data.get("models", [])]
-            model_base = self.model.split(":")[0]
-            return any(model_base in m for m in models)
+            if self._is_openai_api:
+                # OpenAI-compatible: /health or /v1/models
+                response = requests.get(f"{base_url_normalized}/health", timeout=5)
+                return response.status_code == 200
+            else:
+                # Ollama tags endpoint для проверки доступности
+                response = requests.get(f"{base_url_normalized}/api/tags", timeout=5)
+                if response.status_code != 200:
+                    return False
+                data = response.json()
+                models = [m.get("name", "") for m in data.get("models", [])]
+                model_base = self.model.split(":")[0]
+                return any(model_base in m for m in models)
         except Exception:
             return False
 

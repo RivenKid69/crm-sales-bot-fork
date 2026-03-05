@@ -271,18 +271,10 @@ def format_dialog(d: dict) -> str:
 
 def run_all(label: str):
     """Запускает все сценарии, сохраняет результаты."""
-    from src.bot import SalesBot
+    from src.bot import SalesBot, setup_autonomous_pipeline
     from src.llm import OllamaLLM
-    from src.feature_flags import flags
 
-    for flag_name in [
-        "response_factual_verifier",
-        "response_boundary_validator",
-        "response_boundary_llm_judge",
-        "response_boundary_retry",
-        "response_boundary_fallback",
-    ]:
-        flags.set_override(flag_name, True)
+    setup_autonomous_pipeline()
 
     llm = OllamaLLM()
     bot = SalesBot(llm, flow_name="autonomous")

@@ -1,0 +1,259 @@
+{
+  "label": "post_fix_v3",
+  "timestamp": "2026-03-02T14:47:27.339364",
+  "pass_count": 5,
+  "total": 11,
+  "deflection_count": 5,
+  "results": [
+    {
+      "id": 1,
+      "question": "Чем отличаются сканеры WP930Z и WPB930?",
+      "category": "equipment",
+      "response": "WP930Z — проводной за 10 000 ₸, а WPB930 — беспроводной за 17 000 ₸. Выбор зависит от удобства работы кассира и наличия свободных портов.",
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_specs",
+      "action": "autonomous_respond",
+      "is_deflection": false,
+      "keywords_found": [
+        "WP930Z",
+        "проводн",
+        "10 000",
+        "WPB930",
+        "беспроводн",
+        "17 000"
+      ],
+      "keywords_expected": [
+        "WP930Z",
+        "проводн",
+        "10 000",
+        "10000",
+        "WPB930",
+        "беспроводн",
+        "17 000",
+        "17000"
+      ],
+      "passed": true,
+      "elapsed_s": 26.1
+    },
+    {
+      "id": 2,
+      "question": "Как быстро можно подключить ТИС?",
+      "category": "tis",
+      "response": "Wipon интегрируется с Kaspi, 1С, ОФД и другими сервисами через REST API. Расскажите, какой у вас бизнес — подберу подходящий вариант подключения.",
+      "state": "autonomous_discovery",
+      "intent": "question_tis_transition",
+      "action": "autonomous_respond",
+      "is_deflection": true,
+      "keywords_found": [],
+      "keywords_expected": [
+        "1-2 дн",
+        "1–2 дн",
+        "один-два",
+        "ЭЦП",
+        "удалённо",
+        "удаленно",
+        "день",
+        "дня",
+        "дней"
+      ],
+      "passed": false,
+      "elapsed_s": 18.0
+    },
+    {
+      "id": 3,
+      "question": "Сколько времени занимает подключение Wipon?",
+      "category": "support",
+      "response": "Полное подключение Wipon занимает от 30 минут до часа. Первичная установка Wipon занимает 30-60 минут в зависимости от объёма настройки.",
+      "state": "autonomous_discovery",
+      "intent": "question_implementation",
+      "action": "autonomous_respond",
+      "is_deflection": false,
+      "keywords_found": [
+        "час",
+        "минут"
+      ],
+      "keywords_expected": [
+        "час",
+        "дн",
+        "минут",
+        "быстр"
+      ],
+      "passed": true,
+      "elapsed_s": 15.8
+    },
+    {
+      "id": 4,
+      "question": "Где находятся офисы Wipon?",
+      "category": "delivery",
+      "response": "Офисы Wipon есть в Астане, Алматы и Шымкенте. В Астане на Туран 19/2, в Алматы на Толе би 73 а, в Шымкенте в микрорайоне Нурсат 131 в.",
+      "state": "autonomous_discovery",
+      "intent": "question_office_location",
+      "action": "autonomous_respond",
+      "is_deflection": false,
+      "keywords_found": [
+        "Астан",
+        "Алматы",
+        "Шымкент",
+        "офис"
+      ],
+      "keywords_expected": [
+        "Астан",
+        "Алматы",
+        "Шымкент",
+        "офис",
+        "город"
+      ],
+      "passed": true,
+      "elapsed_s": 18.8
+    },
+    {
+      "id": 5,
+      "question": "Доставляете ли в сёла и отдалённые населённые пункты?",
+      "category": "delivery",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "state": "autonomous_discovery",
+      "intent": "question_delivery",
+      "action": "autonomous_respond",
+      "is_deflection": true,
+      "keywords_found": [],
+      "keywords_expected": [
+        "да",
+        "доставля",
+        "Казахстан",
+        "населённ",
+        "населенн",
+        "по всему",
+        "курьер"
+      ],
+      "passed": false,
+      "elapsed_s": 15.6
+    },
+    {
+      "id": 6,
+      "question": "С какими банками работают POS-терминалы?",
+      "category": "integrations",
+      "response": "В Wipon работают терминалы всех казахстанских банков: Kaspi, Halyk, Forte, Jysan, BCC и другие. Сумма чека передаётся на терминал автоматически, без ручного ввода кассиром.",
+      "state": "autonomous_discovery",
+      "intent": "question_bank_terminal",
+      "action": "autonomous_respond",
+      "is_deflection": false,
+      "keywords_found": [
+        "Forte",
+        "Halyk",
+        "Kaspi",
+        "банк"
+      ],
+      "keywords_expected": [
+        "Forte",
+        "Halyk",
+        "Kaspi",
+        "банк"
+      ],
+      "passed": true,
+      "elapsed_s": 18.5
+    },
+    {
+      "id": 7,
+      "question": "Поддерживает ли Wipon бесконтактную оплату NFC?",
+      "category": "integrations",
+      "response": "Да, Wipon поддерживает бесконтактную оплату NFC, если ваш банковский терминал это позволяет. Работает с Apple Pay, Google Pay и другими способами оплаты смартфоном.",
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "is_deflection": false,
+      "keywords_found": [
+        "NFC",
+        "бесконтактн",
+        "поддерж",
+        "да"
+      ],
+      "keywords_expected": [
+        "NFC",
+        "бесконтактн",
+        "поддерж",
+        "да"
+      ],
+      "passed": true,
+      "elapsed_s": 18.8
+    },
+    {
+      "id": 8,
+      "question": "Нужна ли ЭЦП для подключения онлайн-кассы?",
+      "category": "fiscal",
+      "response": "Wipon интегрируется с Kaspi, 1С, ОФД и другими сервисами через REST API. Расскажите, какой у вас бизнес — подберу подходящий вариант подключения.",
+      "state": "autonomous_discovery",
+      "intent": "question_fiscal_general",
+      "action": "autonomous_respond",
+      "is_deflection": true,
+      "keywords_found": [],
+      "keywords_expected": [
+        "нужна",
+        "ЭЦП",
+        "электронн",
+        "подпис"
+      ],
+      "passed": false,
+      "elapsed_s": 16.0
+    },
+    {
+      "id": 9,
+      "question": "Можно ли смотреть аналитику в реальном времени?",
+      "category": "analytics",
+      "response": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon.",
+      "state": "autonomous_discovery",
+      "intent": "question_analytics_realtime",
+      "action": "autonomous_respond",
+      "is_deflection": true,
+      "keywords_found": [],
+      "keywords_expected": [
+        "реальн",
+        "онлайн",
+        "мониторинг",
+        "дашборд",
+        "панел"
+      ],
+      "passed": false,
+      "elapsed_s": 16.7
+    },
+    {
+      "id": 10,
+      "question": "Касса сама применит скидку при продаже?",
+      "category": "promotions",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "state": "autonomous_discovery",
+      "intent": "question_promo_discounts",
+      "action": "autonomous_respond",
+      "is_deflection": true,
+      "keywords_found": [],
+      "keywords_expected": [
+        "автоматическ",
+        "скидк",
+        "акци",
+        "касс",
+        "да"
+      ],
+      "passed": false,
+      "elapsed_s": 14.6
+    },
+    {
+      "id": 11,
+      "question": "Чем Wipon лучше конкурентов?",
+      "category": "competitors",
+      "response": "В отличие от 1С, настройка системы не требует привлечения программиста. Мы полностью адаптированы под законодательство Казахстана и предлагаем бесплатный перенос данных при переходе от других систем.",
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "is_deflection": false,
+      "keywords_found": [],
+      "keywords_expected": [
+        "облачн",
+        "ТИС",
+        "Kaspi",
+        "интеграц",
+        "преимущ"
+      ],
+      "passed": false,
+      "elapsed_s": 29.8
+    }
+  ]
+}

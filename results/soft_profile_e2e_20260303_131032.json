@@ -1,0 +1,359 @@
+{
+  "timestamp": "20260303_131032",
+  "llm_model": "qwen3.5-27b",
+  "scenarios": [
+    {
+      "id": "soft_profile_progressive",
+      "turns": [
+        {
+          "user": "Привет, хочу понять тарифы для магазина у дома.",
+          "bot": "Магазин у дома — отличный формат, в Wipon всё настроим под ваши задачи. А что сейчас больше всего напрягает в работе с кассой или учётом?",
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "business_type": "розничная торговля"
+          }
+        },
+        {
+          "user": "Важно, чтобы было просто для кассира и не дорого.",
+          "bot": "Поняла, простота для кассира у нас в приоритете, интерфейс действительно интуитивный. Для старта есть тариф Mini за 5 000 тенге в месяц с кассой и учётом. Какой бюджет вы рассматривали на запуск?",
+          "state": "autonomous_objection_handling",
+          "intent": "objection_price",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "business_type": "розничная торговля",
+            "pain_point": "сложность для кассира",
+            "pain_category": "manual_work",
+            "desired_outcome": "простота использования",
+            "objection_phase_entered": true
+          }
+        },
+        {
+          "user": "Меня зовут Арман.",
+          "bot": "Рада знакомству, Арман! Поняла, что бюджет и простота для кассира сейчас в приоритете. Мини-тариф 5 000 тенге в месяц закроет базовые задачи кассы и учёта, интерфейс очень простой. Хотите, расскажу подробнее, как он устроит вашу работу?",
+          "state": "autonomous_objection_handling",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "business_type": "розничная торговля",
+            "pain_point": "сложность для кассира",
+            "pain_category": "manual_work",
+            "desired_outcome": "простота использования",
+            "objection_phase_entered": true,
+            "contact_name": "Арман"
+          }
+        },
+        {
+          "user": "У нас розничный магазин одежды.",
+          "bot": "Отлично, для одежды в Wipon удобно управлять размерами и артикулами. Арман, а сколько у вас сейчас кассовых мест в магазине?",
+          "state": "autonomous_objection_handling",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "business_type": "розничная торговля",
+            "pain_point": "сложность для кассира",
+            "pain_category": "manual_work",
+            "desired_outcome": "простота использования",
+            "objection_phase_entered": true,
+            "contact_name": "Арман"
+          }
+        },
+        {
+          "user": "Город Алматы.",
+          "bot": "Да, в Алматы у нас есть офис на Толе би, 73 а, к вам приедем или вы сможете зайти. Для одежды в Wipon удобно настраивать размеры и артикулы, чтобы кассиру было проще.",
+          "state": "autonomous_objection_handling",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "business_type": "розничная торговля",
+            "pain_point": "сложность для кассира",
+            "pain_category": "manual_work",
+            "desired_outcome": "простота использования",
+            "objection_phase_entered": true,
+            "contact_name": "Арман",
+            "city": "Алматы"
+          }
+        },
+        {
+          "user": "Раньше автоматизации не было, сейчас в основном Excel.",
+          "bot": "Арман, переход с Excel на Wipon — это шаг к порядку и экономии времени. Программа сама считает остатки и формирует отчёты, не нужно ничего сводить вручную. Как вы думаете, готова ли ваша команда к такому удобству?",
+          "state": "autonomous_objection_handling",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "business_type": "розничная торговля",
+            "pain_point": "сложность для кассира",
+            "pain_category": "manual_work",
+            "desired_outcome": "простота использования",
+            "objection_phase_entered": true,
+            "contact_name": "Арман",
+            "city": "Алматы",
+            "current_tools": "Excel",
+            "automation_before": false,
+            "automation_now": true
+          }
+        },
+        {
+          "user": "Если брать на 2 точки, какой вариант лучше?",
+          "bot": "Для двух точек в Wipon лучше всего подойдёт тариф Standard за 220 000 тенге в год, он включает до трёх точек. В нём есть всё необходимое для управления сетью, включая разные цены для опта и розницы.",
+          "state": "autonomous_negotiation",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "business_type": "розничная торговля",
+            "pain_point": "сложность для кассира",
+            "pain_category": "manual_work",
+            "desired_outcome": "простота использования",
+            "objection_phase_entered": true,
+            "contact_name": "Арман",
+            "city": "Алматы",
+            "current_tools": "Excel",
+            "automation_before": false,
+            "automation_now": true,
+            "negotiation_phase_entered": true
+          }
+        }
+      ],
+      "violations": {
+        "more_than_one_profile_question_in_turn": 0,
+        "profile_question_after_no_question_user_marker": 0
+      },
+      "final_collected": {
+        "business_type": "розничная торговля",
+        "pain_point": "сложность для кассира",
+        "pain_category": "manual_work",
+        "desired_outcome": "простота использования",
+        "objection_phase_entered": true,
+        "contact_name": "Арман",
+        "city": "Алматы",
+        "current_tools": "Excel",
+        "automation_before": false,
+        "automation_now": true,
+        "negotiation_phase_entered": true
+      },
+      "completeness": {
+        "name": true,
+        "business_type": true,
+        "city": true,
+        "automation_before": true,
+        "automation_now": true
+      },
+      "completeness_score_5": 5,
+      "profile_question_turns": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "soft_profile_no_question_block",
+      "turns": [
+        {
+          "user": "Без вопросов, просто скажи цену Mini.",
+          "bot": "Тариф Mini стоит 5 000 тенге в месяц. Это базовый вариант для одной точки с онлайн-кассой и фискализацией. Как к вам обращаться?",
+          "state": "greeting",
+          "intent": "question_tariff_mini",
+          "action": "autonomous_respond",
+          "profile_question_slots": [
+            "name"
+          ],
+          "state_machine_collected": {}
+        },
+        {
+          "user": "И еще сравни Mini и Lite, тоже без встречных вопросов.",
+          "bot": "Mini стоит 5 000 тенге в месяц и включает только кассу без складского учёта. Lite — 150 000 тенге в год, там уже есть склад, неограниченная номенклатура и интеграции с Kaspi.",
+          "state": "autonomous_discovery",
+          "intent": "question_tariff_comparison",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {}
+        },
+        {
+          "user": "Окей, меня зовут Жанна.",
+          "bot": "Жанна, отлично. Wipon объединяет кассу, склад и отчёты в одном окне, так что вам не придётся дублировать данные вручную. Сейчас вы используете какую-то программу для учёта?",
+          "state": "autonomous_discovery",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "contact_name": "Жанна"
+          }
+        },
+        {
+          "user": "Я в сфере услуг, салон красоты в Астане.",
+          "bot": "Салон красоты — это здорово, Жанна. В Wipon для услуг есть удобный календарь записи и учёт мастеров, чтобы не было накладок. А сколько у вас сейчас кассовых мест для пробивания чеков?",
+          "state": "autonomous_discovery",
+          "intent": "situation_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "contact_name": "Жанна",
+            "business_type": "сфера услуг",
+            "city": "Астана"
+          }
+        },
+        {
+          "user": "Раньше была CRM, сейчас работаем в amoCRM.",
+          "bot": "AmoCRM отлично подходит для работы с клиентами, а Wipon закроет учёт услуг и фискализацию чеков. Для салона важно, чтобы записи и оплата были доступны в одном окне без ручного ввода.",
+          "state": "autonomous_qualification",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "contact_name": "Жанна",
+            "business_type": "сфера услуг",
+            "city": "Астана",
+            "current_tools": "AmoCRM",
+            "automation_before": true,
+            "automation_now": true
+          }
+        }
+      ],
+      "violations": {
+        "more_than_one_profile_question_in_turn": 0,
+        "profile_question_after_no_question_user_marker": 1
+      },
+      "final_collected": {
+        "contact_name": "Жанна",
+        "business_type": "сфера услуг",
+        "city": "Астана",
+        "current_tools": "AmoCRM",
+        "automation_before": true,
+        "automation_now": true
+      },
+      "completeness": {
+        "name": true,
+        "business_type": true,
+        "city": true,
+        "automation_before": true,
+        "automation_now": true
+      },
+      "completeness_score_5": 5,
+      "profile_question_turns": 1,
+      "status": "PASS"
+    },
+    {
+      "id": "soft_profile_objection_then_resume",
+      "turns": [
+        {
+          "user": "Нужно быстро понять, сколько стоит подключение.",
+          "bot": "Стоимость подключения зависит от тарифа: Mini стоит 5 000 ₸ в месяц, а Lite, Standard и Pro — годовые подписки от 150 000 до 500 000 ₸. Если у вас уже есть своё оборудование, само подключение программы будет бесплатным.",
+          "state": "autonomous_discovery",
+          "intent": "price_question",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {}
+        },
+        {
+          "user": "Дорого, пока не готов, контакты не дам.",
+          "bot": "Поняла, давайте без спешки. У нас есть бесплатный тестовый период, чтобы вы могли оценить систему без обязательств. Как вам идея попробовать Wipon в деле перед решением?",
+          "state": "autonomous_discovery",
+          "intent": "objection_price",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {}
+        },
+        {
+          "user": "Не задавай лишних вопросов, просто по делу.",
+          "bot": "Поняла, без лишних слов. Wipon — это облачная касса и учёт для розницы, где всё работает в реальном времени и не требует сложного оборудования. Сейчас вы используете кассовую программу?",
+          "state": "autonomous_discovery",
+          "intent": "request_brevity",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {}
+        },
+        {
+          "user": "Ладно, меня зовут Айжан.",
+          "bot": "Айжан, рада знакомству. Чтобы я могла точно подсказать по тарифам, скажите, в какой сфере вы работаете?",
+          "state": "autonomous_discovery",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [
+            "business_type"
+          ],
+          "state_machine_collected": {
+            "contact_name": "Айжан"
+          }
+        },
+        {
+          "user": "Сфера: кофейня и выпечка.",
+          "bot": "Кофейня и выпечка — отличный формат для Wipon, там важны скорость и учёт остатков. Подскажите, в каком городе вы планируете запуск?",
+          "state": "autonomous_discovery",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [
+            "city"
+          ],
+          "state_machine_collected": {
+            "contact_name": "Айжан"
+          }
+        },
+        {
+          "user": "Мы в Шымкенте.",
+          "bot": "Айжан, понимаю вашу позицию насчёт цены: кофейни действительно требуют точного расчёта. У нас есть бесплатный тестовый период, чтобы вы могли оценить функционал без обязательств. Попробуете посмотреть систему в работе?",
+          "state": "autonomous_qualification",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "contact_name": "Айжан",
+            "city": "Шымкент"
+          }
+        },
+        {
+          "user": "Раньше автоматизации не было и сейчас тоже нет.",
+          "bot": "Поняла, Айжан. Раз учёт пока не ведётся, проще сразу начать с прозрачной системы. Сколько примерно позиций в ассортименте вашей кофейни?",
+          "state": "autonomous_qualification",
+          "intent": "info_provided",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "contact_name": "Айжан",
+            "city": "Шымкент",
+            "automation_before": false,
+            "automation_now": false
+          }
+        },
+        {
+          "user": "Что тогда лучше по старту?",
+          "bot": "Для старта кофейни лучше всего подойдёт комплект Standard за 168 000 тенге с моноблоком и сканером. Программу можно подключить отдельно, например, тариф Lite за 150 000 тенге в год для базового учёта.",
+          "state": "autonomous_qualification",
+          "intent": "question_tariff_comparison",
+          "action": "autonomous_respond",
+          "profile_question_slots": [],
+          "state_machine_collected": {
+            "contact_name": "Айжан",
+            "city": "Шымкент",
+            "automation_before": false,
+            "automation_now": false
+          }
+        }
+      ],
+      "violations": {
+        "more_than_one_profile_question_in_turn": 0,
+        "profile_question_after_no_question_user_marker": 0
+      },
+      "final_collected": {
+        "contact_name": "Айжан",
+        "city": "Шымкент",
+        "automation_before": false,
+        "automation_now": false
+      },
+      "completeness": {
+        "name": true,
+        "business_type": false,
+        "city": true,
+        "automation_before": true,
+        "automation_now": true
+      },
+      "completeness_score_5": 4,
+      "profile_question_turns": 2,
+      "status": "PASS"
+    }
+  ]
+}

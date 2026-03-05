@@ -1,0 +1,501 @@
+{
+  "timestamp": "20260227_153426",
+  "scenarios": [
+    {
+      "id": "T01",
+      "name": "Покупка из раннего стейта — перескок в closing",
+      "expected_transitions": [
+        "greeting→autonomous_discovery",
+        "autonomous_discovery→autonomous_qualification ИЛИ autonomous_presentation",
+        "...→autonomous_closing (после 'давайте оформим')",
+        "autonomous_closing→video_call_scheduled (после контакта)"
+      ],
+      "actual_transitions": [
+        "T2: greeting → autonomous_discovery",
+        "T5: autonomous_discovery → autonomous_closing"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Подскажите, какой формат торговли вы планируете открыть?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "intent": "greeting",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.95,
+          "elapsed_s": 6.86
+        },
+        {
+          "turn": 2,
+          "user": "У меня магазин одежды, 1 точка, 2 кассы",
+          "bot": "Магазин одежды с двумя кассами — отличный формат для старта. А какая задача сейчас стоит в приоритете: упростить учёт остатков?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 2.96
+        },
+        {
+          "turn": 3,
+          "user": "Мне нужна кассовая программа с учётом остатков",
+          "bot": "В Wipon учёт остатков работает в реальном времени, вы сразу видите дефицит и излишки. Сейчас как ведёте контроль товаров на складе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "need_expressed",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.8804455507697602,
+          "elapsed_s": 17.88
+        },
+        {
+          "turn": 4,
+          "user": "Какой тариф подойдёт для одного магазина?",
+          "bot": "Для одного магазина одежды с двумя кассами в Wipon рекомендуется тариф Standard за 220 000 ₸ в год. Он включает учёт по размерам, артикулам и работу со складами (до 3 складов). Также для двух касс подходит тариф Lite за 150 000 ₸ в год, если не требуется расширенное ценообразование или несколько складов.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 23.71
+        },
+        {
+          "turn": 5,
+          "user": "Давайте оформим Standard, мне всё понятно",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Standard»:\n1) Комплект Standard\n2) Тариф Standard\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "intent": "agreement",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.95,
+          "elapsed_s": 10.75
+        },
+        {
+          "turn": 6,
+          "user": "Как подключиться?",
+          "bot": "Чтобы подобрать оптимальное решение, оставьте телефон или email — мой коллега позвонит и ответит на все вопросы.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "intent": "agreement",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.9,
+          "elapsed_s": 8.2
+        },
+        {
+          "turn": 7,
+          "user": "Мой телефон 87071234567",
+          "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время. Готовы подключить?",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.95,
+          "elapsed_s": 6.93
+        }
+      ],
+      "total_time_s": 77.29,
+      "num_turns": 7,
+      "final_state": "autonomous_closing"
+    },
+    {
+      "id": "T02",
+      "name": "Цепочка возражений — не уходить в soft_close",
+      "expected_transitions": [
+        "Бот остаётся в текущем стейте при возражениях",
+        "soft_close ТОЛЬКО при rejection ('не пишите больше')",
+        "Возражения ≠ отказ"
+      ],
+      "actual_transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T3: autonomous_discovery → autonomous_objection_handling",
+        "T8: autonomous_objection_handling → autonomous_negotiation",
+        "T9: autonomous_negotiation → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, у меня кафе, 3 точки",
+          "bot": "Кафе с тремя точками — это здорово, Wipon отлично справляется с управлением сетью. А что сейчас в работе вызывает больше всего хлопот?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 3.15
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите что есть для ресторанного бизнеса",
+          "bot": "По предоставленным фактам БД нет подтверждённого ответа в текущем виде. Уточните, пожалуйста, тариф или интеграцию.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 11.38
+        },
+        {
+          "turn": 3,
+          "user": "Дорого. У iiko за эти деньги больше функций",
+          "bot": "Поняла ваши опасения, цена зависит от конкретных задач. В тарифе Pro за 500 000 тенге в год уже есть бухгалтерия, кадры и поддержка ТИС, что часто заменяет отдельные услуги. Давайте я покажу, как эти функции покрывают ваши потребности?",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "intent": "objection_price",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.7453132767233995,
+          "elapsed_s": 23.83
+        },
+        {
+          "turn": 4,
+          "user": "Не уверен что ваша система справится с нашей нагрузкой — 500 чеков в день",
+          "bot": "Поняла, высокая нагрузка требует скорости. Wipon-C200I печатает до 200 мм в секунду, что позволяет справляться с потоками. Какой объём чеков у вас в самый пиковый час?",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "intent": "objection_trust",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.8571721795507048,
+          "elapsed_s": 19.26
+        },
+        {
+          "turn": 5,
+          "user": "А если ваш сервер ляжет? У нас прошлый раз с другой системой потеряли данные за неделю",
+          "bot": "Поняла вашу тревогу, потеря данных — это действительно критично. В Wipon данные не пропадают даже при отключении электричества, так как система автоматически сохраняет и восстанавливает их. Какие именно данные были потеряны в прошлый раз?",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "intent": "objection_risk",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.7490193523245781,
+          "elapsed_s": 16.39
+        },
+        {
+          "turn": 6,
+          "user": "И скидку мне никто не предложил — конкуренты дают 30% на первый год",
+          "bot": "Для вас актуальна скидка при оплате тариф на 2 или 5 лет. Хотите узнать точные условия такой выгоды?",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "intent": "discount_request",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.8910233596805492,
+          "elapsed_s": 18.7
+        },
+        {
+          "turn": 7,
+          "user": "Ладно, допустим. А вот техподдержка — сколько ждать ответа?",
+          "bot": "Среднее время первичного ответа в чате — около 10-15 минут, срочные обращения приоритизируются. Поддержка работает ежедневно до полуночи в будни и до 21:00 в выходные.",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "intent": "question_support",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.9045170652619754,
+          "elapsed_s": 17.86
+        },
+        {
+          "turn": 8,
+          "user": "Хорошо, убедили. Давайте попробуем Standard на 3 точки",
+          "bot": "Отличный выбор, Standard идеально закроет все три точки вашего кафе. Это тариф 220 000 тенге в год с поддержкой ТИС и оптовыми ценами.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "intent": "agreement",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.9,
+          "elapsed_s": 13.99
+        },
+        {
+          "turn": 9,
+          "user": "87779998877",
+          "bot": "Это телефон для связи с вами? Подтвердите, чтобы я могла передать контакты команде для настройки доступа к тестовому периоду.",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "intent": "contact_provided",
+          "template_key": "?",
+          "is_final": true,
+          "confidence": 0.9,
+          "elapsed_s": 10.48
+        }
+      ],
+      "total_time_s": 135.05,
+      "num_turns": 9,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "T03",
+      "name": "Контакт посреди воронки — скачок в closing",
+      "expected_transitions": [
+        "При contact_provided на раннем этапе → closing",
+        "Затем closing→video_call_scheduled (контакт уже есть)"
+      ],
+      "actual_transitions": [
+        "T2: greeting → autonomous_discovery",
+        "T3: autonomous_discovery → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Привет",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "intent": "greeting",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.95,
+          "elapsed_s": 2.19
+        },
+        {
+          "turn": 2,
+          "user": "У меня автомагазин запчастей",
+          "bot": "Автомагазин запчастей — отличный формат, у нас есть поддержка поиска по артикулам и учёт остатков. А что сейчас больше всего напрягает в работе с кассой или учётом?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 3.25
+        },
+        {
+          "turn": 3,
+          "user": "Мне некогда переписываться, позвоните мне лучше. Мой номер 87051112233",
+          "bot": "Без проблем, перезвоним вам на указанный номер в рабочее время. Как к вам обращаться? И когда вам будет удобно принять звонок?",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "intent": "contact_provided",
+          "template_key": "?",
+          "is_final": true,
+          "confidence": 0.95,
+          "elapsed_s": 5.53
+        }
+      ],
+      "total_time_s": 10.97,
+      "num_turns": 3,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "T04",
+      "name": "Мягкое согласие vs реальная покупка",
+      "expected_transitions": [
+        "'да, интересно' → НЕ closing (продолжает этап)",
+        "'согласен, звучит неплохо' → НЕ closing",
+        "'хочу оформить' → closing"
+      ],
+      "actual_transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T6: autonomous_discovery → autonomous_qualification",
+        "T7: autonomous_qualification → autonomous_closing"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, у меня цветочный магазин",
+          "bot": "Цветочный магазин — это прекрасно, Wipon отлично справляется с таким форматом. Расскажите, что сейчас занимает больше всего времени при оформлении продаж?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 3.03
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите что у вас есть",
+          "bot": "Что это: система для ИП на упрощёнке Что переносится: база товаров и остатки",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "agreement",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.375,
+          "elapsed_s": 45.2
+        },
+        {
+          "turn": 3,
+          "user": "Да, интересно. А какие тарифы?",
+          "bot": "У нас четыре тарифа: Mini за 5 000 ₸ в месяц, Lite за 150 000 ₸ в год, Standard за 220 000 ₸ в год и Pro за 500 000 ₸ в год. Выбор зависит от количества ваших точек и нужд в аналитике.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "agreement",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.9,
+          "elapsed_s": 24.28
+        },
+        {
+          "turn": 4,
+          "user": "Согласен, звучит неплохо. А оборудование нужно ваше или своё подойдёт?",
+          "bot": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "agreement",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 7.59
+        },
+        {
+          "turn": 5,
+          "user": "Понятно. А Kaspi интегрируется?",
+          "bot": "Да, Wipon интегрируется с Kaspi Магазином и Halyk Market для автоматического учёта заказов и оплат. Также поддерживаются терминалы Kaspi Pay и оплата по Kaspi QR.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "question_integrations",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.95,
+          "elapsed_s": 15.37
+        },
+        {
+          "turn": 6,
+          "user": "А скидки для новых клиентов есть?",
+          "bot": "Скидки за лояльность у нас не предусмотрены, но есть сезонные акции и выгода при оплате на 2 или 5 лет.",
+          "state": "autonomous_qualification",
+          "action": "autonomous_respond",
+          "spin_phase": "qualification",
+          "intent": "discount_request",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.9291328186663129,
+          "elapsed_s": 16.27
+        },
+        {
+          "turn": 7,
+          "user": "Хорошо, хочу оформить Lite. Что нужно?",
+          "bot": "Отлично, тариф Lite — отличное решение для старта. Для оформления мне нужны ваш номер телефона для Kaspi Pay и ваш ИИН.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "intent": "ready_to_buy",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.8958179114541526,
+          "elapsed_s": 22.33
+        },
+        {
+          "turn": 8,
+          "user": "87473335566, запишите",
+          "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.9,
+          "elapsed_s": 7.3
+        }
+      ],
+      "total_time_s": 141.37,
+      "num_turns": 8,
+      "final_state": "autonomous_closing"
+    },
+    {
+      "id": "T05",
+      "name": "Экспресс-покупатель — payment_ready за 5 ходов",
+      "expected_transitions": [
+        "Быстрый переход в closing (1-2 хода)",
+        "closing→payment_ready (после kaspi_phone + ИИН)"
+      ],
+      "actual_transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T2: autonomous_discovery → autonomous_closing",
+        "T4: autonomous_closing → payment_ready"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, мне нужен Standard тариф на 1 точку. Сколько стоит и как оплатить?",
+          "bot": "Тариф Standard стоит 220 000 тенге в год и включает до трёх торговых точек. Для одной точки также подходит тариф Lite за 150 000 тенге в год. Оплата тарифа производится годовым циклом, возможна досрочная оплата без перерыва в работе.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.85,
+          "elapsed_s": 24.73
+        },
+        {
+          "turn": 2,
+          "user": "Понял, хочу купить. Выставьте счёт.",
+          "bot": "Отлично, для оформления счёта мне нужно получить ваш ИИН и номер Kaspi. Напишите их, пожалуйста, чтобы я передала данные коллегам.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "intent": "request_invoice",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.97,
+          "elapsed_s": 10.94
+        },
+        {
+          "turn": 3,
+          "user": "Kaspi-телефон: 87019876543",
+          "bot": "Номер Kaspi записала. Для оформления счёта осталось уточнить ваш ИИН, чтобы передать данные коллегам. Можете его написать?",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "is_final": false,
+          "confidence": 0.9,
+          "elapsed_s": 7.95
+        },
+        {
+          "turn": 4,
+          "user": "ИИН: 850610300123",
+          "bot": "ИИН записала. Теперь у меня есть все данные для оформления счёта. Как к вам лучше обращаться, чтобы не ошибиться?",
+          "state": "payment_ready",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "intent": "contact_provided",
+          "template_key": "?",
+          "is_final": true,
+          "confidence": 0.9,
+          "elapsed_s": 2.21
+        }
+      ],
+      "total_time_s": 45.83,
+      "num_turns": 4,
+      "final_state": "payment_ready"
+    }
+  ]
+}

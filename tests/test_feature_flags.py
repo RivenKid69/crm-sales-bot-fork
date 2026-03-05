@@ -23,6 +23,11 @@ class TestFeatureFlagsBasic:
         assert "lead_scoring" in FeatureFlags.DEFAULTS
         assert "response_variations" in FeatureFlags.DEFAULTS
         assert "multi_tier_fallback" in FeatureFlags.DEFAULTS
+        assert "postprocess_semantic_mutations_after_verifier" in FeatureFlags.DEFAULTS
+        assert "postprocess_override_enforce_enterprise_tis_quote" in FeatureFlags.DEFAULTS
+        assert "postprocess_override_strip_fabricated_claims" in FeatureFlags.DEFAULTS
+        assert "postprocess_override_strip_ungrounded_integrations" in FeatureFlags.DEFAULTS
+        assert "postprocess_override_low_quality_fallback" in FeatureFlags.DEFAULTS
 
     def test_is_enabled_returns_bool(self):
         """is_enabled возвращает boolean"""

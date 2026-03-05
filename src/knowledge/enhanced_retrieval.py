@@ -554,6 +554,20 @@ class EnhancedRetrievalPipeline:
     # Any NEW secondary intent NOT listed here triggers retrieval automatically.
     # Default-safe: retrieval ON unless explicitly excluded.
     _SOCIAL_ONLY_SECONDARY = frozenset({"request_brevity"})
+    _DIMENSION_TO_CATEGORIES: Dict[str, Tuple[str, ...]] = {
+        "product_fit": ("products", "features", "tis"),
+        "pricing": ("pricing", "promotions"),
+        "integrations": ("integrations",),
+        "features": ("features", "products"),
+        "equipment": ("equipment",),
+        "security": ("fiscal", "stability"),
+        "support": ("support",),
+        "comparison": ("competitors", "products", "features", "pricing"),
+        "implementation": ("support", "features"),
+        "delivery": ("delivery",),
+        "contact": ("support",),
+        "demo": ("support", "products"),
+    }
 
     def retrieve(
         self,
@@ -565,10 +579,15 @@ class EnhancedRetrievalPipeline:
         recently_used_keys: Optional[Set[str]] = None,
         history: Optional[List[Dict[str, Any]]] = None,
         secondary_intents: Optional[List[str]] = None,
+        semantic_frame: Optional[Dict[str, Any]] = None,
         collected_data: Optional[dict] = None,
     ) -> Tuple[str, List[Dict[str, str]], List[str]]:
         recently_used = set(recently_used_keys or set())
         history = history or []
+        frame_dims = self._extract_frame_dimensions(semantic_frame)
+        frame_forced_categories = self._frame_categories(frame_dims)
+        frame_price_requested = self._frame_price_requested(semantic_frame, frame_dims)
+        frame_blocks_pricing = bool(frame_dims) and not frame_price_requested
         selection_resolved_query = self.query_rewriter.resolve_fact_disambiguation_selection(
             user_message=user_message,
             history=history,
@@ -599,6 +618,8 @@ class EnhancedRetrievalPipeline:
             # If ANY secondary intent needs KB data → DON'T skip
             elif secondary_intents and not set(secondary_intents).issubset(self._SOCIAL_ONLY_SECONDARY):
                 pass  # Fall through to full retrieval
+            elif frame_dims:
+                pass  # Semantic frame detected meaningful dimension(s)
             else:
                 return load_facts_for_state(
                     state=state,
@@ -621,6 +642,11 @@ class EnhancedRetrievalPipeline:
         categories = None
         if self.category_router is not None and rewritten_query:
             categories = self.category_router.route(rewritten_query)
+        if frame_forced_categories:
+            if categories is None:
+                categories = list(frame_forced_categories)
+            else:
+                categories = self._merge_categories(categories, frame_forced_categories)
 
         # [2a] Ensure "pricing" category is included when tariff/price terms appear.
         # CategoryRouter may route "расскажите про тариф Mini" → "features" only,
@@ -629,6 +655,10 @@ class EnhancedRetrievalPipeline:
         if categories is not None:
             # Check BOTH rewritten_query and original user_message for keywords
             _q_low = ((rewritten_query or "") + " " + (user_message or "")).lower()
+            _explicit_price_terms = bool(re.search(
+                r"(?:\bтариф\w*|\bцен[аы]\w*|\bстоимост\w*|\bсколько\s+стоит|\bпоч[её]м|\bрассроч\w*)",
+                _q_low,
+            ))
             _needs_pricing = bool(re.search(
                 r'(?:тариф|mini|lite|standard|pro|тис|мини|лайт|стандарт|про\b'
                 r'|цен[аы]|стоимост|сколько\s+стои|почём|прайс|расценк'
@@ -636,8 +666,12 @@ class EnhancedRetrievalPipeline:
                 r'|офд|ofd|фискал|обучени|тренинг)',
                 _q_low,
             ))
+            if frame_blocks_pricing and not _explicit_price_terms:
+                _needs_pricing = False
             if _needs_pricing and "pricing" not in categories:
                 categories = list(categories) + ["pricing"]
+            if frame_blocks_pricing and "pricing" in categories and not _explicit_price_terms:
+                categories = [c for c in categories if c != "pricing"]
             # Also include "equipment" for hardware questions
             _needs_equipment = bool(re.search(
                 r'(?:оборудовани|моноблок|pos|принтер|сканер|вес[аы]|комплект|ящик'
@@ -706,6 +740,14 @@ class EnhancedRetrievalPipeline:
             ))
             if _needs_analytics and "analytics" not in categories:
                 categories = list(categories) + ["analytics"]
+            # Include "delivery" for delivery/logistics/region questions
+            _needs_delivery = bool(re.search(
+                r'(?:доставк|доставля|доставит|привез|привёз|курьер'
+                r'|самовывоз|логист|отправк|отправит)',
+                _q_low,
+            ))
+            if _needs_delivery and "delivery" not in categories:
+                categories = list(categories) + ["delivery"]
 
         # [3] Base query retrieval.
         base_results: List[SearchResult] = []
@@ -903,6 +945,43 @@ class EnhancedRetrievalPipeline:
                 continue
             merged.append(key)
             seen.add(key)
+        return merged
+
+    @classmethod
+    def _extract_frame_dimensions(cls, semantic_frame: Optional[Dict[str, Any]]) -> Set[str]:
+        if not isinstance(semantic_frame, dict):
+            return set()
+        dims = semantic_frame.get("asked_dimensions", [])
+        if not isinstance(dims, list):
+            return set()
+        return {str(d).strip().lower() for d in dims if d}
+
+    @classmethod
+    def _frame_categories(cls, frame_dims: Set[str]) -> List[str]:
+        categories: List[str] = []
+        for dim in frame_dims:
+            for category in cls._DIMENSION_TO_CATEGORIES.get(dim, ()):
+                if category not in categories:
+                    categories.append(category)
+        return categories
+
+    @staticmethod
+    def _frame_price_requested(
+        semantic_frame: Optional[Dict[str, Any]],
+        frame_dims: Set[str],
+    ) -> bool:
+        if "pricing" in frame_dims:
+            return True
+        if not isinstance(semantic_frame, dict):
+            return False
+        return bool(semantic_frame.get("price_requested"))
+
+    @staticmethod
+    def _merge_categories(base: Sequence[str], extra: Sequence[str]) -> List[str]:
+        merged: List[str] = []
+        for category in [*list(base), *list(extra)]:
+            if category and category not in merged:
+                merged.append(category)
         return merged
 
     @classmethod

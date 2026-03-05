@@ -14,7 +14,7 @@ from typing import List, Dict, Any
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.llm import OllamaClient
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 
 
 def run_scenario(bot: SalesBot, name: str, messages: List[str]) -> Dict[str, Any]:
@@ -391,6 +391,7 @@ def main():
     selected = sys.argv[1:] if len(sys.argv) > 1 else list(SCENARIOS.keys())
 
     llm = OllamaClient()
+    setup_autonomous_pipeline()
     bot = SalesBot(llm, flow_name="autonomous", enable_tracing=True)
 
     results = []

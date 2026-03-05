@@ -14,8 +14,15 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel, Field
+
 from src.feature_flags import flags
 from src.logger import logger
+
+
+class SemanticRelevanceResult(BaseModel):
+    relevant: bool              # required — ensures Ollama generates an object, not a primitive
+    reason: str = Field(default="", max_length=200)
 
 
 @dataclass
@@ -204,9 +211,10 @@ class ResponseBoundaryValidator:
         re.IGNORECASE,
     )
     PAST_SETUP_PATTERN = re.compile(
-        r'(?:уже\s+)?(?:всё\s+)?(?:подключ(?:ил(?:и)?|[её]н[аоы]?|ено)|'
-        r'настро(?:ил(?:и)?|[её]н[аоы]?|ено)|'
-        r'активир(?:овал(?:и)?|ован[аоы]?|овано)|'
+        r'(?:уже\s+)?(?:всё\s+)?(?:'
+        r'\bподключ(?:ил(?:и)?|[её]н[аоы]?|ено)\b|'
+        r'\bнастро(?:ил(?:и)?|[её]н[аоы]?|ено)\b|'
+        r'\bактивир(?:овал(?:и)?|ован[аоы]?|овано)\b|'
         r'готов[аоы]?\s+к\s+работе|'
         # "данные сохранены/записаны/зафиксированы" — fabricated data save action
         r'(?:данные|информаци\w*)\s+(?:Kaspi\s+)?(?:уже\s+)?(?:сохранен|записан|зафиксирован)\w*|'
@@ -687,18 +695,61 @@ class ResponseBoundaryValidator:
             ):
                 self._metrics.total += 1
                 self._metrics.fallback_used += 1
+                repaired = self._llm_or_kb_fallback(
+                    source_response=original,
+                    context={**context, "violations": ["llm_ungrounded_claim"]},
+                    llm=llm,
+                    violations=["llm_ungrounded_claim"],
+                )
                 return BoundaryValidationResult(
-                    response=self._hallucination_fallback(
-                        {**context, "violations": ["llm_ungrounded_claim"]}
-                    ),
+                    response=repaired,
                     violations=["llm_ungrounded_claim"],
                     retry_used=False,
                     fallback_used=True,
                     validation_events=[
                         {"stage": "detect", "violations": []},
-                        {"stage": "llm_judge_fallback"},
+                        {"stage": "llm_or_kb_fallback", "reason": "llm_ungrounded_claim"},
                     ],
                 )
+            # Semantic relevance: ответ по теме вопроса клиента?
+            if (
+                llm is not None
+                and flags.is_enabled("response_semantic_relevance")
+                and self._check_semantic_irrelevance(original, context, llm)
+            ):
+                repaired = self._retry_with_relevance(original, context, llm)
+                # CONFLICT 4 mitigation: проверить pattern violations на retry output
+                if repaired and self._detect_violations(repaired, context):
+                    repaired = None  # retry ввёл новые нарушения → fallback
+                if (
+                    repaired
+                    and not self._check_semantic_irrelevance(repaired, context, llm)
+                ):
+                    return BoundaryValidationResult(
+                        response=repaired,
+                        validation_events=[
+                            {"stage": "detect", "violations": []},
+                            {"stage": "semantic_relevance_retry"},
+                        ],
+                    )
+                else:
+                    fb = self._llm_or_kb_fallback(
+                        source_response=original,
+                        context={**context, "violations": ["semantic_irrelevance"]},
+                        llm=llm,
+                        violations=["semantic_irrelevance"],
+                    )
+                    self._metrics.total += 1
+                    self._metrics.fallback_used += 1
+                    return BoundaryValidationResult(
+                        response=fb,
+                        violations=["semantic_irrelevance"],
+                        fallback_used=True,
+                        validation_events=[
+                            {"stage": "detect", "violations": []},
+                            {"stage": "llm_or_kb_fallback", "reason": "semantic_irrelevance"},
+                        ],
+                    )
             return BoundaryValidationResult(response=original)
 
         self._metrics.total += 1
@@ -706,32 +757,6 @@ class ResponseBoundaryValidator:
         events: List[Dict[str, Any]] = [
             {"stage": "detect", "violations": sorted(initial_violations)}
         ]
-
-        # Hard hallucination violations → immediate deterministic fallback, no LLM retry.
-        _HARD_HALLUCINATIONS = {
-            "hallucinated_iin",
-            "hallucinated_phone",
-            "hallucinated_past_action",
-            "hallucinated_manager_contact",
-            "hallucinated_client_name",
-            "policy_disclosure",
-            "hallucinated_contact_claim",
-            "meta_narration_leak",
-            "off_topic_recommendation",
-            "false_company_policy",
-            "ungrounded_tech_claim",
-            "ungrounded_stats",
-        }
-        if _HARD_HALLUCINATIONS & set(initial_violations):
-            self._metrics.fallback_used += 1
-            _ctx_with_violations = {**context, "violations": sorted(initial_violations)}
-            return BoundaryValidationResult(
-                response=self._hallucination_fallback(_ctx_with_violations),
-                violations=sorted(initial_violations),
-                retry_used=False,
-                fallback_used=True,
-                validation_events=events + [{"stage": "hallucination_fallback"}],
-            )
 
         candidate = original
         retry_used = False
@@ -762,10 +787,15 @@ class ResponseBoundaryValidator:
                 }
             )
             if remaining_after_sanitize and flags.is_enabled("response_boundary_fallback"):
-                candidate = self._deterministic_fallback(context)
+                candidate = self._llm_or_kb_fallback(
+                    source_response=candidate,
+                    context={**context, "violations": sorted(remaining_after_sanitize)},
+                    llm=llm,
+                    violations=sorted(remaining_after_sanitize),
+                )
                 fallback_used = True
                 self._metrics.fallback_used += 1
-                events.append({"stage": "fallback", "used": True})
+                events.append({"stage": "llm_or_kb_fallback", "reason": "remaining_after_sanitize"})
 
         # LLM-as-judge: final check on candidate after pattern retry/sanitize.
         if (
@@ -774,12 +804,43 @@ class ResponseBoundaryValidator:
             and flags.is_enabled("response_boundary_llm_judge")
             and self._llm_judge_ungrounded_claims(candidate, context, llm)
         ):
-            candidate = self._hallucination_fallback(
-                {**context, "violations": ["llm_ungrounded_claim"]}
+            candidate = self._llm_or_kb_fallback(
+                source_response=candidate,
+                context={**context, "violations": ["llm_ungrounded_claim"]},
+                llm=llm,
+                violations=["llm_ungrounded_claim"],
             )
             fallback_used = True
             self._metrics.fallback_used += 1
-            events.append({"stage": "llm_judge_fallback"})
+            events.append({"stage": "llm_or_kb_fallback", "reason": "llm_ungrounded_claim"})
+
+        # Semantic relevance: ответ по теме вопроса клиента?
+        if (
+            not fallback_used
+            and llm is not None
+            and flags.is_enabled("response_semantic_relevance")
+            and self._check_semantic_irrelevance(candidate, context, llm)
+        ):
+            relevance_repaired = self._retry_with_relevance(candidate, context, llm)
+            # CONFLICT 4 mitigation: проверить pattern violations на retry output
+            if relevance_repaired and self._detect_violations(relevance_repaired, context):
+                relevance_repaired = None  # retry ввёл новые нарушения → fallback
+            if (
+                relevance_repaired
+                and not self._check_semantic_irrelevance(relevance_repaired, context, llm)
+            ):
+                candidate = relevance_repaired
+                events.append({"stage": "semantic_relevance_retry"})
+            else:
+                candidate = self._llm_or_kb_fallback(
+                    source_response=candidate,
+                    context={**context, "violations": ["semantic_irrelevance"]},
+                    llm=llm,
+                    violations=["semantic_irrelevance"],
+                )
+                fallback_used = True
+                self._metrics.fallback_used += 1
+                events.append({"stage": "llm_or_kb_fallback", "reason": "semantic_irrelevance"})
 
         logger.info(
             "Response boundary validation applied",
@@ -936,7 +997,7 @@ class ResponseBoundaryValidator:
                 self._iter_scalar_values(context.get("retrieved_facts", ""))
             ).lower()
             m = self.UNGROUNDED_TECH_CLAIM_PATTERN.search(response)
-            if m and m.group(0).lower() not in grounding_blob:
+            if m and not self._is_tech_claim_grounded(m.group(0), grounding_blob):
                 violations.append("ungrounded_tech_claim")
 
         return violations
@@ -960,6 +1021,60 @@ class ResponseBoundaryValidator:
             return out
         out.append(str(value))
         return out
+
+    @staticmethod
+    def _extract_tech_anchor_tokens(value: str) -> List[str]:
+        tokens = set(re.findall(r"[a-zа-яё0-9#+.\-]{3,}", str(value or "").lower()))
+        stop_words = {
+            "интеграции",
+            "интеграция",
+            "интеграций",
+            "интеграцию",
+            "подключение",
+            "подключения",
+            "подключен",
+            "подключить",
+            "синхронизация",
+            "синхронизации",
+            "синхронизируется",
+            "прямой",
+            "через",
+            "работаем",
+            "доступен",
+            "доступна",
+            "поддержка",
+            "есть",
+            "нет",
+            "пока",
+            "на",
+            "для",
+            "или",
+            "что",
+        }
+        return [token for token in sorted(tokens) if token not in stop_words]
+
+    def _is_tech_claim_grounded(self, claim: str, grounding_blob: str) -> bool:
+        claim_low = re.sub(r"\s{2,}", " ", str(claim or "").lower()).strip()
+        grounded_low = re.sub(r"\s{2,}", " ", str(grounding_blob or "").lower()).strip()
+        if not claim_low:
+            return True
+        if claim_low in grounded_low:
+            return True
+
+        anchors = self._extract_tech_anchor_tokens(claim_low)
+        if not anchors:
+            return False
+        anchored_hits = [token for token in anchors if token in grounded_low]
+        if len(anchored_hits) >= max(1, min(len(anchors), 2)):
+            return True
+
+        has_negated_integration = bool(
+            re.search(r"(?:\bнет\b|\bне\s+(?:поддерж|интегр|подключ|работ))", claim_low)
+            and re.search(r"(?:wildberries|ozon|маркетплейс)", claim_low)
+        )
+        if has_negated_integration and len(anchored_hits) >= 1:
+            return True
+        return False
 
     def _extract_grounded_numbers(self, context: Dict[str, Any]) -> List[str]:
         grounded_sources: List[str] = []
@@ -1025,6 +1140,7 @@ class ResponseBoundaryValidator:
         sanitized = self._sanitize_opening_punctuation(sanitized)
         sanitized = self._sanitize_known_typos(sanitized)
         sanitized = self._sanitize_send_promise(sanitized, context)
+        sanitized = self._sanitize_past_action(sanitized)
         sanitized = self._sanitize_contact_claim(sanitized, context)
         sanitized = self._sanitize_iin_status_claim(sanitized, context)
         sanitized = self._sanitize_invoice_status_claim(sanitized, context)
@@ -1104,6 +1220,20 @@ class ResponseBoundaryValidator:
                     "Поняла, без контактов. "
                     "Продолжим в чате — дам конкретный следующий шаг по вашему вопросу."
                 )
+            # Default: sentence-strip the offending parts, keep factual content
+            import re as _re
+            sentences = _re.split(r'(?<=[.!?])\s+', response)
+            kept = [
+                s for s in sentences
+                if not self.SEND_PROMISE_PATTERN.search(s)
+                and not self.SEND_CAPABILITY_PATTERN.search(s)
+                and not self.PAST_SETUP_PATTERN.search(s)
+                and not self.PAST_ACTION_PATTERN.search(s)
+            ]
+            if kept:
+                result = " ".join(kept).strip()
+                if len(result) > 20:
+                    return result
             return (
                 "Расскажу всё прямо здесь, в чате. "
                 "Что именно хотите узнать?"
@@ -1261,11 +1391,36 @@ class ResponseBoundaryValidator:
         return response
 
     def _sanitize_ungrounded_guarantee(self, response: str) -> str:
-        if self.UNGROUNDED_GUARANTEE_PATTERN.search(response):
-            return (
-                "Опишу аккуратно и по фактам: результат зависит от вашего сценария внедрения. "
-                "Дам конкретные шаги и условия без обещаний, которых нет в базе знаний."
-            )
+        if not self.UNGROUNDED_GUARANTEE_PATTERN.search(response):
+            return response
+        # Sentence-level strip: remove only the sentence containing the
+        # ungrounded guarantee, keep the rest of the factual response.
+        import re as _re
+        sentences = _re.split(r'(?<=[.!?])\s+', response)
+        kept = [s for s in sentences if not self.UNGROUNDED_GUARANTEE_PATTERN.search(s)]
+        if kept:
+            result = " ".join(kept).strip()
+            if len(result) > 20:
+                return result
+        # Nothing useful remains — phrase-level strip as last resort
+        cleaned = self.UNGROUNDED_GUARANTEE_PATTERN.sub("", response).strip()
+        cleaned = _re.sub(r'\s{2,}', ' ', cleaned).strip(" ,.")
+        if len(cleaned) > 20:
+            return cleaned
+        return response
+
+    def _sanitize_past_action(self, response: str) -> str:
+        """Sentence-strip for PAST_ACTION_PATTERN — remove only the sentence
+        with the fabricated action claim, keep the factual part."""
+        if not self.PAST_ACTION_PATTERN.search(response):
+            return response
+        import re as _re
+        sentences = _re.split(r'(?<=[.!?])\s+', response)
+        kept = [s for s in sentences if not self.PAST_ACTION_PATTERN.search(s)]
+        if kept:
+            result = " ".join(kept).strip()
+            if len(result) > 20:
+                return result
         return response
 
     def _sanitize_ungrounded_social_proof(self, response: str) -> str:
@@ -1315,7 +1470,34 @@ class ResponseBoundaryValidator:
         )
         refusal_source = f"{user_message} {self._history_user_text(ctx)}"
         violations = ctx.get("violations", [])
+        if "semantic_irrelevance" in violations:
+            return (
+                "К сожалению, у меня нет точной информации по этому вопросу. "
+                "Могу рассказать о других возможностях системы — что вас интересует?"
+            )
         if "llm_ungrounded_claim" in violations:
+            # Domain-specific guarded fallbacks for high-impact asks.
+            if re.search(r"(?:алкогол|акциз|укм|маркиров)", user_message_lower):
+                return (
+                    "Да, для торговли алкоголем используют модуль Wipon PRO УКМ: "
+                    "он поддерживает акциз и маркировку алкоголя."
+                )
+            if "экосистем" in user_message_lower and "wipon" in user_message_lower:
+                return "Ключевые продукты экосистемы Wipon: Kassa, Desktop и ТИС."
+            if (
+                ("wildberries" in user_message_lower or "ozon" in user_message_lower)
+                and "лимит" in user_message_lower
+            ):
+                return (
+                    "Продажи через Wildberries и Ozon не входят в расчёт лимита ТИС, "
+                    "потому что проходят мимо кассы."
+                )
+            if (
+                "тоо" in user_message_lower
+                and "тис" in user_message_lower
+                and "вместо" in user_message_lower
+            ):
+                return "Для ТОО вместо ТИС обычно используют Wipon Розница под режим розничного налога."
             # KB-grounded fallback: extract relevant sentences from retrieved facts.
             # Universal — works for any state/intent without hardcoding.
             retrieved = str(ctx.get("retrieved_facts", "") or "").strip()
@@ -1468,11 +1650,11 @@ class ResponseBoundaryValidator:
             return _closing_variants[_hash]
         # Greeting: proper greeting fallback
         if intent == "greeting" or state == "greeting":
-            return "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Расскажите, что вас интересует?"
+            return "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?"
         # Discovery stage: respond based on user message context
         if state == "autonomous_discovery":
             if self._is_pricing_context(ctx):
-                return "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом."
+                return self._grounded_pricing_fallback(ctx, user_message)
             if any(kw in user_message_lower for kw in ("офлайн", "интернет", "без связи", "пропад")):
                 return (
                     "Wipon работает в офлайн-режиме — продажи не прерываются при потере интернета, "
@@ -1499,7 +1681,7 @@ class ResponseBoundaryValidator:
             return "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение."
         if "hallucinated_client_name" in violations:
             if self._is_pricing_context(ctx):
-                return "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом."
+                return self._grounded_pricing_fallback(ctx, user_message)
             if "soft_close" in state:
                 return (
                     "Wipon — торгово-информационная система для розницы в Казахстане: "
@@ -1519,7 +1701,7 @@ class ResponseBoundaryValidator:
                 "и сокращения ручных ошибок. Могу рассчитать конкретно под ваш случай — сколько точек?"
             )
         if self._is_pricing_context(ctx):
-            return "Точную стоимость для вашего случая уточню у коллег и вернусь с ответом."
+            return self._grounded_pricing_fallback(ctx, user_message)
         if intent == "no_problem":
             return (
                 "Понимаю, сейчас всё работает. Многие начинают задумываться о системе, "
@@ -1550,11 +1732,22 @@ class ResponseBoundaryValidator:
                 "коллега позвонит и согласует удобное время."
             )
         if "negotiation" in state:
-            return (
-                "Точную стоимость для вашего случая уточню у коллег. "
-                "Оставьте телефон или email — подберём подходящий вариант."
-            )
+            return self._grounded_pricing_fallback(ctx, user_message)
         return "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon."
+
+    def _grounded_pricing_fallback(self, ctx: Dict[str, Any], user_message: str) -> str:
+        """KB-driven pricing response. Falls back to neutral CTA, never to deflection.
+
+        Depends on Fix 3 (pricing in kb_categories) so that retrieved_facts contains
+        pricing sections for discovery-state state backfill.
+        """
+        retrieved = str(ctx.get("retrieved_facts", "") or "").strip()
+        if retrieved:
+            grounded = self._extract_kb_fallback(retrieved, user_message)
+            if grounded and re.search(r'\d', grounded):
+                return grounded
+        # Neutral CTA — не дефлекция, не хардкод цен
+        return "Подскажите, сколько у вас касс или точек продаж — назову подходящий тариф."
 
     def _extract_kb_fallback(self, facts: str, user_message: str) -> str:
         """Extract 1-2 relevant KB sentences as grounded fallback.
@@ -1594,6 +1787,40 @@ class ResponseBoundaryValidator:
         result = " ".join(top).strip()
         return result if len(result) > 20 else ""
 
+    def _llm_or_kb_fallback(
+        self,
+        *,
+        source_response: str,
+        context: Dict[str, Any],
+        llm: Any,
+        violations: List[str],
+    ) -> str:
+        """Universal fallback: LLM repair first, then grounded KB extract, then safe minimal text."""
+        repaired = ""
+        if llm is not None and flags.is_enabled("response_boundary_retry"):
+            repaired = self._retry_once(source_response, violations, context, llm) or ""
+            repaired = repaired.strip()
+            if repaired:
+                sanitized = self._sanitize(repaired, context)
+                if not self._detect_violations(sanitized, context):
+                    return sanitized
+
+        retrieved = str(context.get("retrieved_facts", "") or "").strip()
+        if retrieved:
+            grounded = self._extract_kb_fallback(
+                retrieved,
+                str(context.get("user_message", "") or ""),
+            )
+            if grounded:
+                grounded_sanitized = self._sanitize(grounded, context)
+                if len(grounded_sanitized) > 20:
+                    return grounded_sanitized
+
+        return (
+            "Могу дать только подтверждённые факты из базы знаний. "
+            "Уточните запрос, и отвечу строго по доступным данным."
+        )
+
     def _retry_once(
         self,
         response: str,
@@ -1618,7 +1845,10 @@ class ResponseBoundaryValidator:
         cleaned = self.MID_CONV_GREETING_PATTERN.sub("", response).strip()
         if len(cleaned) < 10:
             intent = str(context.get("intent", "") or "").lower()
-            if intent.startswith("question_") or intent in {"price_question", "pricing_details", "comparison"}:
+            _user_msg = str(context.get("user_message", "") or "")
+            if intent in {"price_question", "pricing_details"}:
+                return self._grounded_pricing_fallback(context, _user_msg)
+            if intent.startswith("question_") or intent in {"comparison"}:
                 return "Уточню точные параметры у коллег и вернусь с коротким ответом по вашему вопросу."
             return response  # safety: не возвращать пустую/короткую строку
         if cleaned and cleaned[0].islower():
@@ -1848,6 +2078,107 @@ class ResponseBoundaryValidator:
             return False
         except Exception:
             return False  # fail-open: не блокируем при ошибке
+
+    # ── Semantic Relevance Check ──────────────────────────────────────────
+
+    _RELEVANCE_CHECK_INTENTS = frozenset({
+        "comparison", "pricing_comparison", "question_tariff_comparison",
+        "price_question", "budget_question", "cost_inquiry",
+        "discount_request", "consultation_request",
+        "payment_terms", "pricing_details",
+        "objection_price", "objection_competitor", "objection_no_need",
+        "objection_timing", "objection_trust",
+    })
+
+    def _check_semantic_irrelevance(
+        self, response: str, context: Dict[str, Any], llm: Any,
+    ) -> bool:
+        """LLM проверяет: ответ бота по теме вопроса клиента?
+
+        Returns True если ответ НЕРЕЛЕВАНТЕН (нужен retry/fallback).
+        Fail-open: при ошибке возвращает False.
+        """
+        # Skip condition 1: trivial response
+        if len(response) < 40:
+            return False
+
+        state = str(context.get("state", "") or "").lower()
+        intent = str(context.get("intent", "") or "").lower()
+
+        # Skip condition 2: greeting
+        if state == "greeting":
+            return False
+
+        # Skip condition 3: non-question intent
+        is_relevance_intent = intent in self._RELEVANCE_CHECK_INTENTS
+        if not is_relevance_intent and not intent.startswith("question_"):
+            return False
+
+        # Skip condition 4: bot follow-up question in discovery (OK)
+        # BUT if intent in _RELEVANCE_CHECK_INTENTS — do NOT skip (S06 case)
+        if (
+            response.rstrip().endswith("?")
+            and len(response) < 200
+            and not is_relevance_intent
+        ):
+            return False
+
+        # Skip condition 5: fact_disambiguated — already verified by disambiguation
+        if context.get("fact_disambiguated"):
+            return False
+
+        user_message = str(context.get("user_message", "") or "").strip()
+        if not user_message:
+            return False
+
+        prompt = (
+            f'Клиент спросил: "{user_message}"\n'
+            f'Бот ответил: "{response}"\n\n'
+            "РЕЛЕВАНТЕН ли ответ вопросу клиента?\n"
+            "- true: ответ по теме (даже частичный), или честное "
+            '"такой функции нет" / "уточню",\n'
+            "        или уточняющий вопрос ПО ТЕМЕ (для подбора ответа)\n"
+            "- false: ответ о ДРУГОМ (не по теме), или пустой встречный "
+            "вопрос БЕЗ содержательного ответа\n\n"
+            'Ответь JSON объектом: {"relevant": true/false, "reason": "краткое пояснение"}'
+        )
+        try:
+            result = llm.generate_structured(
+                prompt,
+                schema=SemanticRelevanceResult,
+                temperature=0.1,
+                num_predict=150,
+            )
+            if result is None:
+                return False  # fail-open
+            return not result.relevant
+        except Exception:
+            return False  # fail-open
+
+    def _retry_with_relevance(
+        self, response: str, context: Dict[str, Any], llm: Any,
+    ) -> Optional[str]:
+        """Генерирует новый ответ, явно привязанный к вопросу клиента."""
+        user_message = str(context.get("user_message", "") or "").strip()
+        retrieved_facts = str(context.get("retrieved_facts", "") or "").strip()
+        facts_block = retrieved_facts[:3000] if retrieved_facts else "(нет данных)"
+
+        prompt = (
+            f"Сообщение клиента: {user_message}\n\n"
+            "Инструкция: Ответь ИМЕННО на вопрос клиента. 2-3 предложения.\n\n"
+            "ВАЖНО: Если в фактах ниже НЕТ прямого ответа на вопрос клиента — "
+            'ответь честно: "К сожалению, у меня нет точной информации по этому вопросу."\n'
+            "НЕ подставляй похожую по словам, но ДРУГУЮ по смыслу функцию/услугу.\n"
+            "НЕ задавай встречный вопрос вместо ответа.\n"
+            "Валюта: тенге (₸). Бренд системы: Wipon.\n\n"
+            f"Факты из базы знаний:\n{facts_block}"
+        )
+        try:
+            result = llm.generate(prompt)
+            text = str(result).strip()
+            return text if text else None
+        except Exception:
+            return None
 
     _OFF_TOPIC_RECOMMENDATION_PATTERN = re.compile(
         r'(?:рекоменд|посовет|попробуйте|посетите|обратитесь\s+в|загляните\s+в|'

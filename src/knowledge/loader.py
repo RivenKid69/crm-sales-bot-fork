@@ -31,8 +31,8 @@ FILE_TO_CATEGORY = {
     "mobile.yaml": "mobile",
     "features.yaml": "features",
     "faq.yaml": "faq",
-    "regions.yaml": "regions",
     "competitors.yaml": "competitors",
+    "delivery.yaml": "delivery",
 }
 
 

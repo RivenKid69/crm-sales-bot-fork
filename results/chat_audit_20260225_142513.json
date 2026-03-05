@@ -1,0 +1,470 @@
+{
+  "timestamp": "20260225_142513",
+  "scenarios": [
+    {
+      "id": "C01",
+      "name": "Прямой прайс-вопрос — небольшой продуктовый магазин",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "У меня небольшой продуктовый магазин, ищу кассовую программу",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит ваш продукт?",
+          "bot": "Тариф Pro — максимальный тариф учетной системы Wipon для крупного бизнеса, сетей магазинов и оптовых компаний. Лимиты: неограниченные товары и сотрудники, до 5 складов.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "А есть что-то дешевле?",
+          "bot": "Бюджетный сканер — проводные модели дешевле беспроводных. Бюджетная альтернатива — комплект Standard дешевле дорогих решений.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 5,
+          "user": "Ладно, расскажите подробнее про Mini",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Mini»:\n1) Тариф Mini\n2) Комплект Mini\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "name": "Омоним 'стоит' — не должен дать ценовой ответ",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, хочу узнать о системе",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "Не стоит тратить время на лишние вопросы, скажите сразу — что умеет ваша программа?",
+          "bot": "Простота освоения Wipon — программа простая с бесплатным обучением. Сложность: программа простая в освоении.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Сколько сотрудников может работать одновременно?",
+          "bot": "Количество сотрудников в тарифах — ограничения зависят от тарифа. Лимит сотрудников по тарифам — зависит от выбранного тарифного плана.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "name": "Клиент сравнивает тарифы — Lite vs Standard",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Добрый день",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "У меня магазин одежды, 3 кассира",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Чем Lite отличается от Standard?",
+          "bot": "Lite и Standard отличаются лимитами и глубиной функционала. Тариф Wipon выбирают по числу торговых точек: Lite на 1, Standard на 3, Pro на 5.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "В Lite есть учёт остатков?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Lite»:\n1) Модуль Lite\n2) Тариф Lite\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 5,
+          "user": "А скидки для постоянных клиентов?",
+          "bot": "В Wipon нет скидок за лояльность или статус клиента, но доступны скидки при оплате на 2/5 лет и сезонные акции. Скидки за лояльность/статус клиента: нет.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "name": "Клиент просит демо/тестовый период",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "Мне нужна кассовая программа для аптеки",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Можно попробовать бесплатно перед покупкой?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "А демо-версия есть?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "is_final": false
+        },
+        {
+          "turn": 5,
+          "user": "Тогда давайте я просто куплю — как оформить?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт. Коллега позвонит и оформит подключение — скажите номер?",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "name": "Казахскоязычный клиент — смешанный язык",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Сәлем, сізде кассалық бағдарлама бар ма?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "Менің дүкенім Алматыда, 2 касса",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Рахмет, бағасы қанша?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "Kaspi арқылы төлеуге болады ма?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "name": "Скептичный клиент — возражения и давление",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Ещё один продавец ПО. Чем вы лучше других?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "У меня уже есть 1С, зачем мне ваше?",
+          "bot": "Интеграция Wipon с 1С — обмен данными и упрощение бухучёта. Настройка: не требует отдельного программиста.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит переход? Это же куча денег",
+          "bot": "Переход Standard → Pro: доплачивается разница стоимости за оставшийся период. ТИС (Торговая Информационная Система) — отдельный продукт для сетей с несколькими точками.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "А если у вас сервер упадёт — я потеряю данные?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 5,
+          "user": "Ладно, допустим. Расскажите про поддержку",
+          "bot": "Доплата за базовую поддержку: не указана. Клиент получает поддержку в рамках активного тарифа.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "name": "Сеть магазинов — Pro тариф, технические вопросы",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Добрый день, у нас 5 точек в разных городах Казахстана",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "Нам нужен централизованный учёт по всем точкам",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Какая СУБД используется?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "Есть API для интеграции с нашей ERP?",
+          "bot": "API для разработчиков Wipon — REST/OAuth/webhooks для программной интеграции внешних систем. Интеграция Wipon с внешними CRM — через API при отсутствии прямого готового коннектора.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 5,
+          "user": "Сколько будет стоить для 5 точек на год?",
+          "bot": "До 5 точек: тариф Pro — 500 000 ₸/год. Более 5 точек: ТИС — 220 000 ₸/год за первую точку + 80 000 ₸/год за каждую следующую.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C08",
+      "name": "Клиент готов купить — быстрый путь к закрытию",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, мне нужен Standard для магазина бытовой химии",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Standard»:\n1) Модуль Standard\n2) Тариф Standard\n3) Комплект Standard\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "Да, всё понятно, как подключиться?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Мой телефон 87051234567",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "is_final": true
+        }
+      ]
+    },
+    {
+      "id": "C09",
+      "name": "Вопрос о чём-то несуществующем — тест на галлюцинации",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "У вас есть модуль для ресторанного бизнеса?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "А модуль доставки? Курьеры и всё такое",
+          "bot": "Цена доставки по Астане: 0 ₸ при заказе от 40 000 ₸. Сроки и стоимость доставки уточняйте у коллегу.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "Есть интеграция с Яндекс.Доставкой?",
+          "bot": "Доставка как услуга в Wipon — учёт заказов с доставкой как отдельной позиции. Интеграция Wipon ТИС с 1С/iiko/r_keeper — синхронизация операционных данных.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 5,
+          "user": "Понял. Тогда расскажите что реально есть для розничной торговли",
+          "bot": "Возможность: можно, если деятельность реально соответствует новому ОКЭД. Смена ОКЭД для перехода на розничный налог возможна только при реальном соответствии деятельности и коде из разрешённого перечня.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    },
+    {
+      "id": "C10",
+      "name": "Клиент прерывает SPIN — хочет сразу цену",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Привет",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "is_final": false
+        },
+        {
+          "turn": 2,
+          "user": "Не надо вопросов — просто скажите цену на все тарифы",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "is_final": false
+        },
+        {
+          "turn": 3,
+          "user": "Хорошо, а для одной кассы что берёте?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 4,
+          "user": "Есть рассрочка?",
+          "bot": "Рассрочка на комплект оборудования Wipon — оплата частями доступна, условия согласуются индивидуально. Рассрочка в Wipon — оплата частями для программы и оборудования.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        },
+        {
+          "turn": 5,
+          "user": "Договорились, хочу оформить. Как?",
+          "bot": "Произошла техническая ошибка. Попробуйте ещё раз или оставьте контакт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "is_final": false
+        }
+      ]
+    }
+  ]
+}

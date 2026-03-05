@@ -30,7 +30,7 @@ from .reranker import get_reranker
 # Принцип: каждый интент связан с категориями, которые могут содержать релевантные факты
 #
 # ВАЖНО: Используйте только существующие категории из knowledge/data/:
-# equipment, products, tis, support, pricing, inventory, features, regions,
+# equipment, products, tis, support, pricing, inventory, features, delivery,
 # integrations, analytics, employees, fiscal, stability, mobile, promotions,
 # competitors, faq
 #
@@ -60,10 +60,10 @@ INTENT_TO_CATEGORY = {
     # =================================================================
     # ЗАПРОСЫ НА ДЕЙСТВИЕ (требуют контактной информации)
     # =================================================================
-    "callback_request": ["support", "regions"],  # контакты в support и regions
+    "callback_request": ["support", "delivery"],  # контакты в support и delivery
     "demo_request": ["support", "products"],
     "consultation_request": ["support", "features", "products"],
-    "contact_provided": ["support", "regions"],
+    "contact_provided": ["support", "delivery"],
 
     # =================================================================
     # СОГЛАСИЕ/ИНТЕРЕС (общая информация)
@@ -210,7 +210,16 @@ class CascadeRetriever:
             embedder_device = getattr(
                 getattr(settings, 'retriever', None), 'embedder_device', 'cpu'
             )
-            self.embedder = SentenceTransformer(embedder_model, device=embedder_device)
+            try:
+                self.embedder = SentenceTransformer(embedder_model, device=embedder_device)
+            except Exception as e:
+                if "out of memory" in str(e).lower() or "CUDA" in str(e):
+                    logger.warning(f"CUDA OOM loading embedder, falling back to CPU: {e}")
+                    import torch
+                    torch.cuda.empty_cache()
+                    self.embedder = SentenceTransformer(embedder_model, device="cpu")
+                else:
+                    raise
 
             # Проверяем нужны ли префиксы (FRIDA использует префиксы для лучшего качества)
             self._use_prefixes = "FRIDA" in embedder_model.upper()

@@ -85,7 +85,16 @@ class SemanticToneAnalyzer:
                     model_name = 'ai-forever/FRIDA'
 
                 logger.info(f"Loading semantic tone model: {model_name}")
-                self._embedder = SentenceTransformer(model_name)
+                try:
+                    self._embedder = SentenceTransformer(model_name)
+                except Exception as e:
+                    if "out of memory" in str(e).lower() or "CUDA" in str(e):
+                        logger.warning(f"CUDA OOM loading tone embedder, falling back to CPU")
+                        import torch
+                        torch.cuda.empty_cache()
+                        self._embedder = SentenceTransformer(model_name, device="cpu")
+                    else:
+                        raise
 
                 # Собираем все примеры
                 all_examples = []

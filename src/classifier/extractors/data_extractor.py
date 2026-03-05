@@ -1763,6 +1763,59 @@ class DataExtractor:
                 extracted["business_type"] = btype
                 break
 
+        # === Город клиента (для profile enrichment) ===
+        city_patterns = {
+            r'(?:в|из|по)\s+алмат[ыы]': "Алматы",
+            r'(?:в|из|по)\s+астан[аеы]': "Астана",
+            r'(?:в|из|по)\s+шымкент[еаы]?': "Шымкент",
+            r'(?:в|из|по)\s+караганд[аеы]': "Караганда",
+            r'(?:в|из|по)\s+актоб[еы]': "Актобе",
+            r'(?:в|из|по)\s+павлодар[еаы]?': "Павлодар",
+            r'(?:в|из|по)\s+костанай[еаы]?': "Костанай",
+            r'(?:в|из|по)\s+уральск[еаы]?': "Уральск",
+            r'(?:в|из|по)\s+атырау': "Атырау",
+            r'(?:в|из|по)\s+семе[йе]': "Семей",
+            r'(?:в|из|по)\s+акта[уу]': "Актау",
+            r'(?:в|из|по)\s+тараз[еаы]?': "Тараз",
+            r'(?:в|из|по)\s+кызылорд[аеы]': "Кызылорда",
+            r'(?:в|из|по)\s+туркестан[еаы]?': "Туркестан",
+            r'(?:в|из|по)\s+петропавловск[еаы]?': "Петропавловск",
+        }
+        for pattern, city in city_patterns.items():
+            if re.search(pattern, message_lower):
+                extracted["city"] = city
+                break
+
+        # === Автоматизация: раньше / сейчас ===
+        # Эти поля помогают мягко квалифицировать клиента без изменений state machine.
+        has_automation_marker = bool(
+            re.search(r'автоматиз|crm|срм|1с|битрикс|amo|амо|excel|эксел|таблиц|notion|trello', message_lower)
+        )
+        if has_automation_marker:
+            # "Раньше" (исторический опыт)
+            if "automation_before" not in extracted:
+                if re.search(r'раньше|до этого|до\s+внедрения|до этого момента', message_lower):
+                    if re.search(r'раньше[^.]{0,40}(?:не было|не использ|без|вручную|никак)', message_lower):
+                        extracted["automation_before"] = False
+                    elif re.search(r'раньше[^.]{0,50}(?:был|была|использ|работал|вели|crm|срм|1с|битрикс|амо)', message_lower):
+                        extracted["automation_before"] = True
+
+            # "Сейчас" (текущее состояние)
+            if "automation_now" not in extracted:
+                if re.search(r'сейчас|на данный момент|пока', message_lower):
+                    if re.search(r'(?:сейчас|на данный момент|пока)[^.]{0,40}(?:нет|не используем|без|вручную|никак)', message_lower):
+                        extracted["automation_now"] = False
+                    elif re.search(r'(?:сейчас|на данный момент|пока)[^.]{0,60}(?:использ|работа|вед[её]м|crm|срм|1с|битрикс|амо|excel|эксел|таблиц)', message_lower):
+                        extracted["automation_now"] = True
+
+        # Fallback from current_tools: если инструмент определён, помечаем "automation_now"
+        if "automation_now" not in extracted and "current_tools" in extracted:
+            tool_value = str(extracted.get("current_tools", "")).lower()
+            if tool_value in {"вручную", "на бумаге", "в блокноте", "в головах", "никак не ведём"}:
+                extracted["automation_now"] = False
+            else:
+                extracted["automation_now"] = True
+
         # === Последствия проблемы (для Implication) — config-driven ===
         if self._should_extract_for_phase("implication", spin_phase, missing_data):
             impact_patterns = [
@@ -2071,4 +2124,3 @@ class DataExtractor:
                 extracted["pain_category"] = category
 
         return extracted
-

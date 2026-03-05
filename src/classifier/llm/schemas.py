@@ -392,10 +392,13 @@ class ExtractedData(BaseModel):
     """Извлечённые данные из сообщения."""
     company_name: Optional[str] = Field(None, description="Название компании клиента")
     contact_name: Optional[str] = Field(None, description="Полное имя контактного лица")
+    city: Optional[str] = Field(None, description="Город клиента")
     budget_range: Optional[str] = Field(None, description="Бюджет клиента (сумма или оценка)")
     company_size: Optional[int] = Field(None, description="Размер компании (число сотрудников)")
     business_type: Optional[str] = Field(None, description="Тип бизнеса/отрасль")
     current_tools: Optional[str] = Field(None, description="Текущие инструменты")
+    automation_before: Optional[bool] = Field(None, description="Была ли автоматизация раньше")
+    automation_now: Optional[bool] = Field(None, description="Есть ли автоматизация сейчас")
     pain_point: Optional[str] = Field(None, description="Выявленная боль")
     pain_category: Optional[PainCategory] = Field(None, description="Категория боли")
     pain_impact: Optional[str] = Field(None, description="Влияние боли на бизнес")
@@ -445,7 +448,7 @@ CategoryType = Literal[
     "pricing",       # Цены и тарифы
     "products",      # Продукты Wipon
     "promotions",    # Акции и скидки
-    "regions",       # Регионы и доставка
+    "delivery",      # Доставка и регионы
     "stability",     # Надёжность и стабильность
     "support",       # Техподдержка и обучение
     "tis",           # Трёхкомпонентная система для ИП

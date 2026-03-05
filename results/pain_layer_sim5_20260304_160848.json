@@ -1,0 +1,292 @@
+{
+  "timestamp": "20260304_160848",
+  "scenarios": [
+    {
+      "id": "P01",
+      "group": "pain_kassa",
+      "name": "Касса тормозит в час пик",
+      "desc": "Клиент жалуется что касса зависает в пиковые часы → pain_context должен содержать решение",
+      "expect_pain": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, у меня продуктовый магазин",
+          "bot": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. О, продуктовый магазин — это отличная ниша для Wipon! Расскажите, что сейчас больше всего напрягает в учёте или кассе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 10.8,
+          "pain_context_len": 0,
+          "pain_context_preview": ""
+        },
+        {
+          "turn": 2,
+          "user": "Главная проблема — касса тормозит в час пик, клиенты стоят в очереди и уходят",
+          "bot": "Wipon работает стабильно даже в пиковые часы, исключая зависания при высокой нагрузке. Это позволяет быстро пробивать чеки и не терять клиентов из-за очередей.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "info_provided",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 29.83,
+          "pain_context_len": 728,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_kassa/kassa_freeze_peak_hours_601]\nWipon Kassa обеспечивает стабильную работу даже в пиковые ч"
+        },
+        {
+          "turn": 3,
+          "user": "А это точно не будет зависать при 50 чеках в час?",
+          "bot": "В Wipon касса работает в обычном режиме без замедления продаж: все проверки проходят в фоне, система не блокируется и чек пробивается как обычно. Для ускорения работы кассира на потоке доступен стационарный сканер со скоростью до 1650 сканов в секунду при простом наведении.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "rejection",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 28.73,
+          "pain_context_len": 706,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_kassa/kassa_freeze_peak_hours_601]\nWipon Kassa обеспечивает стабильную работу даже в пиковые ч"
+        }
+      ],
+      "checks": {
+        "passed": true,
+        "issues": [],
+        "pain_context_len": 728
+      },
+      "passed": true,
+      "total_time_s": 69.4,
+      "num_turns": 3,
+      "final_state": "autonomous_discovery"
+    },
+    {
+      "id": "P02",
+      "group": "pain_snr",
+      "name": "Страх перехода на СНР 2026",
+      "desc": "Клиент боится перехода на новый налоговый режим → pain_context про ТИС и переход",
+      "expect_pain": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Добрый день, у нас ИП в Алматы",
+          "bot": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+          "state": "greeting",
+          "action": "greet_back",
+          "intent": "greeting",
+          "spin_phase": null,
+          "template_key": "greet_back",
+          "elapsed_s": 11.55,
+          "pain_context_len": 700,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_consulting/consulting_ip_registration_difficulty_3201]\nWipon Consulting сопровождает процесс р"
+        },
+        {
+          "turn": 2,
+          "user": "Боюсь перехода на СНР 2026, не знаем как это оформить и что менять",
+          "bot": "Wipon сама адаптируется под СНР-2026 и автоматически формирует все нужные документы, снижая риск ошибок при переходе. Как к вам обращаться?",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "intent": "question_implementation",
+          "spin_phase": null,
+          "template_key": "autonomous_respond",
+          "elapsed_s": 20.43,
+          "pain_context_len": 706,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_snr/tis_transition_fear_new_regime_1001]\nWipon ТИС предоставляет готовую инфраструктуру для ко"
+        },
+        {
+          "turn": 3,
+          "user": "А если мы не успеем подать уведомление до марта?",
+          "bot": "Согласно информации, режим розничного налога начинает действовать с 1 числа месяца, следующего за месяцем подачи заявления. Если вы не успеете подать уведомление до марта, то переход на новый режим произойдет уже в следующем месяце после фактической подачи документов. Для отслеживания статуса и получения уведомления с точной датой перехода используйте кабинет налогоплательщика.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "agreement",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 42.61,
+          "pain_context_len": 0,
+          "pain_context_preview": ""
+        }
+      ],
+      "checks": {
+        "passed": true,
+        "issues": [],
+        "pain_context_len": 706
+      },
+      "passed": true,
+      "total_time_s": 74.63,
+      "num_turns": 3,
+      "final_state": "autonomous_discovery"
+    },
+    {
+      "id": "P03",
+      "group": "pain_equipment",
+      "name": "Сканер плохо читает штрихкоды",
+      "desc": "Клиент жалуется на сканер → pain_context про оборудование",
+      "expect_pain": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Привет, у меня магазин одежды в Астане",
+          "bot": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Здорово, одежда — это про размеры и цвета, тут важно всё держать под контролем. А что сейчас в работе напрягает больше всего?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 5.1,
+          "pain_context_len": 0,
+          "pain_context_preview": ""
+        },
+        {
+          "turn": 2,
+          "user": "Сканер постоянно не считывает с первого раза, кассир по 3 раза водит",
+          "bot": "У нас есть стационарный сканер, который считывает штрихкоды при простом наведении до 1650 раз в секунду. Это полностью освобождает руки кассира и ускоряет обслуживание. Расскажите, сколько у вас сейчас точек продаж?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "agreement",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 21.59,
+          "pain_context_len": 584,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_kassa/kassa_complex_interface_603]\nWipon Kassa имеет простой и понятный интерфейс, который сни"
+        },
+        {
+          "turn": 3,
+          "user": "Какой сканер посоветуете к вашей системе?",
+          "bot": "Для магазина одежды отлично подойдут проводной Honeywell Youjie 4600 или беспроводной Sunmi с Bluetooth. Какой вариант удобнее для вашей кассы?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "consultation_request",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 26.19,
+          "pain_context_len": 684,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_equipment/equipment_scanner_damaged_codes_1704]\nWipon предлагает сканеры с улучшенным распозна"
+        }
+      ],
+      "checks": {
+        "passed": false,
+        "issues": [
+          "pain_context не содержит ожидаемых слов: ['сканер', 'штрихкод', 'считыва', 'скорост', 'scanner', 'equipment_scanner']"
+        ],
+        "pain_context_len": 684
+      },
+      "passed": false,
+      "total_time_s": 52.92,
+      "num_turns": 3,
+      "final_state": "autonomous_discovery"
+    },
+    {
+      "id": "P04",
+      "group": "pain_products",
+      "name": "Долго добавлять товар вручную",
+      "desc": "Клиент жалуется на ручной ввод номенклатуры → pain_context про автоматизацию добавления товара",
+      "expect_pain": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, у меня строительный магазин, 3000+ позиций",
+          "bot": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Строительные магазины с большим ассортиментом отлично работают на Wipon без ограничений по количеству позиций. Расскажите, что сейчас больше всего замедляет работу кассиров или учёт?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 5.83,
+          "pain_context_len": 647,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_products/ops_speed_slow_new_product_add_002]\nWipon решает проблему долгого добавления новых то"
+        },
+        {
+          "turn": 2,
+          "user": "Каждый новый товар приходится вбивать вручную — это отнимает полдня",
+          "bot": "Поняла, в Wipon новые товары создаются быстро через массовый импорт или автозаполнение по штрихкоду. Это избавит вас от долгого ручного ввода. А какие категории товаров у вас самые объемные?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 20.1,
+          "pain_context_len": 680,
+          "pain_context_preview": "=== РЕШЕНИЕ ДЛЯ БОЛИ КЛИЕНТА ===\nКлиент упомянул проблему — НЕ выделяй отдельным блоком, вплети решение в свой основной ответ одним связным текстом.\n\n[pain_products/ops_speed_slow_new_product_add_002]\nWipon решает проблему долгого добавления новых то"
+        },
+        {
+          "turn": 3,
+          "user": "А можно загрузить весь каталог сразу из Excel?",
+          "bot": "В предоставленной информации о возможностях загрузки каталога из Excel или массового импорта товаров нет данных. В системе Wipon подтверждена только интеграция разделов: склад, финансы, закупки и касса работают вместе с автоматическим обновлением данных.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_integrations",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 27.34,
+          "pain_context_len": 0,
+          "pain_context_preview": ""
+        }
+      ],
+      "checks": {
+        "passed": true,
+        "issues": [],
+        "pain_context_len": 680
+      },
+      "passed": true,
+      "total_time_s": 53.31,
+      "num_turns": 3,
+      "final_state": "autonomous_discovery"
+    },
+    {
+      "id": "P05",
+      "group": "negative",
+      "name": "Обычный диалог без болей (negative)",
+      "desc": "Клиент спрашивает только о цене — pain_context должен быть ПУСТЫМ",
+      "expect_pain": false,
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Добрый день, расскажите о тарифах",
+          "bot": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. У нас четыре тарифа: Mini за 5 000 тенге в месяц, а также годовые Lite, Standard и Pro от 150 до 500 тысяч тенге. Какой из них вас интересует для начала?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_features",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 11.16,
+          "pain_context_len": 0,
+          "pain_context_preview": ""
+        },
+        {
+          "turn": 2,
+          "user": "Сколько стоит Lite тариф?",
+          "bot": "Тариф Lite стоит 150 000 тенге за год. Он предназначен для одной торговой точки и не имеет ограничений по номенклатуре. В тариф включены интеграция с POS-терминалами, Wipon ОФД, а также базовые операции продаж и учёта.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "price_question",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 33.69,
+          "pain_context_len": 0,
+          "pain_context_preview": ""
+        },
+        {
+          "turn": 3,
+          "user": "Понял, спасибо. Подумаю и вернусь",
+          "bot": "Без проблем, решение принимать вам. Я всегда на связи, если появятся вопросы по настройке или функционалу Wipon.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "objection_think",
+          "spin_phase": "discovery",
+          "template_key": "autonomous_respond",
+          "elapsed_s": 19.96,
+          "pain_context_len": 0,
+          "pain_context_preview": ""
+        }
+      ],
+      "checks": {
+        "passed": true,
+        "issues": [],
+        "pain_context_len": 0
+      },
+      "passed": true,
+      "total_time_s": 64.84,
+      "num_turns": 3,
+      "final_state": "autonomous_discovery"
+    }
+  ]
+}

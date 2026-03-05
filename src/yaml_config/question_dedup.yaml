@@ -80,6 +80,46 @@ data_fields:
       - "В какой сфере работаете?"
     phases: [situation]
 
+  contact_name:
+    description: "Имя/контактное лицо клиента"
+    extraction_hints:
+      - "меня зовут"
+      - "обращайтесь"
+      - "я "
+    related_questions:
+      - "Кстати, как к вам лучше обращаться?"
+      - "Подскажите, пожалуйста, ваше имя."
+    phases: [situation, discover, discovery]
+
+  city:
+    description: "Город клиента"
+    extraction_hints:
+      - "в Алматы"
+      - "из Астаны"
+      - "в каком городе"
+    related_questions:
+      - "Подскажите, пожалуйста, в каком вы городе?"
+      - "Из какого вы города?"
+    phases: [situation, discover, discovery, qualification]
+
+  automation_before:
+    description: "Была ли автоматизация раньше"
+    extraction_hints:
+      - "раньше была CRM"
+      - "раньше не было автоматизации"
+    related_questions:
+      - "Раньше у вас уже была автоматизация или CRM?"
+    phases: [situation, discover, discovery, qualification]
+
+  automation_now:
+    description: "Есть ли автоматизация сейчас"
+    extraction_hints:
+      - "сейчас ведём в CRM"
+      - "сейчас всё вручную"
+    related_questions:
+      - "А сейчас автоматизация есть? Если да, какая система?"
+    phases: [situation, discover, discovery, qualification]
+
   pain_point:
     description: "Основная проблема/боль клиента"
     extraction_hints:
@@ -458,6 +498,63 @@ prompt_instructions:
   available_questions_template: |
     Выбери ОДИН вопрос из доступных (то, что ещё НЕ известно):
     {available_questions_list}
+
+# =============================================================================
+# SOFT PROFILE COLLECTION (non-blocking)
+# =============================================================================
+# Цель: мягко собрать обязательный профиль клиента без изменения state machine.
+# Принцип: задаём максимум 1 дополнительный профильный вопрос, только когда уместно.
+
+profile_collection:
+  enabled: true
+  phases:
+    - situation
+    - discover
+    - discovery
+    - interest
+    - understand
+    - qualification
+  slot_order:
+    - contact_name
+    - business_type
+    - city
+    - automation
+  slots:
+    contact_name:
+      required_any: [contact_name, client_name]
+      question: "Кстати, как к вам лучше обращаться?"
+      markers: ["как к вам обращаться", "как вас зовут", "ваше имя"]
+    business_type:
+      required_any: [business_type]
+      question: "Чтобы точнее подсказать, в какой сфере вы работаете?"
+      markers: ["в какой сфере", "тип бизнеса", "чем занимаетесь"]
+    city:
+      required_any: [city]
+      question: "Подскажите, пожалуйста, в каком вы городе?"
+      markers: ["в каком городе", "из какого города", "какой город"]
+    automation:
+      required_all: [automation_before, automation_now]
+      required_if_true:
+        automation_now: [current_tools]
+      question: "Коротко уточню: раньше автоматизация была, и чем пользуетесь сейчас?"
+      markers: ["автоматизац", "чем пользуетесь сейчас", "раньше была"]
+  blockers:
+    question_instruction_markers:
+      - "не задавай"
+      - "никаких вопросов"
+      - "без встречных вопросов"
+      - "запрещены discovery-вопросы"
+    skip_intents:
+      - rejection
+      - farewell
+      - request_human
+    skip_intent_prefixes:
+      - "objection_"
+    max_frustration: 2
+    recent_turn_window: 4
+  instruction_template: |
+    Мягкий сбор профиля: если в этом сообщении уместен ОДИН встречный вопрос, предпочти такой: "{question}".
+    Спроси ненавязчиво и не задавай второй вопрос в этом же сообщении.
 
   # Fallback если всё известно
   all_data_collected_instruction: |

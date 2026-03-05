@@ -9,7 +9,7 @@
 
 import random
 import re
-from typing import Dict, List, Optional, TYPE_CHECKING, Any, Set, Tuple
+from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Any, Set, Tuple
 from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from src.knowledge.retriever import get_retriever
 from src.settings import settings
@@ -580,6 +580,8 @@ class ResponseGenerator:
             "factual_verifier_changed": False,
             "factual_verifier_verdict": "not_run",
             "factual_verifier_reason_codes": [],
+            "postprocess_trace": [],
+            "postprocess_last_mutation_rule": None,
         }
         self._last_response_embedding: Optional[List[float]] = None
         self._last_factual_verifier_meta: Dict[str, Any] = {
@@ -587,6 +589,10 @@ class ResponseGenerator:
             "factual_verifier_changed": False,
             "factual_verifier_verdict": "not_run",
             "factual_verifier_reason_codes": [],
+        }
+        self._last_postprocess_meta: Dict[str, Any] = {
+            "postprocess_trace": [],
+            "postprocess_last_mutation_rule": None,
         }
         self._factual_verifier = None
 
@@ -979,7 +985,15 @@ class ResponseGenerator:
         'модуль Контроль сроков годности', 'модуль Лицензирование'.
         Strip the sentence if the module name is not found in retrieved_facts.
         """
-        rf_low = (retrieved_facts or "").lower()
+        facts_text = str(retrieved_facts or "")
+        if not facts_text.strip():
+            # Without facts, we cannot reliably decide whether module is grounded.
+            return response
+        if facts_text.strip().lower() in {"(response_context empty)", "(response context empty)"}:
+            return response
+
+        rf_low = facts_text.lower()
+        known_safe_module_markers = ("укм", "акциз", "маркиров")
 
         def _strip_sentence(text: str, match_start: int, match_end: int) -> str:
             """Remove the sentence containing the match range."""
@@ -998,6 +1012,8 @@ class ResponseGenerator:
         )
         for m in reversed(list(quoted_pat.finditer(result))):
             module_name = m.group(1).strip().lower()
+            if any(marker in module_name for marker in known_safe_module_markers):
+                continue
             if module_name not in rf_low:
                 result = _strip_sentence(result, m.start(), m.end())
 
@@ -1009,6 +1025,8 @@ class ResponseGenerator:
         )
         for m in reversed(list(unquoted_pat.finditer(result))):
             module_name = m.group(1).strip().lower()
+            if any(marker in module_name for marker in known_safe_module_markers):
+                continue
             if module_name not in rf_low:
                 result = _strip_sentence(result, m.start(), m.end())
 
@@ -1028,7 +1046,13 @@ class ResponseGenerator:
         Allowed without grounding: фискальный регистратор, Kaspi, OFD.
         Everything else must be present in retrieved_facts.
         """
-        rf_low = (retrieved_facts or "").lower()
+        facts_text = str(retrieved_facts or "")
+        if not facts_text.strip():
+            # Without retrieved facts we cannot reliably decide grounding.
+            return response
+        if not re.search(r'(?:интеграци\w+|интегрирован\w*|подключен\w*|синхронизир\w+|совместим\w*)', response, re.IGNORECASE):
+            return response
+        rf_low = facts_text.lower()
 
         def _strip_sentence(text: str, start: int, end: int) -> str:
             sent_start = text.rfind('.', 0, start)
@@ -1425,6 +1449,8 @@ class ResponseGenerator:
         KB confirms: 1С, iiko, r_keeper, Poster are supported.
         Bot sometimes denies these exist.
         """
+        # Legacy deterministic repair disabled: handled by LLM guardrails + factual verifier.
+        return str(response or "")
         # Pattern: "не интегрируется / нет интеграции / не поддерживает интеграцию" + supported system
         supported = {'iiko': 'iiko', 'r_keeper': 'R-Keeper', 'r-keeper': 'R-Keeper',
                      'poster': 'Poster', '1с': '1С', '1c': '1С'}
@@ -1454,6 +1480,8 @@ class ResponseGenerator:
         - Hallucinated TLS/SSL version numbers (e.g. "TLS 2.56+")
         - Fabricated tariff names (anything other than Mini/Lite/Standard/Pro)
         """
+        # Legacy deterministic repair disabled: handled by LLM guardrails + factual verifier.
+        return str(response or "")
         # Fix hallucinated TLS versions (only 1.0, 1.1, 1.2, 1.3 exist)
         response = re.sub(
             r'(?:TLS|SSL)\s+\d+\.\d+\+?',
@@ -1578,6 +1606,8 @@ class ResponseGenerator:
         The KB article 'support_db_technical' sometimes wins retrieval for unrelated
         queries (demo requests, integration questions). This strips the misrouted answer.
         """
+        # Legacy deterministic repair disabled: handled by LLM guardrails + factual verifier.
+        return str(response or "")
         if 'СУБД' not in response or 'коммерческ' not in response:
             return response
         # If user asked about tech → keep the answer
@@ -1832,6 +1862,12 @@ class ResponseGenerator:
             "factual_verifier_reason_codes": [],
         }
 
+    def _reset_postprocess_meta(self) -> None:
+        self._last_postprocess_meta = {
+            "postprocess_trace": [],
+            "postprocess_last_mutation_rule": None,
+        }
+
     def _ensure_factual_verifier(self):
         if self._factual_verifier is not None:
             return self._factual_verifier
@@ -1976,30 +2012,474 @@ class ResponseGenerator:
 
     @staticmethod
     def _is_direct_factual_request(intent: str, user_message: str) -> bool:
-        """Return True for direct factual asks that must be answered before discovery probing."""
+        """Return True for direct question/clarification asks that need a direct answer first."""
+        msg = str(user_message or "").strip()
+        if not msg:
+            return False
+        msg_low = msg.lower()
+        normalized_intent = str(intent or "").lower().strip()
+
+        # Classifier-driven factual/question intents are direct by contract.
+        if normalized_intent.startswith(
+            ("question_", "price_", "pricing_", "comparison", "cost_", "roi_")
+        ):
+            return True
+        if normalized_intent in {
+            "payment_terms",
+            "company_info_question",
+            "experience_question",
+            "budget_question",
+            "discount_request",
+            "consultation_request",
+        }:
+            return True
+
+        # Generic direct-question signals without domain hardcoding.
+        if "?" in msg_low:
+            return True
+        direct_prefixes = (
+            "что ",
+            "как ",
+            "какой ",
+            "какие ",
+            "сколько ",
+            "где ",
+            "когда ",
+            "можно ",
+            "есть ли",
+        )
+        if any(msg_low.startswith(prefix) for prefix in direct_prefixes):
+            return True
+        request_markers = (
+            "расскаж",
+            "объясн",
+            "уточн",
+            "перечисл",
+            "назов",
+            "сравн",
+        )
+        return any(marker in msg_low for marker in request_markers)
+
+    @staticmethod
+    def _is_tariff_or_pricing_query(intent: str, user_message: str) -> bool:
+        msg = str(user_message or "").strip().lower()
+        intent_low = str(intent or "").strip().lower()
+        if not msg and not intent_low:
+            return False
+        if intent_low.startswith(("price_", "pricing_", "comparison", "cost_")):
+            return True
+        return bool(
+            re.search(
+                r"(?:\bтариф\w*|\bцена\w*|\bстоимост\w*|\bрассроч\w*|\bсколько\b|\bточк\w*\b|"
+                r"\bmini\b|\blite\b|\bstandard\b|\bpro\b|\bтис\b)",
+                msg,
+                re.IGNORECASE,
+            )
+        )
+
+    @staticmethod
+    def _is_broad_tariff_list_request(user_message: str) -> bool:
         msg = str(user_message or "").strip().lower()
         if not msg:
             return False
-        textual_factual = bool(re.search(
-            r"(?:сколько|какие?|какой|расскажите|посоветуй|поч[её]м|цен[аы]|стоимост"
-            r"|можно\s+ли|есть\s+ли|как\s+работает|как\s+это\s+работает|чем\s+отлич"
-            r"|какие\s+банки|какой\s+тариф|какие\s+тарифы|рассрочк|офд|маркировк|1[cс]\b)",
-            msg,
-            re.IGNORECASE,
-        ))
-        if "?" not in msg and not textual_factual:
-            return False
+        return bool(
+            re.search(
+                r"(?:какие\s+тариф\w+|все\s+тариф\w+|перечисл\w+\s+тариф\w+|назов\w+\s+все\s+тариф\w+)",
+                msg,
+                re.IGNORECASE,
+            )
+        )
 
-        normalized_intent = str(intent or "").lower().strip()
-        if not normalized_intent:
-            # Early turns often have noisy/empty intent; rely on explicit user ask.
+    def _pricing_llm_guardrails(self, user_message: str) -> str:
+        rules = [
+            "КРИТИЧЕСКОЕ ПРАВИЛО ПО ТАРИФАМ И ЦЕНАМ:",
+            "Опирайся только на факты из БАЗЫ ЗНАНИЙ и не придумывай значения.",
+            "Не подменяй один тариф другим и не объединяй разные тарифы в один пункт.",
+            "Если вопрос общий про тарифы, дай полный структурированный перечень тарифов из фактов.",
+            "Для каждого тарифа указывай цену и период оплаты строго по фактам.",
+            "Для запроса вида 'для N точек' подбирай минимально подходящий тариф по лимитам из фактов.",
+            "Если в фактах не хватает данных, скажи об этом прямо и попроси уточнение.",
+        ]
+        if self._is_broad_tariff_list_request(user_message):
+            rules.append("Запрос про полный перечень: не сокращай ответ до общего описания, перечисли все тарифы.")
+        return "\n".join(rules)
+
+    def _factual_llm_guardrails(self, intent: str, user_message: str) -> str:
+        """General LLM-only factual constraints replacing deterministic semantic rewrites."""
+        rules = [
+            "КРИТИЧЕСКИЕ ПРАВИЛА ФАКТОЛОГИИ:",
+            "Отвечай только по фактам из БАЗЫ ЗНАНИЙ. Если факта нет, прямо скажи об этом.",
+            "Не подменяй названия тарифов, модулей, интеграций и продуктов.",
+            "Не отрицай поддержку функции/интеграции, если в фактах есть подтверждение.",
+            "Не подтверждай поддержку функции/интеграции, если в фактах этого нет.",
+            "Не добавляй технические детали (версии, стандарты, сроки), которых нет в фактах.",
+            "Если вопрос прямой factual, сначала дай прямой ответ, без ухода в discovery.",
+        ]
+        if self._is_tariff_or_pricing_query(intent, user_message):
+            rules.append("Для тарифа/цены строго соблюдай соответствие: тариф -> цена -> период оплаты.")
+        if re.search(r"(?:тестов\w+|пробн\w+|trial)", str(user_message or ""), re.IGNORECASE):
+            rules.append("По тестовому периоду указывай условия только в формулировке из фактов.")
+        return "\n".join(rules)
+
+    @staticmethod
+    def _is_high_risk_factual_response(response: str, user_message: str, intent: str) -> bool:
+        """Gate factual verifier to responses with concrete high-risk factual claims.
+
+        Prevents unnecessary verifier rewrites on low-risk descriptive answers when retrieval
+        context is sparse/noisy.
+        """
+        response_text = str(response or "")
+        response_low = response_text.lower()
+        user_low = str(user_message or "").lower()
+        intent_low = str(intent or "").lower().strip()
+        combined = f"{user_low} {response_low}"
+
+        if (
+            "price" in intent_low
+            or "pricing" in intent_low
+            or intent_low == "question_tis_price"
+        ):
             return True
 
-        factual_intent = (
-            normalized_intent.startswith(("question_", "price_", "pricing_", "comparison", "cost_", "roi_"))
-            or normalized_intent in {"payment_terms", "company_info_question", "experience_question"}
+        if re.search(r"(?:₸|тенге|тг|\b\d[\d\s]{2,}\b)", response_text):
+            return True
+
+        if re.search(r"(?:ндс|лимит|порог|процент|%|дн(?:я|ей)?|час(?:а|ов)?|год|месяц)", response_low) and re.search(r"\d", response_text):
+            return True
+
+        # Comparisons with concrete specs/numbers are also high-risk.
+        if re.search(r"(?:чем\s+отлич|разниц|сравн)", combined):
+            if re.search(r"(?:\b\d|\b(?:i[3579]|ram|ssd|gb|мм|кг|kg)\b)", response_low):
+                return True
+
+        # Regulated-domain applicability (alcohol/excise/marking/UKM) is high-risk:
+        # wrong answer can break legal compliance assumptions for client.
+        if re.search(r"(?:алкогол|акциз|укм|маркиров)", combined):
+            if re.search(r"(?:подходит|поддерж|можно|работает|доступн)", response_low):
+                return True
+
+        # Capability/integration claims are high-risk for trust and routing.
+        if re.search(r"(?:интеграц|модул|поддерж|совместим|подключ|1[cс]|iiko|r[_\s-]?keeper|poster)", combined):
+            if re.search(r"(?:поддерж|не\s+поддерж|есть|нет|можно|нельзя|работает|не\s+работает)", response_low):
+                return True
+
+        # Trial-period statements are policy-sensitive and must be verified.
+        if re.search(r"(?:тестов\w+|пробн\w+|trial)", combined):
+            if re.search(r"(?:\d+\s*(?:дн|дней|дня)|нет|есть|доступ|период)", response_low):
+                return True
+
+        return False
+
+    @classmethod
+    def _has_factual_verifier_coverage(cls, user_message: str, retrieved_facts: str) -> bool:
+        """Check whether retrieved facts plausibly cover the user ask (generic, domain-agnostic)."""
+        msg_text = str(user_message or "")
+        facts_text = cls._grounding_facts_text(str(retrieved_facts or ""))
+        if not facts_text.strip():
+            return False
+
+        msg_terms = cls._fact_terms(msg_text)
+        fact_terms = cls._fact_terms(facts_text)
+        if not msg_terms:
+            return "?" in msg_text or len(facts_text) >= 40
+
+        overlap = len(msg_terms & fact_terms)
+        # Normalize against a capped denominator so long questions are not penalized.
+        overlap_ratio = overlap / max(1, min(len(msg_terms), 6))
+        if overlap >= 2 or overlap_ratio >= 0.34:
+            return True
+
+        # Numeric asks require numeric support in facts.
+        if re.search(r"\d", msg_text) and re.search(r"\d", facts_text):
+            return True
+
+        # For question-style asks require at least minimal lexical overlap.
+        if "?" in msg_text:
+            return overlap >= 1
+        return overlap >= 1
+
+    _KB_LIST_OR_COMPARE_QUERY_RE = re.compile(
+        r"(?:\bкакие\b|чем\s+отлич|отличи|разниц|сравн|перечис|вариант|модел|экосистем|что\s+входит|функционал)",
+        re.IGNORECASE,
+    )
+    _KB_MODEL_TOKEN_RE = re.compile(
+        r"\b(?:wipon|rongta|wildberries|ozon|kassa|desktop|duo|triple|quadro|screen|"
+        r"mini|lite|standard|pro|consulting|cashback|розниц\w*|укм|тис|tis|"
+        r"wp[-\s]?[a-z]?\d+[a-z]*|gp[-\s]?[a-z]?\d+[a-z]*)\b",
+        re.IGNORECASE,
+    )
+    _KB_ABSTRACT_FACT_RE = re.compile(
+        r"(?:\bобзор\b|\bсценарий\b|\bвозможност\w*\b|\bвыполнени\w*\b|"
+        r"\bподдержк\w*\b|\bразграничени\w*\b|\bмодель\b|\bпреимуществ\w*\b|"
+        r"\bрешени\w*\b|\bплатформ\w*\b)",
+        re.IGNORECASE,
+    )
+    _KB_QUERY_CONTEXT_SEPARATOR_RE = re.compile(r"\n===\s*КОНТЕКСТ\s+ЭТАПА\s*===\n", re.IGNORECASE)
+    _KB_EMPTY_CONTEXT_RE = re.compile(r"^\(\s*response[_\s]context\s+empty\s*\)$", re.IGNORECASE)
+    _KB_SECTION_HEADER_RE = re.compile(r"^\[[^]\n]+/[^]\n]+\]$")
+    _KB_STRUCTURAL_LINE_RE = re.compile(
+        r"^(?:параметры|основная\s+функция|получатель\s+данных|дополнительно)\s*:?$",
+        re.IGNORECASE,
+    )
+    _KB_CITY_RE = re.compile(
+        r"\b(?:алматы|астан\w*|шымкент|актау|караганд\w*|павлодар|актобе|костанай|атырау)\b",
+        re.IGNORECASE,
+    )
+    _KB_DETAIL_MARKERS = (
+        "офд", "фискализ", "онлайн-касс", "касс", "склад", "учёт", "учет",
+        "перенос", "excel", "android", "ios", "кассир", "администратор",
+        "владелец", "достав", "рабоч", "удал", "эцп", "kaspi", "тис",
+        "kassa", "desktop", "налич", "карт", "долг", "смешан", "офлайн",
+        "синхрон", "лимит",
+    )
+
+    @staticmethod
+    def _normalize_model_token(token: str) -> str:
+        return re.sub(r"[\s\-]+", "", str(token or "").lower())
+
+    @classmethod
+    def _extract_model_tokens(cls, text: str) -> Set[str]:
+        tokens: Set[str] = set()
+        for raw in cls._KB_MODEL_TOKEN_RE.findall(str(text or "").lower()):
+            normalized = cls._normalize_model_token(raw)
+            if normalized:
+                tokens.add(normalized)
+        return tokens
+
+    @classmethod
+    def _is_list_or_compare_query(cls, user_message: str) -> bool:
+        return bool(cls._KB_LIST_OR_COMPARE_QUERY_RE.search(str(user_message or "").lower()))
+
+    @classmethod
+    def _grounding_facts_text(cls, retrieved_facts: str) -> str:
+        """Prefer query-focused facts and strip known placeholders/noise."""
+        facts_text = str(retrieved_facts or "").strip()
+        if not facts_text:
+            return ""
+        if cls._KB_EMPTY_CONTEXT_RE.match(facts_text):
+            return ""
+        if facts_text.lower().startswith("информация по этому вопросу будет уточнена"):
+            return ""
+        parts = cls._KB_QUERY_CONTEXT_SEPARATOR_RE.split(facts_text, maxsplit=1)
+        query_context = str(parts[0] or "").strip()
+        if len(query_context) >= 40:
+            return query_context
+        return facts_text
+
+    @classmethod
+    def _is_structural_fact_line(cls, raw_line: str) -> bool:
+        value = str(raw_line or "").strip()
+        if not value:
+            return True
+        if cls._KB_SECTION_HEADER_RE.fullmatch(value):
+            return True
+        if cls._KB_STRUCTURAL_LINE_RE.fullmatch(value):
+            return True
+        return value.startswith("===") and value.endswith("===")
+
+    def _score_answer_alignment(self, user_message: str, answer: str) -> float:
+        """Score how well answer matches user ask without introducing extra entities."""
+        user_text = str(user_message or "")
+        answer_text = str(answer or "")
+        user_low = user_text.lower()
+
+        query_terms = self._fact_terms(user_text)
+        answer_terms = self._fact_terms(answer_text)
+        overlap = len(query_terms & answer_terms) if query_terms else 0
+
+        wants_numeric = bool(
+            re.search(r"(?:сколько|цена|стоим|тариф|лимит|₸|тенге|\d)", user_low, re.IGNORECASE)
         )
-        return factual_intent or textual_factual
+        has_numeric = bool(re.search(r"(?:₸|тенге|тг|\d{2,})", answer_text, re.IGNORECASE))
+        numeric_bonus = 2 if wants_numeric and has_numeric else 0
+
+        list_or_compare = self._is_list_or_compare_query(user_text)
+        replacement_query = bool(
+            re.search(r"(?:вместо|альтернатив|что\s+предлож|чем\s+замен)", user_low, re.IGNORECASE)
+        )
+        value_prop_query = bool(
+            re.search(r"(?:почему|зачем|преимущ|чем\s+лучше|плюс\w*)", user_low, re.IGNORECASE)
+        )
+        query_models = self._extract_model_tokens(user_text)
+        answer_models = self._extract_model_tokens(answer_text)
+        extra_models = {model for model in answer_models if model not in query_models}
+
+        extra_penalty = 0
+        if not list_or_compare and not replacement_query and not value_prop_query:
+            if len(answer_models) > 1:
+                extra_penalty += (len(answer_models) - 1) * 2
+            if query_models and extra_models:
+                extra_penalty += len(extra_models) * 2
+
+        compact_bonus = 1 if 5 <= len(answer_text.split()) <= 28 else 0
+        return overlap * 3 + numeric_bonus + compact_bonus - extra_penalty
+
+    @staticmethod
+    def _has_quantitative_details(text: str) -> bool:
+        return bool(
+            re.search(r"(?:₸|тенге|тг|\b\d{2,}\b|мм|кг|kg|мес|месяц|год)", str(text or ""), re.IGNORECASE)
+        )
+
+    @classmethod
+    def _fact_overlap_score(cls, text: str, facts_text: str) -> int:
+        answer_terms = cls._fact_terms(text)
+        fact_terms = cls._fact_terms(facts_text)
+        if not answer_terms or not fact_terms:
+            return 0
+        return len(answer_terms & fact_terms)
+
+    @classmethod
+    def _is_low_information_answer(cls, text: str) -> bool:
+        value = str(text or "").strip()
+        low = value.lower()
+        if not low:
+            return True
+        terms = cls._fact_terms(low)
+        has_quant = cls._has_quantitative_details(low)
+        if len(terms) <= 3 and not has_quant:
+            return True
+        if not has_quant:
+            if low.startswith("сценарий:"):
+                return True
+            if "— обзор" in low or "- обзор" in low:
+                return True
+            if "—" in low and cls._KB_ABSTRACT_FACT_RE.search(low) and len(terms) <= 10:
+                return True
+            has_domain_detail = bool(
+                re.search(
+                    r"(?:офд|фискализ|касс|склад|уч[её]т|перенос|excel|android|ios|кассир|администратор|владелец|"
+                    r"достав|рабоч|удал[её]нн|эцп|kaspi|кг|мм)",
+                    low,
+                    re.IGNORECASE,
+                )
+            )
+            if cls._KB_ABSTRACT_FACT_RE.search(low) and len(terms) <= 8 and not has_domain_detail:
+                return True
+        return False
+
+    @classmethod
+    def _answer_information_score(cls, text: str, facts_text: str = "") -> int:
+        value = str(text or "")
+        terms = cls._fact_terms(value)
+        score = len(terms)
+        if cls._has_quantitative_details(value):
+            score += 2
+        if re.search(r"[,;:]", value):
+            score += 1
+        if facts_text:
+            score += min(4, cls._fact_overlap_score(value, facts_text))
+        if cls._is_low_information_answer(value):
+            score -= 2
+        return score
+
+    @classmethod
+    def _detail_marker_score(cls, text: str) -> int:
+        low = str(text or "").lower()
+        if not low:
+            return 0
+        score = sum(1 for marker in cls._KB_DETAIL_MARKERS if marker in low)
+        if cls._has_quantitative_details(low):
+            score += 1
+        return score
+
+    @staticmethod
+    def _normalize_tis_marketplace_limit_phrase(text: str) -> str:
+        value = str(text or "").strip()
+        low = value.lower()
+        has_marketplaces = bool(re.search(r"(?:wildberries.*ozon|ozon.*wildberries)", low))
+        if not has_marketplaces or "тис" not in low:
+            return value
+        return re.sub(
+            r"не\s+вход\w*\s+[^.?!]*лимит\w*[^.?!]*",
+            "не входят в расчёт лимита ТИС",
+            value,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+
+    @staticmethod
+    def _normalize_positive_factual_phrasing(text: str) -> str:
+        """Prefer positive factual wording to avoid brittle negation echoes."""
+        result = str(text or "").strip()
+        if not result:
+            return result
+
+        result = re.sub(
+            r"\b(?:нет,\s*)?две\s+программы\s+не\s+нуж\w*",
+            "достаточно одной системы",
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r"\bне\s+нуж\w*[^.!?]{0,40}вручную[^.!?]*",
+            "всё выполняется автоматически",
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r"\bвручную[^.!?]{0,40}не\s+нуж\w*",
+            "автоматически",
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r"\bданн\w*\s+не\s+потеря\w*",
+            "данные сохраняются",
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r"\bданн\w*\s+не\s+теря\w*",
+            "данные сохраняются",
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r"\bограничени\w*[^.!?]{0,60}:\s*нет\b",
+            "без ограничений",
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r"\bбез\s+лимит\w*\b",
+            "без ограничений",
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r"\bне\s+останавлива\w*",
+            "работает без остановки",
+            result,
+            flags=re.IGNORECASE,
+        )
+
+        low = result.lower()
+        if "без интернета" in low and "офлайн" not in low:
+            tail = "" if result.endswith((".", "!", "?")) else "."
+            result = f"{result}{tail} Работает в офлайн-режиме."
+
+        result = re.sub(r"\s{2,}", " ", result).strip()
+        result = re.sub(r"\s+([.,!?])", r"\1", result)
+        return result
+
+    @staticmethod
+    def _binary_answer_polarity(text: str) -> int:
+        """Return -1 for negative factual polarity, +1 for positive, 0 unknown."""
+        low = str(text or "").lower()
+        if re.search(r"\bне\s+(?:вход|подход|можно|доступ|работа|поддерж|включ)", low):
+            return -1
+        if re.search(r"\b(?:вход|подход|можно|доступ|работа|поддерж|включ)\w*", low):
+            return 1
+        return 0
+
+    def _apply_kb_targeted_repairs(
+        self,
+        response: str,
+        context: Dict[str, Any],
+        retrieved_facts: str = "",
+    ) -> str:
+        """Legacy deterministic targeted repairs are disabled (migrated to LLM verifier/judge)."""
+        return str(response or "")
 
     def _resolve_fact_disambiguation_user_message(
         self,
@@ -2203,6 +2683,7 @@ class ResponseGenerator:
                     recently_used_keys=recently_used,
                     history=history,
                     secondary_intents=self._get_secondary_intents(working_context),
+                    semantic_frame=self._get_semantic_frame(working_context),
                     collected_data=working_context.get("collected_data", {}),
                 )
             except Exception as e:
@@ -2314,6 +2795,7 @@ class ResponseGenerator:
             history=history,
             collected=collected,
             secondary_intents=secondary_intents,
+            semantic_frame=self._get_semantic_frame(working_context),
         )
         if _is_autonomous and self._should_suppress_followup_question_for_interrupt(
             state=state,
@@ -2349,6 +2831,24 @@ class ResponseGenerator:
                 f"- {text[:220]}" for text in recent_bot_responses
             )
 
+        # Isolated pain-point retrieval for autonomous flow.
+        if _is_autonomous:
+            try:
+                from src.knowledge.pain_retriever import retrieve_pain_context
+
+                try:
+                    variables["pain_context"] = retrieve_pain_context(
+                        user_message,
+                        intent=intent,
+                        llm=self.llm,
+                    )
+                except TypeError:
+                    # Backward compatibility for test monkeypatches/lighter stubs.
+                    variables["pain_context"] = retrieve_pain_context(user_message)
+            except Exception as e:
+                logger.warning("Pain retrieval failed, skipping", error=str(e))
+                variables["pain_context"] = ""
+
         return {
             "state": state,
             "intent": intent,
@@ -2369,6 +2869,7 @@ class ResponseGenerator:
 
         # Reset metadata for this generation attempt.
         self._reset_factual_verifier_meta()
+        self._reset_postprocess_meta()
         self._last_generation_meta = {
             "requested_action": action,
             "selected_template_key": None,
@@ -2377,6 +2878,8 @@ class ResponseGenerator:
             "factual_verifier_changed": False,
             "factual_verifier_verdict": "not_run",
             "factual_verifier_reason_codes": [],
+            "postprocess_trace": [],
+            "postprocess_last_mutation_rule": None,
         }
 
         # Получаем релевантные факты из базы знаний
@@ -2403,6 +2906,8 @@ class ResponseGenerator:
                 "factual_verifier_changed": False,
                 "factual_verifier_verdict": "not_run",
                 "factual_verifier_reason_codes": [],
+                "postprocess_trace": [],
+                "postprocess_last_mutation_rule": None,
             }
             self._add_to_response_history(response)
             return response
@@ -2438,6 +2943,7 @@ class ResponseGenerator:
                     recently_used_keys=recently_used,
                     history=context.get("history", []),
                     secondary_intents=self._get_secondary_intents(context),
+                    semantic_frame=self._get_semantic_frame(context),
                     collected_data=context.get("collected_data", {}),
                 )
             except Exception as e:
@@ -2505,6 +3011,8 @@ class ResponseGenerator:
                 "factual_verifier_changed": False,
                 "factual_verifier_verdict": "not_run",
                 "factual_verifier_reason_codes": [],
+                "postprocess_trace": [],
+                "postprocess_last_mutation_rule": None,
             }
             return self._kb_empty_handoff(context)
 
@@ -2635,6 +3143,7 @@ class ResponseGenerator:
             history=context.get("history", []),
             collected=collected,
             secondary_intents=_secondary_intents,
+            semantic_frame=self._get_semantic_frame(context),
         )
         if _is_autonomous and self._should_suppress_followup_question_for_interrupt(
             state=context.get("state", ""),
@@ -3041,6 +3550,23 @@ class ResponseGenerator:
             except Exception as e:
                 logger.warning(f"ResponseDirectives integration failed: {e}")
 
+        # Soft profile collection: unobtrusive enrichment without changing flow transitions.
+        profile_instruction = ""
+        if flags.is_enabled("soft_profile_collection"):
+            profile_instruction = question_dedup_engine.get_soft_profile_instruction(
+                phase=spin_phase,
+                intent=intent,
+                collected_data=collected,
+                history=context.get("history", []),
+                question_instruction=variables.get("question_instruction", ""),
+                frustration_level=context.get("frustration_level", 0),
+            )
+        if profile_instruction:
+            existing_qi = variables.get("question_instruction", "").strip()
+            variables["question_instruction"] = (
+                f"{existing_qi}\n{profile_instruction}" if existing_qi else profile_instruction
+            )
+
         # Question dedup: extract questions from last 3 full bot turns and inject into do_not_ask
         # Done OUTSIDE response_directives block so it always fires when history exists.
         # This prevents the LLM from repeating "Хотите посмотреть?" or similar CTA questions.
@@ -3079,6 +3605,27 @@ class ResponseGenerator:
                 f"{_existing_dna}\n{_no_followup_rule}" if _existing_dna else _no_followup_rule
             )
 
+        # --- Pain context (isolated parallel search) ---
+        # Только для autonomous flow. Не зависит от intent/state.
+        if _is_autonomous:
+            try:
+                from src.knowledge.pain_retriever import retrieve_pain_context
+                try:
+                    variables["pain_context"] = retrieve_pain_context(
+                        user_message,
+                        intent=intent,
+                        llm=self.llm,
+                    )
+                except TypeError:
+                    # Backward compatibility for test monkeypatches/lighter stubs.
+                    variables["pain_context"] = retrieve_pain_context(user_message)
+            except Exception as e:
+                logger.warning("Pain retrieval failed, skipping", error=str(e))
+                variables["pain_context"] = ""
+
+        # Expose pain_context to post-processing (verifier + boundary validator).
+        context["_pain_context"] = variables.get("pain_context", "")
+
         for var in CRITICAL_TEMPLATE_VARS:
             if var not in variables or not variables[var]:
                 logger.warning(
@@ -3092,6 +3639,12 @@ class ResponseGenerator:
         # SafeDict возвращает пустую строку для отсутствующих ключей,
         # предотвращая KeyError и показ {переменных} клиенту
         prompt = template.format_map(SafeDict(variables))
+        _is_direct_factual_turn = _is_autonomous and self._is_direct_factual_request(intent, user_message)
+        _is_pricing_turn = self._is_tariff_or_pricing_query(intent, user_message)
+        if _is_direct_factual_turn:
+            prompt = f"{prompt}\n\n{self._factual_llm_guardrails(intent, user_message)}"
+        if _is_pricing_turn:
+            prompt = f"{prompt}\n\n{self._pricing_llm_guardrails(user_message)}"
 
         # Генерируем с retry при китайских символах
         best_response = ""
@@ -3103,9 +3656,14 @@ class ResponseGenerator:
         skip_dedup = requested_action in DEDUP_EXEMPT_ACTIONS
 
         _retrieved_facts_str = str(variables.get("retrieved_facts", ""))
+        generation_purpose = (
+            "response_generation_factual"
+            if (_is_direct_factual_turn or _is_pricing_turn)
+            else "response_generation"
+        )
 
         for attempt in range(max_retries):
-            response = self.llm.generate(prompt)
+            response = self.llm.generate(prompt, purpose=generation_purpose)
 
             # Domain hallucination check: ФФД — Russian fiscal standard, not KZ
             if self._has_russian_fiscal_hallucination(response):
@@ -3121,92 +3679,6 @@ class ResponseGenerator:
             # Strip markdown bold/italic BEFORE price fixes — LLM may wrap prices
             # in **bold** which breaks regex matching (e.g. "**220 000 ₸**")
             response = re.sub(r'\*{1,3}', '', response)
-
-            # Fix price period confusion FIRST (e.g. "150 000 ₸ в месяц" → "в год")
-            # Must run before all price checks because official prices bypass hallucination detection.
-            response = self._fix_price_period_confusion(response)
-
-            # Fix tariff-point-count mismatches FIRST (e.g. "Standard для 5 точек" → "Pro")
-            # Must run before tariff-price fix so the price fixer sees the correct tariff name.
-            response = self._fix_tariff_point_count(response)
-
-            # Fix TIS pricing (e.g. "ТИС 500 000" for 12 points → "ТИС 1 100 000")
-            response = self._fix_tis_pricing(response)
-            response = self._strip_fake_per_point_surcharges(response)
-
-            # Fix false denials of supported integrations (iiko, r_keeper, poster, 1C)
-            response = self._fix_false_integration_denial(response)
-
-            # Fix tariff-price mismatches (e.g. "Standard 300 000" → "Standard 220 000")
-            # This must run before stripping so we correct wrong associations before removing them.
-            response = self._fix_tariff_price_mismatch(response)
-
-            # Second pass: tariff_price_mismatch may have created new period mismatches
-            # e.g. "Mini 150000 ₸/год" → "Mini 5000 ₸/год" → need "₸/мес"
-            response = self._fix_price_period_confusion(response)
-
-            # Inject missing billing period qualifiers: "5 000 ₸" → "5 000 ₸/мес",
-            # "150 000 ₸" → "150 000 ₸/год" etc.  Only when no period follows.
-            response = self._inject_missing_period(response)
-
-            # Global tariff-price consistency: catches cross-sentence mismatches
-            # e.g. "Mini — фискальная касса. Стоимость — 500 000 ₸/год"
-            response = self._fix_global_tariff_price_consistency(response)
-
-            # Fix collapsed price ranges: "от X ₸ за Mini до X ₸ за Pro" where
-            # both prices are the same (LLM copies Mini price for all tariffs)
-            response = self._fix_collapsed_price_range(response)
-
-            # Fix ungrounded tech claims (TLS versions, GDPR, etc.)
-            response = self._fix_tech_hallucinations(response, _retrieved_facts_str)
-
-            # Strip misrouted СУБД answer when user didn't ask about tech stack
-            response = self._strip_misrouted_subd_answer(response, user_message)
-
-            # Fix hallucinated trial period: any N-day trial where N != 7 → 7 days
-            # Catches 14 days, 30 days, 10 days, etc.
-            def _fix_trial_duration(m):
-                n = int(m.group(1))
-                if n == 7:
-                    return m.group(0)  # correct, keep as-is
-                return '7 дней'
-            response = re.sub(
-                r'(?:на\s+)?(\d{1,3})\s*(?:[-–]?\s*)?(?:дневн\w+|дн\w*|день|суток)',
-                _fix_trial_duration,
-                response,
-                flags=re.IGNORECASE,
-            )
-
-            # Fix trial period denial: "пробный период [у нас] не предусмотрен" → KB says 7 days
-            # Allow up to 20 chars between "период" and denial (handles "у нас", "пока" etc.)
-            response = re.sub(
-                r'(?:пробн\w+|тестов\w+)\s+период\w*\s+.{0,20}'
-                r'(?:не\s+предусмотрен\w*|отсутствует|не\s+(?:предлага|предоставля)\w*)',
-                'есть 7-дневный тестовый период',
-                response,
-                flags=re.IGNORECASE,
-            )
-            # "нет пробного периода" / "без пробного периода"
-            response = re.sub(
-                r'(?:нет|без)\s+(?:пробн\w+|тестов\w+)\s+период\w*',
-                'есть 7-дневный тестовый период',
-                response,
-                flags=re.IGNORECASE,
-            )
-            # "у нас нет пробного" / "у нас нет тестового"
-            response = re.sub(
-                r'у\s+нас\s+нет\s+(?:пробн\w+|тестов\w+)\s+период\w*',
-                'есть 7-дневный тестовый период',
-                response,
-                flags=re.IGNORECASE,
-            )
-            # "Пробного периода нет" — reversed word order
-            response = re.sub(
-                r'(?:пробн\w+|тестов\w+)\s+период\w*\s+нет\b',
-                'есть 7-дневный тестовый период',
-                response,
-                flags=re.IGNORECASE,
-            )
 
             # Price hallucination check: strip fabricated prices, keep valid ones.
             # Instead of rejecting the whole response (which causes over-cautious retries),
@@ -3273,19 +3745,8 @@ class ResponseGenerator:
                 )
             )
             if _is_factual_turn_guard:
-                _bundle_query = bool(re.search(
-                    r'(?:комплект|всё\s+вместе|все\s+вместе'
-                    r'|касса.*сканер|сканер.*принтер|принтер.*вес)',
-                    user_message,
-                    re.IGNORECASE,
-                ))
-                _bundle_anchor_present = bool(re.search(
-                    r'(?:комплект|standard|168\s*000|219\s*000|100\s*000)',
-                    response,
-                    re.IGNORECASE,
-                ))
                 _deflective = self._is_deflective_factual_response(response)
-                _needs_fallback = _deflective or (_bundle_query and not _bundle_anchor_present)
+                _needs_fallback = _deflective
 
                 if attempt == 0 and _needs_fallback:
                     if selected_template_key == "autonomous_respond":
@@ -3338,6 +3799,7 @@ class ResponseGenerator:
                     "validation_events": validation_events,
                     "fact_keys": _fact_keys,
                     **self._last_factual_verifier_meta,
+                    **self._last_postprocess_meta,
                 }
                 return processed
 
@@ -3375,6 +3837,7 @@ class ResponseGenerator:
             "validation_events": validation_events,
             "fact_keys": _fact_keys,
             **self._last_factual_verifier_meta,
+            **self._last_postprocess_meta,
         }
         return processed
 
@@ -3935,20 +4398,71 @@ class ResponseGenerator:
         """
         Apply post-processing layers.
         """
-        processed = self._apply_diversity(response, context)
-        processed = self._ensure_apology(processed, context)
-
         validation_events: List[Dict[str, Any]] = []
-        _is_autonomous = bool(self._flow and self._flow.name == "autonomous")
-        self._reset_factual_verifier_meta()
-        fact_disambiguated = False
+        postprocess_trace: List[Dict[str, Any]] = []
+        last_mutation_rule: Optional[str] = None
 
-        if self._should_attempt_fact_disambiguation(
+        self._reset_factual_verifier_meta()
+        self._reset_postprocess_meta()
+
+        processed = response
+        _is_autonomous = bool(self._flow and self._flow.name == "autonomous")
+        fact_disambiguated = False
+        verifier_completed = False
+        verified_response_snapshot: Optional[str] = None
+        semantic_post_verifier_changes: List[str] = []
+
+        def _track_step(
+            rule_id: str,
+            before: str,
+            after: str,
+            *,
+            enabled: bool,
+            extra: Optional[Dict[str, Any]] = None,
+        ) -> None:
+            nonlocal last_mutation_rule
+            changed = after != before
+            entry: Dict[str, Any] = {
+                "rule_id": rule_id,
+                "before": before,
+                "after": after,
+                "changed": changed,
+                "enabled": enabled,
+            }
+            if extra:
+                entry.update(extra)
+            postprocess_trace.append(entry)
+            if changed and extra and extra.get("semantic_after_verifier") and verifier_completed:
+                semantic_post_verifier_changes.append(rule_id)
+            if changed:
+                last_mutation_rule = rule_id
+
+        def _apply_step(
+            rule_id: str,
+            transform: Callable[[str], str],
+            *,
+            enabled: bool = True,
+            extra: Optional[Dict[str, Any]] = None,
+        ) -> None:
+            nonlocal processed
+            before = processed
+            after = transform(before) if enabled else before
+            processed = after
+            _track_step(rule_id, before, after, enabled=enabled, extra=extra)
+
+        _apply_step("apply_diversity", lambda text: self._apply_diversity(text, context))
+        _apply_step("ensure_apology", lambda text: self._ensure_apology(text, context))
+
+        should_attempt_disambiguation = self._should_attempt_fact_disambiguation(
             context=context,
             requested_action=requested_action,
             retrieved_facts=str(retrieved_facts or ""),
             is_autonomous=_is_autonomous,
-        ):
+        )
+        if should_attempt_disambiguation:
+            before = processed
+            decision = None
+            disambiguation_error = None
             try:
                 from src.knowledge.fact_disambiguation import detect_fact_disambiguation
 
@@ -3970,26 +4484,270 @@ class ResponseGenerator:
                         }
                     )
             except Exception as exc:  # pragma: no cover - defensive fail-open
-                logger.warning("fact_disambiguation_postprocess_failed", error=str(exc))
+                disambiguation_error = str(exc)
+                logger.warning("fact_disambiguation_postprocess_failed", error=disambiguation_error)
 
-        # Isolated same-model factual verifier for factual turns.
+            extra: Dict[str, Any] = {"triggered": fact_disambiguated}
+            if decision is not None:
+                extra.update(
+                    {
+                        "family": getattr(decision, "family", ""),
+                        "options": list(getattr(decision, "options", []) or []),
+                        "reason_codes": list(getattr(decision, "reason_codes", []) or []),
+                    }
+                )
+            if disambiguation_error:
+                extra["error"] = disambiguation_error
+            _track_step(
+                "fact_disambiguation",
+                before,
+                processed,
+                enabled=True,
+                extra=extra,
+            )
+        else:
+            _track_step(
+                "fact_disambiguation",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "not_applicable", "triggered": False},
+            )
+
+        # Deterministic semantic rewrites are intentionally disabled:
+        # migrated to LLM-driven prompt guardrails + factual verifier/judge pipeline.
+        deterministic_semantic_reason = "migrated_to_llm_guardrails"
+        grounding_facts = self._grounding_facts_text(str(retrieved_facts or ""))
+
+        # Include pain_context in grounding facts so that factual verifier
+        # can verify claims originating from the pain KB (information symmetry
+        # with the generator prompt which includes {pain_context}).
+        _pain_ctx = str(context.get("_pain_context", "") or "").strip()
+        if _pain_ctx:
+            grounding_facts = f"{grounding_facts}\n\n{_pain_ctx}" if grounding_facts else _pain_ctx
+
+        # Semantic and hard-safety mutations BEFORE factual verifier.
+        if _is_autonomous and not fact_disambiguated:
+            _apply_step("enforce_feminine_gender", self._enforce_feminine_gender)
+            _apply_step("strip_banned_phrases", self._strip_banned_phrases)
+            _track_step(
+                "strip_fabricated_claims",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": deterministic_semantic_reason, "semantic_before_verifier": True},
+            )
+            _track_step(
+                "strip_ungrounded_modules",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": deterministic_semantic_reason},
+            )
+            _track_step(
+                "strip_ungrounded_integrations",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": deterministic_semantic_reason, "semantic_before_verifier": True},
+            )
+        else:
+            pre_verifier_skip_reason = "fact_disambiguated" if fact_disambiguated else "not_autonomous"
+            _track_step(
+                "enforce_feminine_gender",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": pre_verifier_skip_reason},
+            )
+            _track_step(
+                "strip_banned_phrases",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": pre_verifier_skip_reason},
+            )
+            _track_step(
+                "strip_fabricated_claims",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": pre_verifier_skip_reason, "semantic_before_verifier": True},
+            )
+            _track_step(
+                "strip_ungrounded_modules",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": pre_verifier_skip_reason},
+            )
+            _track_step(
+                "strip_ungrounded_integrations",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": pre_verifier_skip_reason, "semantic_before_verifier": True},
+            )
+
+        if not fact_disambiguated:
+            _apply_step(
+                "compress_repeated_price_response",
+                lambda text: self._compress_repeated_price_response(text, context),
+            )
+        else:
+            _track_step(
+                "compress_repeated_price_response",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "fact_disambiguated"},
+            )
+
+        _track_step(
+            "enforce_enterprise_tis_quote",
+            processed,
+            processed,
+            enabled=False,
+            extra={
+                "reason": (
+                    "fact_disambiguated"
+                    if fact_disambiguated
+                    else deterministic_semantic_reason
+                ),
+                "semantic_before_verifier": True,
+            },
+        )
+
+        _apply_step(
+            "enforce_no_contact_boundaries",
+            lambda text: self._enforce_no_contact_boundaries(text, context),
+        )
+
+        has_low_quality_artifact = self._is_low_quality_artifact(processed)
+        _track_step(
+            "low_quality_fallback_artifact",
+            processed,
+            processed,
+            enabled=False,
+            extra={
+                "reason": (
+                    "fact_disambiguated"
+                    if fact_disambiguated
+                    else (
+                        deterministic_semantic_reason
+                        if has_low_quality_artifact
+                        else "condition_false"
+                    )
+                ),
+                "semantic_before_verifier": True,
+            },
+        )
+
+        # Detect off-topic API/integration answer when user asked about payment
+        _um = context.get("user_message", "")
+        has_offtopic_technical_answer = self._is_offtopic_technical_answer(processed, _um)
+        _track_step(
+            "low_quality_fallback_offtopic",
+            processed,
+            processed,
+            enabled=False,
+            extra={
+                "reason": (
+                    "fact_disambiguated"
+                    if fact_disambiguated
+                    else (
+                        deterministic_semantic_reason
+                        if has_offtopic_technical_answer
+                        else "condition_false"
+                    )
+                ),
+                "semantic_before_verifier": True,
+            },
+        )
+
+        if not fact_disambiguated:
+            _apply_step(
+                "enforce_no_colleague_fallback",
+                lambda text: self._enforce_no_colleague_fallback(
+                    response=text,
+                    retrieved_facts=grounding_facts,
+                    user_message=str(context.get("user_message", "") or ""),
+                ),
+            )
+        else:
+            _track_step(
+                "enforce_no_colleague_fallback",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "fact_disambiguated"},
+            )
+        _track_step(
+            "kb_targeted_repairs",
+            processed,
+            processed,
+            enabled=False,
+            extra={
+                "reason": (
+                    "fact_disambiguated"
+                    if fact_disambiguated
+                    else "removed_legacy_targeted_repairs"
+                ),
+                "semantic_before_verifier": True,
+            },
+        )
+
+        if _is_autonomous and not fact_disambiguated:
+            _track_step(
+                "normalize_positive_factual_phrasing",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": deterministic_semantic_reason, "semantic_before_verifier": True},
+            )
+        else:
+            _track_step(
+                "normalize_positive_factual_phrasing",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "not_autonomous_or_fact_disambiguated", "semantic_before_verifier": True},
+            )
+
+        # Isolated same-model factual verifier now runs after semantic mutations.
         _is_factual_scope = bool(
             self._is_direct_factual_request(
                 str(context.get("intent", "") or ""),
                 str(context.get("user_message", "") or ""),
             )
         )
-        if (
+        _is_high_risk_verifier_candidate = bool(
+            self._is_high_risk_factual_response(
+                processed,
+                str(context.get("user_message", "") or ""),
+                str(context.get("intent", "") or ""),
+            )
+        )
+        _has_verifier_coverage = bool(
+            self._has_factual_verifier_coverage(
+                str(context.get("user_message", "") or ""),
+                grounding_facts,
+            )
+        )
+        verifier_applicable = bool(
             not fact_disambiguated
             and _is_factual_scope
-            and str(retrieved_facts or "").strip()
-        ):
+            and _has_verifier_coverage
+            and grounding_facts.strip()
+        )
+        if verifier_applicable:
             verifier = self._ensure_factual_verifier()
             if verifier is not None and verifier.is_enabled():
+                before = processed
                 vr = verifier.verify_and_rewrite(
                     user_message=str(context.get("user_message", "") or ""),
                     candidate_response=processed,
-                    retrieved_facts=str(retrieved_facts or ""),
+                    retrieved_facts=grounding_facts,
                     intent=str(context.get("intent", "") or ""),
                     state=str(context.get("state", "") or ""),
                     dialog_history=context.get("history", []) or [],
@@ -4011,39 +4769,158 @@ class ResponseGenerator:
                 )
                 if vr.final_response:
                     processed = vr.final_response
-
-        # Strip markdown formatting from autonomous responses (plain text chat)
-        if _is_autonomous:
-            if not fact_disambiguated:
-                processed = self._strip_markdown(processed)
-            processed = self._fix_language_mismatch(
-                processed, str(context.get("user_message", "") or "")
+                verifier_completed = True
+                verified_response_snapshot = processed
+                _track_step(
+                    "factual_verifier",
+                    before,
+                    processed,
+                    enabled=True,
+                    extra={
+                        "used": vr.verifier_used,
+                        "verdict": vr.verifier_verdict,
+                        "reason_codes": list(vr.reason_codes),
+                    },
+                )
+            else:
+                _track_step(
+                    "factual_verifier",
+                    processed,
+                    processed,
+                    enabled=False,
+                    extra={"reason": "verifier_unavailable_or_disabled"},
+                )
+        else:
+            _track_step(
+                "factual_verifier",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": (
+                        "fact_disambiguated"
+                        if fact_disambiguated
+                        else (
+                            "insufficient_fact_coverage"
+                            if _is_factual_scope and not _has_verifier_coverage
+                            else "not_factual_or_no_facts"
+                        )
+                    ),
+                    "high_risk_candidate": _is_high_risk_verifier_candidate,
+                },
             )
 
-        # Deterministic autonomous post-processing
-        if _is_autonomous:
-            processed = self._enforce_feminine_gender(processed)
-            processed = self._strip_banned_phrases(processed)
-            processed = self._strip_fabricated_claims(processed)
-            processed = self._strip_ungrounded_modules(processed, str(retrieved_facts or ""))
-            processed = self._strip_ungrounded_integrations(processed, str(retrieved_facts or ""))
-            if not fact_disambiguated:
-                processed = self._simplify_or_questions(processed)
-                processed = self._truncate_to_max_sentences(processed, max_sentences=3)
-                processed = self._enforce_word_limit(processed)
+        # Post-verifier: cosmetics and formatting only.
+        if _is_autonomous and not fact_disambiguated:
+            _apply_step(
+                "strip_markdown",
+                self._strip_markdown,
+                extra={"semantic_after_verifier": True},
+            )
+        else:
+            _track_step(
+                "strip_markdown",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": "not_autonomous_or_fact_disambiguated",
+                    "semantic_after_verifier": True,
+                },
+            )
 
-        if not fact_disambiguated:
-            processed = self._compress_repeated_price_response(processed, context)
-        processed = self._enforce_enterprise_tis_quote(processed, context)
-        if not fact_disambiguated and self._should_force_no_question(context):
-            processed = self._strip_trailing_question(processed)
-        processed = self._enforce_no_contact_boundaries(processed, context)
-        if self._is_low_quality_artifact(processed):
-            processed = self._low_quality_fallback(context)
-        # Detect off-topic API/integration answer when user asked about payment
-        _um = context.get("user_message", "")
-        if self._is_offtopic_technical_answer(processed, _um):
-            processed = self._low_quality_fallback(context)
+        if _is_autonomous:
+            _apply_step(
+                "fix_language_mismatch",
+                lambda text: self._fix_language_mismatch(
+                    text, str(context.get("user_message", "") or "")
+                ),
+                extra={"semantic_after_verifier": True},
+            )
+        else:
+            _track_step(
+                "fix_language_mismatch",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "not_autonomous", "semantic_after_verifier": True},
+            )
+
+        if _is_autonomous and not fact_disambiguated:
+            _apply_step(
+                "simplify_or_questions",
+                self._simplify_or_questions,
+                extra={"semantic_after_verifier": True},
+            )
+            _track_step(
+                "truncate_to_max_sentences",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": deterministic_semantic_reason,
+                    "semantic_after_verifier": True,
+                },
+            )
+            _track_step(
+                "enforce_word_limit",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": deterministic_semantic_reason,
+                    "semantic_after_verifier": True,
+                },
+            )
+        else:
+            _track_step(
+                "simplify_or_questions",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": "not_autonomous_or_fact_disambiguated",
+                    "semantic_after_verifier": True,
+                },
+            )
+            _track_step(
+                "truncate_to_max_sentences",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": "not_autonomous_or_fact_disambiguated",
+                    "semantic_after_verifier": True,
+                },
+            )
+            _track_step(
+                "enforce_word_limit",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": "not_autonomous_or_fact_disambiguated",
+                    "semantic_after_verifier": True,
+                },
+            )
+
+        should_force_no_question = bool(
+            not fact_disambiguated and self._should_force_no_question(context)
+        )
+        _track_step(
+            "strip_trailing_question_force_no_question",
+            processed,
+            processed,
+            enabled=False,
+            extra={
+                "reason": (
+                    deterministic_semantic_reason
+                    if should_force_no_question
+                    else "condition_false"
+                ),
+                "semantic_after_verifier": True,
+            },
+        )
 
         # Layer 5: Post-processing safety net — strip trailing question when suppressed
         rd = context.get("response_directives")
@@ -4053,25 +4930,43 @@ class ResponseGenerator:
             and not getattr(rd, 'should_offer_exit', False)
             and not getattr(rd, 'prioritize_contact', False)
         )
-        if should_strip and not fact_disambiguated:
-            processed = self._strip_trailing_question(processed)
-
-        processed = self._enforce_no_colleague_fallback(
-            response=processed,
-            retrieved_facts=str(retrieved_facts or ""),
-            user_message=str(context.get("user_message", "") or ""),
+        _track_step(
+            "strip_trailing_question_response_directives",
+            processed,
+            processed,
+            enabled=False,
+            extra={
+                "reason": (
+                    "fact_disambiguated"
+                    if fact_disambiguated
+                    else (
+                        deterministic_semantic_reason
+                        if should_strip
+                        else "condition_false"
+                    )
+                ),
+                "semantic_after_verifier": True,
+            },
         )
 
         # Response boundary validation — Rule #8 (trial period) + LLM judge (capability claims)
         if _is_autonomous and flags.is_enabled("response_boundary_validator"):
+            before = processed
+            boundary_error = None
+            bv_result = None
             try:
                 from src.response_boundary_validator import boundary_validator
+                _bv_facts = retrieved_facts
+                _bv_pain = str(context.get("_pain_context", "") or "").strip()
+                if _bv_pain:
+                    _bv_facts = f"{_bv_facts}\n\n{_bv_pain}" if _bv_facts else _bv_pain
                 bv_context = {
                     **context,
-                    "retrieved_facts": retrieved_facts,
+                    "retrieved_facts": _bv_facts,
                     "factual_verified_grounded": (
                         self._last_factual_verifier_meta.get("factual_verifier_verdict") == "pass"
                     ),
+                    "fact_disambiguated": fact_disambiguated,
                 }
                 bv_result = boundary_validator.validate_response(
                     processed, bv_context, llm=self.llm
@@ -4084,8 +4979,170 @@ class ResponseGenerator:
                         "fallback_used": bv_result.fallback_used,
                     })
             except Exception as exc:  # pragma: no cover — fail-open
-                logger.warning("boundary_validator_post_process_failed", error=str(exc))
+                boundary_error = str(exc)
+                logger.warning("boundary_validator_post_process_failed", error=boundary_error)
 
+            extra: Dict[str, Any] = {}
+            if bv_result is not None:
+                extra = {
+                    "violations": list(getattr(bv_result, "violations", []) or []),
+                    "fallback_used": bool(getattr(bv_result, "fallback_used", False)),
+                }
+            if boundary_error:
+                extra["error"] = boundary_error
+            _track_step(
+                "boundary_validator",
+                before,
+                processed,
+                enabled=True,
+                extra={**extra, "semantic_after_verifier": True},
+            )
+        else:
+            _track_step(
+                "boundary_validator",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "not_autonomous_or_flag_disabled", "semantic_after_verifier": True},
+            )
+
+        # If any semantic mutation happened after factual verifier, re-check with verify_only.
+        if verifier_completed and semantic_post_verifier_changes and grounding_facts.strip():
+            verifier = self._ensure_factual_verifier()
+            verify_only_result = None
+            verify_only_verdict = "not_run"
+            verify_only_error = None
+            if verifier is not None:
+                try:
+                    verify_only_result = verifier.verify_only(
+                        user_message=str(context.get("user_message", "") or ""),
+                        candidate_response=processed,
+                        retrieved_facts=grounding_facts,
+                        intent=str(context.get("intent", "") or ""),
+                        state=str(context.get("state", "") or ""),
+                        dialog_history=context.get("history", []) or [],
+                    )
+                    if verify_only_result is not None:
+                        verify_only_verdict = str(verify_only_result.verdict)
+                except Exception as exc:  # pragma: no cover - defensive
+                    verify_only_error = str(exc)
+                    logger.warning("factual_verify_only_recheck_failed", error=verify_only_error)
+            else:
+                verify_only_error = "verifier_unavailable"
+
+            validation_events.append(
+                {
+                    "stage": "factual_verify_only_recheck",
+                    "triggered_by": list(semantic_post_verifier_changes),
+                    "verdict": verify_only_verdict,
+                    "error": verify_only_error,
+                }
+            )
+
+            before = processed
+            if verify_only_result is None or verify_only_result.verdict != "pass":
+                if verified_response_snapshot:
+                    processed = verified_response_snapshot
+                _track_step(
+                    "factual_verify_only_revert",
+                    before,
+                    processed,
+                    enabled=True,
+                    extra={
+                        "semantic_after_verifier": True,
+                        "triggered_by": list(semantic_post_verifier_changes),
+                        "verdict": verify_only_verdict,
+                        "reverted": True,
+                        "error": verify_only_error,
+                    },
+                )
+            else:
+                _track_step(
+                    "factual_verify_only_revert",
+                    before,
+                    processed,
+                    enabled=False,
+                    extra={
+                        "semantic_after_verifier": True,
+                        "triggered_by": list(semantic_post_verifier_changes),
+                        "verdict": verify_only_verdict,
+                        "reverted": False,
+                    },
+                )
+
+        # First bot reply (non-greeting intent): prepend mandatory intro
+        # before the normal model answer.
+        is_first_bot_reply = bool(context.get("is_first_bot_reply", False))
+        mandatory_intro = (
+            "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon"
+        )
+        is_greeting_turn = (
+            selected_template_key == "greet_back"
+            or str(context.get("intent", "") or "") == "greeting"
+        )
+        if is_first_bot_reply and not is_greeting_turn:
+            before = processed
+            body = str(processed or "").strip()
+            normalized = re.sub(r"\s+", " ", body).lower()
+            intro_already_present = mandatory_intro.lower() in normalized
+            if not intro_already_present:
+                processed = (
+                    f"{mandatory_intro}. {body}"
+                    if body
+                    else f"{mandatory_intro}."
+                )
+            _track_step(
+                "prepend_first_turn_mandatory_intro",
+                before,
+                processed,
+                enabled=True,
+                extra={
+                    "is_first_bot_reply": True,
+                    "intro_already_present": intro_already_present,
+                },
+            )
+        else:
+            _track_step(
+                "prepend_first_turn_mandatory_intro",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": (
+                        "greeting_turn"
+                        if is_greeting_turn
+                        else "not_first_bot_reply"
+                    ),
+                },
+            )
+
+        # Hard policy: greeting must always use canonical wording.
+        if is_greeting_turn:
+            canonical_greeting = (
+                "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. "
+                "Чем я могу вам помочь?"
+            )
+            _track_step(
+                "enforce_canonical_greeting",
+                processed,
+                canonical_greeting,
+                enabled=True,
+                extra={"reason": "greeting_policy"},
+            )
+            processed = canonical_greeting
+        else:
+            _track_step(
+                "enforce_canonical_greeting",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "not_greeting_turn"},
+            )
+
+        self._last_postprocess_meta = {
+            "postprocess_trace": postprocess_trace,
+            "postprocess_last_mutation_rule": last_mutation_rule,
+        }
         return processed, validation_events
 
     def post_process_only(
@@ -4172,59 +5229,46 @@ class ResponseGenerator:
         return best
 
     def _enforce_enterprise_tis_quote(self, response: str, context: Dict[str, Any]) -> str:
-        """Force deterministic TIS quote when user explicitly asks about ТИС or needs >5 points."""
+        """Append deterministic TIS price block only for explicit pricing requests and >5 points."""
         points = self._extract_points_from_context(context)
-        if points < 2:
+        if points <= 5:
             return response
 
         user_low = str(context.get("user_message", "") or "").lower()
         intent_low = str(context.get("intent", "") or "").lower()
+        response_text = str(response or "").strip()
 
-        # Only force ТИС quote when:
-        # 1. User explicitly mentions "ТИС" in their message, OR
-        # 2. More than 5 points (Pro max = 5, so >5 requires ТИС)
-        # For 2-5 points, don't override if user asks about specific tariff (Mini/Lite/Standard/Pro)
-        user_asks_tis = bool(re.search(r'\bтис\b', user_low))
-        user_asks_named_tariff = bool(re.search(
-            r'\b(?:mini|lite|standard|pro|мини|лайт|стандарт)\b', user_low
-        ))
-
-        if points <= 5 and not user_asks_tis:
-            # User has ≤5 points and didn't mention ТИС — let regular flow handle it
-            return response
-        if user_asks_named_tariff and not user_asks_tis:
-            # User asks about a specific tariff — don't override with ТИС
-            return response
-
-        pricing_markers = (
-            "цена", "стоимость", "сколько", "тариф", "ориентир", "прайс", "по деньгам",
-        )
+        # Do not trigger by "ТИС" keyword alone; only explicit pricing context.
         asks_pricing = (
             intent_low in {"price_question", "pricing_details", "pricing_comparison"}
-            or any(marker in user_low for marker in pricing_markers)
-            or user_asks_tis
+            or self._has_price_signal(user_low)
         )
         if not asks_pricing:
             return response
 
         total = 220000 + (points - 1) * 80000
         total_spaced = f"{total:,}".replace(",", " ")
-        normalized_digits = re.sub(r"\D", "", response)
+        normalized_digits = re.sub(r"\D", "", response_text)
         has_total = str(total) in normalized_digits
-        mentions_tis = bool(re.search(r"\bТИС\b", response, re.IGNORECASE))
-        has_non_tis_tariff = bool(re.search(r"\b(?:Mini|Lite|Standard|Pro)\b", response, re.IGNORECASE))
-        has_broken_tail = bool(re.search(r"обход\w*\s+в\s*[.!?]?$", response.strip(), re.IGNORECASE))
+        mentions_tis = bool(re.search(r"\bТИС\b", response_text, re.IGNORECASE))
+        has_non_tis_tariff = bool(re.search(r"\b(?:Mini|Lite|Standard|Pro)\b", response_text, re.IGNORECASE))
+        has_broken_tail = bool(re.search(r"обход\w*\s+в\s*[.!?]?$", response_text, re.IGNORECASE))
         has_vague_quote = any(
-            phrase in response.lower()
+            phrase in response_text.lower()
             for phrase in ("уточню у коллег", "точную стоимость", "вернусь с ответом")
         )
         if mentions_tis and has_total and not has_non_tis_tariff and not has_broken_tail and not has_vague_quote:
-            return response
+            return response_text
 
-        return (
+        quote_block = (
             f"Для {points} точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку "
             f"и +80 000 ₸/год за каждую дополнительную, итого {total_spaced} ₸/год."
         )
+        if not response_text:
+            return quote_block
+
+        connector = "" if response_text.endswith((".", "!", "?", "…")) else "."
+        return f"{response_text}{connector} {quote_block}".strip()
 
     @staticmethod
     def _enforce_feminine_gender(text: str) -> str:
@@ -4396,7 +5440,7 @@ class ResponseGenerator:
         return result
 
     @staticmethod
-    def _strip_fabricated_claims(text: str) -> str:
+    def _strip_fabricated_claims(text: str, retrieved_facts: str = "") -> str:
         """Strip sentences containing fabricated promotions, discounts, or false claims."""
         # Strip sentences with fabricated discounts/promotions
         # "скидка 20%", "до 30% скидка", "действует скидка", "скидка для новых клиентов"
@@ -4538,14 +5582,62 @@ class ResponseGenerator:
             result,
             flags=re.IGNORECASE,
         )
-        # Strip "бесплатная касса/система" — no free tier exists, Mini = 5000₸/мес
-        result = re.sub(
-            r'[^.!?]*бесплатн\w+\s+(?:онлайн[-\s]?касс\w*|касс\w*|систем\w*|тариф\w*|wipon\w*|подключени\w*)'
-            r'[^.!?]*[.!?]?\s*',
-            '',
-            result,
-            flags=re.IGNORECASE,
-        )
+        # Strip ungrounded "free" claims using fact overlap (no product-specific exceptions).
+        # Keep sentence only if a "бесплат*" claim is supported by a similarly-scoped fact sentence.
+        def _split_sentences(value: str) -> List[str]:
+            return [
+                segment.strip()
+                for segment in re.split(r'(?<=[.!?])\s+|\n+', str(value or ""))
+                if segment.strip()
+            ]
+
+        def _normalize_claim_term(term: str) -> str:
+            token = str(term or "").lower()
+            if token.startswith("бесплат"):
+                return "бесплат"
+            if len(token) >= 5:
+                token = re.sub(
+                    r"(ами|ями|ого|ему|ому|ими|ыми|ов|ев|ей|ий|ый|ая|ое|ые|ых|ым|ом|ую|юю|у|а|е|ы|и|о|ю|я)$",
+                    "",
+                    token,
+                )
+            return token
+
+        def _claim_terms(value: str) -> Set[str]:
+            normalized: Set[str] = set()
+            for term in ResponseGenerator._fact_terms(value):
+                normalized_term = _normalize_claim_term(term)
+                if len(normalized_term) >= 3:
+                    normalized.add(normalized_term)
+            return normalized
+
+        if re.search(r'бесплат', result, flags=re.IGNORECASE):
+            free_fact_sentences = [
+                sentence
+                for sentence in _split_sentences(retrieved_facts)
+                if re.search(r'бесплат', sentence, flags=re.IGNORECASE)
+            ]
+            kept_sentences: List[str] = []
+            for sentence in _split_sentences(result):
+                if not re.search(r'бесплат', sentence, flags=re.IGNORECASE):
+                    kept_sentences.append(sentence)
+                    continue
+                sentence_terms = _claim_terms(sentence)
+                if not sentence_terms:
+                    continue
+                is_grounded = False
+                for fact_sentence in free_fact_sentences:
+                    fact_terms = _claim_terms(fact_sentence)
+                    if not fact_terms:
+                        continue
+                    overlap = len(sentence_terms & fact_terms)
+                    min_overlap = 1 if len(sentence_terms) <= 2 else 2
+                    if overlap >= min_overlap:
+                        is_grounded = True
+                        break
+                if is_grounded:
+                    kept_sentences.append(sentence)
+            result = " ".join(kept_sentences)
         # Strip ANY sentence containing "демо" — Wipon has no demo version
         # BUT keep "7-дневный тестовый период" mentions (KB has trial info)
         result = re.sub(
@@ -4775,11 +5867,23 @@ class ResponseGenerator:
         ))
         return not has_product
 
-    @staticmethod
-    def _low_quality_fallback(context: Dict[str, Any]) -> str:
-        """Context-aware fallback for glitchy short outputs."""
+    def _low_quality_fallback(self, context: Dict[str, Any], retrieved_facts: str = "") -> str:
+        """Context-aware fallback for glitchy outputs with KB-grounded priority."""
         intent = str(context.get("intent", "") or "").lower()
         state = str(context.get("state", "") or "").lower()
+        user_message = str(context.get("user_message", "") or "")
+        facts_text = self._grounding_facts_text(
+            str(retrieved_facts or context.get("retrieved_facts", "") or "")
+        )
+
+        if facts_text.strip() and user_message.strip():
+            grounded = self._db_grounded_response_from_facts(
+                user_message=user_message,
+                retrieved_facts=facts_text,
+            )
+            if grounded and not grounded.startswith("В предоставленных фактах БД нет"):
+                return grounded
+
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             return "Спасибо! Контакт сохранён. По базе могу сразу ответить по тарифам, интеграциям и условиям."
         if "price" in intent or "pricing" in intent:
@@ -4805,10 +5909,13 @@ class ResponseGenerator:
         return value
 
     def _db_grounded_response_from_facts(self, user_message: str, retrieved_facts: str) -> str:
-        chunks = re.split(r"\n+\s*---\s*\n+", str(retrieved_facts or ""))
+        facts_text = self._grounding_facts_text(str(retrieved_facts or ""))
+        chunks = re.split(r"\n+\s*---\s*\n+", facts_text)
         sentences: List[str] = []
         for chunk in chunks:
             for raw in re.split(r"(?<=[.!?])\s+|\n+", chunk):
+                if self._is_structural_fact_line(raw):
+                    continue
                 line = self._normalize_fact_sentence(raw)
                 if len(line) < 5:
                     continue
@@ -4823,8 +5930,32 @@ class ResponseGenerator:
         if not sentences:
             return "В предоставленных фактах БД нет подтвержденного ответа по этому вопросу."
 
+        query_low = str(user_message or "").lower()
         query_terms = self._fact_terms(user_message)
         wants_numeric = bool(re.search(r"(?:цена|стоим|тариф|₸|тенге|сколько|\d)", user_message or "", re.IGNORECASE))
+        wants_timeline = bool(
+            re.search(
+                r"(?:как\s+быстро|сколько\s+времени|за\s+сколько|срок|сколько\s+дн(?:я|ей)?)",
+                query_low,
+                re.IGNORECASE,
+            )
+        )
+        list_or_compare = self._is_list_or_compare_query(user_message)
+        enumeration_query = bool(
+            re.search(
+                r"(?:\bкакие\b|что\s+входит|что\s+можно|какие\s+роли|какие\s+способы|функционал|экосистем)",
+                query_low,
+                re.IGNORECASE,
+            )
+        )
+        catalog_query = bool(re.search(r"(?:какие\s+продукт|экосистем)", query_low, re.IGNORECASE))
+        replacement_query = bool(
+            re.search(r"(?:вместо|альтернатив|что\s+предлож|чем\s+замен)", query_low, re.IGNORECASE)
+        )
+        value_prop_query = bool(
+            re.search(r"(?:почему|зачем|преимущ|чем\s+лучше|плюс\w*)", query_low, re.IGNORECASE)
+        )
+        query_models = self._extract_model_tokens(user_message)
 
         scored = []
         seen = set()
@@ -4836,12 +5967,56 @@ class ResponseGenerator:
             sent_terms = self._fact_terms(sentence)
             overlap = len(query_terms & sent_terms) if query_terms else 0
             numeric_bonus = 2 if wants_numeric and re.search(r"(?:₸|тенге|тг|\d{2,}|цена|стоим|тариф)", sentence, re.IGNORECASE) else 0
+            timeline_bonus = 2 if wants_timeline and re.search(
+                r"(?:\b\d+\s*(?:[-–]\s*\d+)?(?:\s+\w+){0,2}\s*(?:дн(?:я|ей)?|час(?:а|ов)?)\b|"
+                r"удал[её]нн|эцп|в\s+тот\s+же\s+день)",
+                sentence,
+                re.IGNORECASE,
+            ) else 0
+            sentence_models = self._extract_model_tokens(sentence)
+            extra_models = {model for model in sentence_models if model not in query_models}
+            extra_penalty = 0
+            if not list_or_compare and not replacement_query and not value_prop_query:
+                if len(sentence_models) > 1:
+                    extra_penalty += (len(sentence_models) - 1) * 2
+                if query_models and extra_models:
+                    extra_penalty += len(extra_models) * 2
             compact_bonus = 1 if 5 <= len(sentence.split()) <= 28 else 0
-            score = overlap * 3 + numeric_bonus + compact_bonus
+            detail_bonus = 1 if len(sent_terms) >= 6 else 0
+            if self._has_quantitative_details(sentence):
+                detail_bonus += 1
+            if enumeration_query and len(sent_terms) >= 4:
+                detail_bonus += 1
+            generic_penalty = 6 if self._is_low_information_answer(sentence) else 0
+            if (
+                self._KB_ABSTRACT_FACT_RE.search(sentence.lower())
+                and not self._has_quantitative_details(sentence)
+                and len(sent_terms) <= 12
+            ):
+                generic_penalty += 2
+            score = (
+                overlap * 3
+                + numeric_bonus
+                + timeline_bonus
+                + compact_bonus
+                + detail_bonus
+                - extra_penalty
+                - generic_penalty
+            )
             scored.append((score, idx, sentence))
 
         scored.sort(key=lambda item: (-item[0], item[1]))
-        selected = [item[2] for item in scored[:2]] or sentences[:2]
+        pick_count = 3 if catalog_query else (2 if list_or_compare or enumeration_query else 1)
+        selected = [item[2] for item in scored[:pick_count]] or sentences[:pick_count]
+        if scored and self._is_low_information_answer(scored[0][2]):
+            best_score = scored[0][0]
+            for score, _, sentence in scored[1:]:
+                if score < best_score - 1:
+                    break
+                if self._is_low_information_answer(sentence):
+                    continue
+                selected[0] = sentence
+                break
         result = " ".join(selected).strip()
         result = self._COLLEAGUE_FALLBACK_RE.sub("", result)
         result = re.sub(r"\s{2,}", " ", result).strip(" ,.;")
@@ -5165,6 +6340,7 @@ class ResponseGenerator:
         """Сбросить историю ответов для нового диалога."""
         self._response_history.clear()
         self._reset_factual_verifier_meta()
+        self._reset_postprocess_meta()
         self._last_generation_meta = {
             "requested_action": None,
             "selected_template_key": None,
@@ -5173,6 +6349,8 @@ class ResponseGenerator:
             "factual_verifier_changed": False,
             "factual_verifier_verdict": "not_run",
             "factual_verifier_reason_codes": [],
+            "postprocess_trace": [],
+            "postprocess_last_mutation_rule": None,
         }
 
     # Mapping: objection intent → framework type
@@ -5190,6 +6368,7 @@ class ResponseGenerator:
         history: List[Dict[str, Any]],
         collected: Dict[str, Any],
         secondary_intents: List[str] = None,
+        semantic_frame: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Build Layer-2 rules that appear only when state/intent makes them relevant."""
         return build_state_gated_rules(
@@ -5199,6 +6378,7 @@ class ResponseGenerator:
             history=history,
             collected=collected,
             secondary_intents=secondary_intents,
+            semantic_frame=semantic_frame,
         )
 
     @staticmethod
@@ -5446,6 +6626,17 @@ class ResponseGenerator:
         """Return secondary_intents list from context_envelope, or empty list."""
         envelope = context.get("context_envelope")
         return list(getattr(envelope, "secondary_intents", None) or [])
+
+    def _get_semantic_frame(self, context: dict) -> Dict[str, Any]:
+        """Return semantic_frame from direct context or context_envelope."""
+        direct = context.get("semantic_frame")
+        if isinstance(direct, dict) and direct:
+            return direct
+        envelope = context.get("context_envelope")
+        frame = getattr(envelope, "semantic_frame", None)
+        if isinstance(frame, dict):
+            return frame
+        return {}
 
     def _should_inject_secondary_answer(self, action_key: str, context: dict) -> bool:
         """

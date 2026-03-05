@@ -300,11 +300,15 @@ class ResponseDirectivesBuilder:
         "objection_trust": "доверие",
     }
     _DEFAULT_COLLECTED_FIELD_NAMES = {
+        "contact_name": "имя клиента",
         "company_size": "размер компании",
         "company_name": "название компании",
         "business_type": "тип бизнеса",
+        "city": "город",
         "pain_point": "проблема",
         "current_tools": "текущие инструменты",
+        "automation_before": "автоматизация раньше",
+        "automation_now": "автоматизация сейчас",
     }
     _DEFAULT_TONE_INSTRUCTIONS = {
         "empathetic": "Используй эмпатичный тон, признай ситуацию клиента.",
@@ -637,6 +641,11 @@ class ResponseDirectivesBuilder:
         collected = envelope.collected_data
         if collected.get("business_type"):
             parts.append(f"сфера: {collected['business_type']}")
+        if collected.get("city"):
+            parts.append(f"город: {collected['city']}")
+        if "automation_now" in collected:
+            auto_now = "есть" if bool(collected.get("automation_now")) else "нет"
+            parts.append(f"автоматизация сейчас: {auto_now}")
 
         # Ограничиваем длину
         if len(parts) > 3:

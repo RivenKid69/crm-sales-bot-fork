@@ -3402,8 +3402,7 @@ fallback:
   # Tier 1: Переформулировки по состояниям
   rephrase_templates:
     greeting:
-      - "Добрый день! Чем могу помочь?"
-      - "Здравствуйте! Расскажите, что вас интересует?"
+      - "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?"
     spin_situation:
       - "Давайте я спрошу иначе — сколько примерно человек работает с клиентами?"
       - "Можете подсказать хотя бы порядок — 5-10 человек, 10-20, или больше?"
@@ -3607,7 +3606,7 @@ fallback:
 # Ответы при технической ошибке LLM (circuit breaker, timeout, etc.)
 llm:
   fallback_responses:
-    greeting: "Здравствуйте! Чем могу помочь?"
+    greeting: "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?"
     spin_situation: "Расскажите, сколько человек работает в вашей команде?"
     spin_problem: "С какими сложностями сталкиваетесь сейчас?"
     spin_implication: "Как это влияет на бизнес?"
@@ -3743,11 +3742,15 @@ response_directives:
 
   # === Поля для do_not_repeat (collected_data -> readable name) ===
   collected_field_names:
+    contact_name: "имя клиента"
     company_size: "размер компании"
     company_name: "название компании"
     business_type: "тип бизнеса"
+    city: "город"
     pain_point: "проблема"
     current_tools: "текущие инструменты"
+    automation_before: "автоматизация раньше"
+    automation_now: "автоматизация сейчас"
 
   # === Tone instructions (русские тексты) ===
   tone_instructions:
@@ -3945,6 +3948,55 @@ extraction:
         invalid:
           - value: "большая компания"
             reason: "Это размер, не тип бизнеса"
+
+    city:
+      description: "Город клиента"
+      type: str
+      spin_phase: situation
+      validation:
+        min_length: 2
+        extract_patterns:
+          - '(?:в|из|по)\s+(алмат[ыы]|астан[аы]|шымкент|караганд[аы]|актобе|павлодар|костанай|кокшетау|тараз|уральск|атырау|семей|актау|петропавловск|кызылорда|туркестан)'
+          - 'город\s+([а-яё\-]+)'
+      examples:
+        valid:
+          - value: "Алматы"
+            source: "мы из Алматы"
+          - value: "Астана"
+            source: "работаем в Астане"
+        invalid:
+          - value: "Казахстан"
+            reason: "Это страна, не город"
+
+    automation_before:
+      description: "Была ли у клиента автоматизация ранее (true/false)"
+      type: bool
+      spin_phase: situation
+      validation: {}
+      examples:
+        valid:
+          - value: true
+            source: "раньше была CRM"
+          - value: false
+            source: "раньше автоматизации не было"
+        invalid:
+          - value: "иногда"
+            reason: "Требуется boolean true/false"
+
+    automation_now:
+      description: "Есть ли у клиента автоматизация сейчас (true/false)"
+      type: bool
+      spin_phase: situation
+      validation: {}
+      examples:
+        valid:
+          - value: true
+            source: "сейчас работаем в 1С"
+          - value: false
+            source: "сейчас всё вручную"
+        invalid:
+          - value: "частично"
+            reason: "Требуется boolean true/false"
 
     # =========================================================================
     # PROBLEM PHASE FIELDS
@@ -4386,6 +4438,9 @@ extraction:
       - company_size
       - current_tools
       - business_type
+      - city
+      - automation_before
+      - automation_now
     problem:
       - pain_point
       - pain_category
@@ -4433,6 +4488,9 @@ extraction:
       - company_size
       - current_tools
       - business_type
+      - city
+      - automation_before
+      - automation_now
     interest:
       - company_size
       - business_type
@@ -4470,6 +4528,9 @@ extraction:
       - current_tools
       - contact_info
       - role
+      - city
+      - automation_before
+      - automation_now
     qualification:
       - company_size
       - budget_range
@@ -4478,6 +4539,9 @@ extraction:
       - decision_timeline
       - users_count
       - contact_info
+      - city
+      - automation_before
+      - automation_now
     presentation:
       - pain_point
       - desired_outcome

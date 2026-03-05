@@ -1,0 +1,287 @@
+{
+  "timestamp": "2026-03-03T11:27:08.934471",
+  "duration_s": 166.59,
+  "scenarios": [
+    {
+      "id": "s1_tariffs_all",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "intent": "greeting",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 7.354
+        },
+        {
+          "turn": 2,
+          "user": "у меня магазин обуви",
+          "bot": "Магазин обуви — отличный формат, мы часто автоматизируем такие точки. А что сейчас мешает вам работать эффективнее?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 2.819
+        },
+        {
+          "turn": 3,
+          "user": "какие у вас есть тарифы",
+          "bot": "У нас четыре тарифа: Mini за 5 000 ₸ в месяц, Lite за 150 000 ₸ в год, Standard за 220 000 ₸ в год и Pro за 500 000 ₸ в год. Для магазина обуви чаще всего выбирают Lite или Standard, чтобы удобно управлять размерами и остатками.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "pricing_details",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 21.231
+        },
+        {
+          "turn": 4,
+          "user": "назови все тарифы что у вас есть",
+          "bot": "У нас четыре тарифа: Mini за 5 000 ₸ в месяц, Lite за 150 000 ₸ в год (1 точка), Standard за 220 000 ₸ в год (до 3 точек) и Pro за 500 000 ₸ в год (до 5 точек, неограниченные товары и сотрудники). Для магазина обуви чаще всего выбирают Lite или Standard в зависимости от количества точек и необходимости оптовых цен. Все тарифы являются программными и не включают оборудование.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "pricing_details",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 26.789
+        }
+      ]
+    },
+    {
+      "id": "s2_integrations_all",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "привет",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "intent": "greeting",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 2.034
+        },
+        {
+          "turn": 2,
+          "user": "у меня минимаркет",
+          "bot": "Отлично, для минимаркета у нас есть готовое решение с кассой и учётом остатков. А что сейчас мешает работать быстрее?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 10.217
+        },
+        {
+          "turn": 3,
+          "user": "перечисли все варианты интеграций, которые у вас есть",
+          "bot": "У нас есть интеграции с Kaspi и Halyk Market для онлайн-продаж, а также с банковскими терминалами Kaspi, Halyk и Jusan. Для ТИС доступны подключения к 1С, iiko, r_keeper и Poster.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_integrations",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 16.907
+        }
+      ]
+    },
+    {
+      "id": "s3_trial_period",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "добрый день",
+          "bot": "Меня зовут Айбота, я персональный консультант Wipon. Чем могу быть полезна вам сегодня?",
+          "state": "greeting",
+          "action": "greet_back",
+          "intent": "greeting",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 4.047
+        },
+        {
+          "turn": 2,
+          "user": "есть ли у вас тестовый период",
+          "bot": "Да, у нас есть бесплатный пробный период Wipon длительностью 7 дней для проверки функционала в реальном сценарии. Это демо-доступ позволяет протестировать систему перед подключением тарифа. Оформить пробный доступ можно через менеджера.",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "intent": "payment_terms",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 7.073
+        },
+        {
+          "turn": 3,
+          "user": "на каких условиях",
+          "bot": "Возврат по лицензии Wipon — возможен при неактивированной и неиспользованной программе.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "clarification_request",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 12.358
+        }
+      ]
+    },
+    {
+      "id": "s4_general_nonfactual",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "привет",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Подскажите, какой аспект работы системы для вашего магазина сейчас наиболее актуален?",
+          "state": "greeting",
+          "action": "greet_back",
+          "intent": "greeting",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 4.4
+        },
+        {
+          "turn": 2,
+          "user": "расскажи простыми словами чем вы вообще полезны магазину",
+          "bot": "Wipon объединяет кассу, учёт товаров и отчёты в одном окне, чтобы вы не тратили время на сбор данных из разных программ. А что сейчас занимает больше всего времени в вашей точке?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 3.245
+        },
+        {
+          "turn": 3,
+          "user": "ок, а что лучше начать внедрять в первую очередь",
+          "bot": "Фиксация операций: какой кассир, что продал, за какую сумму Срок внедрения Wipon масштабируется от 1-2 часов для одной точки до 3-5 рабочих дней для сети с интеграциями.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_implementation",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 23.531
+        }
+      ]
+    },
+    {
+      "id": "s5_direct_price",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "intent": "greeting",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 2.236
+        },
+        {
+          "turn": 2,
+          "user": "сколько стоит тариф lite",
+          "bot": "Тариф Lite стоит 150 000 тенге в год и включает одну торговую точку с неограниченной номенклатурой. Как к вам обращаться?",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_lite",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 11.247
+        },
+        {
+          "turn": 3,
+          "user": "и standard тоже",
+          "bot": "Тариф Standard стоит 220 000 тенге в год и включает до трёх торговых точек с неограниченной номенклатурой. В нём также есть оптовые цены и расширенная аналитика.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_standard",
+          "factual_verifier_used": null,
+          "factual_verifier_changed": null,
+          "factual_verifier_verdict": null,
+          "factual_verifier_reason_codes": [],
+          "freeform_temperatures": [],
+          "structured_temperatures": [],
+          "structured_has_generic_completeness": null,
+          "latency_s": 11.101
+        }
+      ]
+    }
+  ]
+}

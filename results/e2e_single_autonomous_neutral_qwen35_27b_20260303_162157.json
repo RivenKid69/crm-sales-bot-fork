@@ -1,0 +1,126 @@
+{
+  "timestamp": "20260303_162157",
+  "llm": {
+    "model": "qwen3.5-27b",
+    "base_url": "http://localhost:8080",
+    "api_format": "openai"
+  },
+  "mode": "single_e2e_simulator_run",
+  "flow": "autonomous",
+  "persona": {
+    "key": "happy_path",
+    "name": "Идеальный клиент",
+    "type": "neutral"
+  },
+  "requirements": {
+    "dialogs": 1,
+    "complex_dialog": true,
+    "min_kb_questions": 3,
+    "same_model_for_client_and_bot": true,
+    "full_autonomous_pipeline": true
+  },
+  "result": {
+    "turns": 10,
+    "kb_questions_used": 4,
+    "kb_topics_covered": [
+      "mobile_sales_notifications_1740",
+      "support_installation_time_1739",
+      "support_printer_broken_685",
+      "tis_employees_limit_235"
+    ],
+    "final_state": "video_call_scheduled",
+    "final_intent": "contact_provided",
+    "dialogue": [
+      {
+        "turn": 1,
+        "client": "Здравствуйте. Как настроить уведомления о продажах?",
+        "bot": "В предоставленных фактах нет информации о настройке уведомлений о продажах, поэтому уточню этот момент у коллег. Кстати, как к вам обращаться?",
+        "state": "greeting",
+        "intent": "question_customization",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 2,
+        "client": "а, ок, ладно. меня азамат зовут. у вас в астане офис есть или только о. Как долго устанавливается система?",
+        "bot": "Азамат, здравствуйте! Да, наш главный офис находится в Астане по адресу: Тұран 19/2, БЦ Estra, 3-й этаж, где вы можете посмотреть оборудование и получить консультацию.",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 3,
+        "client": "ага. Что изменится с количеством сотрудников?",
+        "bot": "В тарифах Lite, Standard и Pro нет ограничений по количеству сотрудников, так что штат можно расширять без доплат. Система просто масштабируется под ваш рост.",
+        "state": "autonomous_discovery",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 4,
+        "client": "ага. Что делать, если принтер сломался?",
+        "bot": "Азамат, при поломке мы сначала проводим удалённую диагностику, а если нужно — направляем в ближайший сервис. Гарантия покрывает всё оборудование, включая принтеры и сканеры.",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 5,
+        "client": "понял хорошо. а сколько стоит сама настройка и первые месяцы работы?",
+        "bot": "Настройка после оплаты бесплатная и занимает 30-40 минут. Стоимость работы зависит от тарифа: Mini — 5 000 ₸ в месяц, Lite — 150 000 ₸ в год, Standard — 220 000 ₸ в год, Pro — 500 000 ₸ в год.",
+        "state": "autonomous_qualification",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 6,
+        "client": "ой, это же дорого для старта. а можно начать с самого дешевого тарифа и потом перейти на другой?",
+        "bot": "Да, вы можете начать с самого дешевого тарифа Mini (5 000 ₸/месяц) и в любой момент перейти на более старший план без потери данных. Переход между тарифами доступен без ограничений по времени, а вся информация о товарах и клиентах сохраняется. Это позволяет масштабировать систему по мере роста вашего бизнеса.",
+        "state": "autonomous_qualification",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 7,
+        "client": "ок, ладно. а если я захочу перейти на стандарт, как долго это займет? и данные точно не потеряются?",
+        "bot": "Переход на Standard занимает от 30 минут до часа, а данные о товарах и остатках переносятся полностью без потерь. Это позволяет сразу продолжить работу на новом тарифе.",
+        "state": "autonomous_qualification",
+        "intent": "question_implementation",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 8,
+        "client": "звучит нормально, главное чтобы не пришлось всё заново вбивать. а по деньгам разница большая будет сразу или постепенно?",
+        "bot": "Могу отвечать только по подтвержденным фактам из базы. Сейчас в контексте недостаточно данных для точного ответа.",
+        "state": "autonomous_negotiation",
+        "intent": "price_question",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 9,
+        "client": "ну ладно, а когда сможем посмотреть демо? мне важно увидеть всё своими глазами, прежде чем платить.",
+        "bot": "У нас есть бесплатный тестовый период на 7 дней, чтобы вы могли проверить систему в деле. Оставьте, пожалуйста, ваш телефон для активации доступа.",
+        "state": "autonomous_closing",
+        "intent": "demo_request",
+        "action": "autonomous_respond",
+        "is_final": false
+      },
+      {
+        "turn": 10,
+        "client": "ок, давай. звоните на +7 701 123 4567, я азамат.",
+        "bot": "Азамат, спасибо, что подтвердили номер. Коллега перезвонит вам в ближайшее время, чтобы активировать тестовый период. Мы обязательно покажем все функции системы, чтобы вы убедились в удобстве работы.",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "is_final": true
+      }
+    ]
+  }
+}

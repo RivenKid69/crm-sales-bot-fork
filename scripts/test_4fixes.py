@@ -13,7 +13,7 @@ import json
 import time
 sys.path.insert(0, '/home/corta/crm-sales-bot-fork')
 
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 from src.llm import OllamaClient
 
 _llm = OllamaClient()
@@ -24,6 +24,7 @@ def run_dialog(name: str, messages: list, check_fn=None):
     print(f"  СЦЕНАРИЙ: {name}")
     print(f"{'='*70}")
 
+    setup_autonomous_pipeline()
     bot = SalesBot(llm=_llm, flow_name='autonomous')
     results = []
 

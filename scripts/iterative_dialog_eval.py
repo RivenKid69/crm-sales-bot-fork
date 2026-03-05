@@ -21,7 +21,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 from src.llm import OllamaClient
 
 TERMINAL_STATES = {"payment_ready", "video_call_scheduled"}

@@ -421,6 +421,17 @@ class SalesBot:
         # Тренд уверенности
         context["confidence_trend"] = self.context_window.get_confidence_trend()
 
+        # История диалога (последние 4 хода) для классификации коротких ответов
+        recent_turns = self.context_window.get_last_n_turns(4)
+        if recent_turns:
+            context["dialog_history"] = [
+                {
+                    "bot": (t.bot_response or "")[:250],
+                    "user": t.user_message[:200],
+                }
+                for t in recent_turns
+            ]
+
         return context
 
     def _analyze_tone(self, user_message: str) -> Dict:
@@ -1346,6 +1357,7 @@ class SalesBot:
                         "recent_fact_keys": list(self.context_window.get_recent_fact_keys(3)),
                         "style_modifiers": classification.get("style_modifiers", []),
                         "secondary_signals": classification.get("secondary_signals", []),
+                        "semantic_frame": classification.get("semantic_frame", {}),
                         "style_separation_applied": classification.get("style_separation_applied", False),
                         "terminal_state_requirements": self._flow.states.get(current_state, {}).get(
                             "terminal_state_requirements", {}
@@ -1369,6 +1381,15 @@ class SalesBot:
         #   )
         #
         # СТАЛО:
+        # Собираем dialog history для decision LLM (последние 4 хода)
+        decision_dialog_history = []
+        _recent_for_decision = self.context_window.get_last_n_turns(4)
+        for _t in _recent_for_decision:
+            decision_dialog_history.append({
+                "user": (_t.user_message or "")[:200],
+                "bot": (_t.bot_response or "")[:250],
+            })
+
         sm_start = time.time()
         decision = self._orchestrator.process_turn(
             intent=intent,
@@ -1376,6 +1397,7 @@ class SalesBot:
             context_envelope=context_envelope,
             user_message=user_message,
             frustration_level=frustration_level,
+            dialog_history=decision_dialog_history,
         )
         # Convert to sm_result dict for compatibility with DialoguePolicy/Generator
         sm_result = decision.to_sm_result()
@@ -1511,6 +1533,7 @@ class SalesBot:
             "intent": intent,
             "state": sm_result["next_state"],
             "history": self.history,
+            "is_first_bot_reply": len(self.history) == 0,
             "goal": sm_result["goal"],
             "collected_data": sm_result["collected_data"],
             "missing_data": sm_result["missing_data"],
@@ -1544,6 +1567,7 @@ class SalesBot:
             # Style separation fields from classification (for generator._apply_style_modifiers)
             "style_modifiers": classification.get("style_modifiers", []),
             "secondary_signals": classification.get("secondary_signals", []),
+            "semantic_frame": classification.get("semantic_frame", {}),
             "style_separation_applied": classification.get("style_separation_applied", False),
             # RC1 fix: terminal_state_requirements was missing — generator.py:1134 reads this
             # to compute closing_data_request. Without it, closing_data_request was always "".
@@ -1721,6 +1745,8 @@ class SalesBot:
                 "selected_template_key": action,
                 "validation_events": validation_events,
                 "fact_keys": (prepared_response_ctx or {}).get("fact_keys", []),
+                **self.generator._last_factual_verifier_meta,
+                **self.generator._last_postprocess_meta,
             }
             cta_result = CTAResult(
                 original_response=response,
@@ -1943,17 +1969,23 @@ class SalesBot:
             # Defense-in-depth: verify template exists before generation
             if not self.generator._get_template(action):
                 original_action = action
-                # Context-aware fallback based on intent type
-                from src.yaml_config.constants import PRICING_CORRECT_ACTIONS
-                from src.yaml_config.constants import QUESTION_INTENTS
-                if intent in PRICING_CORRECT_ACTIONS or intent in self.generator.PRICE_RELATED_INTENTS:
-                    action = "answer_with_pricing"
-                elif intent in QUESTION_INTENTS:
-                    action = "answer_with_facts"
-                else:
-                    action = "continue_current_goal"
+                # Universal runtime fallback: choose a neutral action with an existing template.
+                preferred = (
+                    "autonomous_respond"
+                    if getattr(self._flow, "name", "") == "autonomous"
+                    else "continue_current_goal"
+                )
+                fallback_candidates = (
+                    preferred,
+                    "continue_current_goal",
+                    "answer_and_continue",
+                )
+                action = next(
+                    (candidate for candidate in fallback_candidates if self.generator._get_template(candidate)),
+                    "continue_current_goal",
+                )
                 logger.warning(
-                    "Runtime template miss — context-aware fallback applied",
+                    "Runtime template miss — neutral fallback applied",
                     original_action=original_action,
                     fallback_action=action,
                     intent=intent,
@@ -2499,26 +2531,96 @@ def run_interactive(bot: SalesBot):
             break
 
 
+def setup_autonomous_pipeline() -> None:
+    """Activate all flags required for the full autonomous pipeline.
+
+    Call this before creating SalesBot when running with flow_name="autonomous".
+    Ensures: autonomous_flow + factual_verifier + boundary validator chain.
+    """
+    flags.set_override("autonomous_flow", True)
+    for flag in (
+        "response_factual_verifier",
+        "response_boundary_validator",
+        "response_boundary_llm_judge",
+        "response_boundary_retry",
+        "response_boundary_fallback",
+    ):
+        flags.set_override(flag, True)
+
+
+def _cleanup_gpu_before_start():
+    """Kill old python3/ollama processes hogging GPU before fresh start."""
+    import subprocess
+    import os
+
+    my_pid = os.getpid()
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-compute-apps=pid,name,used_memory",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return
+
+        killed = []
+        for line in result.stdout.strip().splitlines():
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 3:
+                continue
+            pid, name, mem_mb = int(parts[0]), parts[1], int(parts[2])
+            if pid == my_pid:
+                continue
+            # Kill old python3 (FRIDA, etc.) and ollama processes
+            if "python" in name.lower() or "ollama" in name.lower():
+                try:
+                    os.kill(pid, 9)
+                    killed.append(f"  PID {pid} ({name}, {mem_mb} MB)")
+                except ProcessLookupError:
+                    pass
+                except PermissionError:
+                    killed.append(f"  PID {pid} ({name}) — нет прав, пропускаю")
+
+        if killed:
+            print(f"[GPU Cleanup] Убил старые процессы:")
+            for k in killed:
+                print(k)
+        else:
+            print("[GPU Cleanup] Нет старых процессов на GPU")
+
+    except FileNotFoundError:
+        pass  # nvidia-smi not found
+    except Exception as e:
+        print(f"[GPU Cleanup] Ошибка: {e}")
+
+    # Restart Ollama via systemd (it was killed above)
+    try:
+        subprocess.run(["sudo", "systemctl", "restart", "ollama"],
+                       timeout=10, capture_output=True)
+        print("[GPU Cleanup] Ollama перезапущена через systemd")
+        # Wait for Ollama to be ready
+        import time
+        time.sleep(3)
+    except Exception as e:
+        print(f"[GPU Cleanup] Не удалось перезапустить Ollama: {e}")
+
+
 if __name__ == "__main__":
     import argparse
     from src.llm import OllamaLLM
 
     parser = argparse.ArgumentParser(description="CRM Sales Bot interactive mode")
-    parser.add_argument("--flow", type=str, default=None,
-                        help="Sales flow to use (e.g. aida, bant, spin_selling, challenger)")
+    parser.add_argument("--flow", type=str, default="autonomous",
+                        help="Sales flow (default: autonomous). Options: autonomous, spin_selling, bant, etc.")
+    parser.add_argument("--no-cleanup", action="store_true",
+                        help="Skip GPU cleanup (don't kill old processes)")
     args = parser.parse_args()
 
-    # Enable all flags for testing
-    flags.enable_group("phase_0")
-    flags.enable_group("phase_1")
-    flags.enable_group("phase_2")
-    flags.enable_group("phase_3")
+    if not args.no_cleanup:
+        _cleanup_gpu_before_start()
 
-    # Auto-enable autonomous_flow flag when --flow autonomous
-    # FRIDA embeddings теперь на CPU (embedder_device), OOM невозможен
     if args.flow == "autonomous":
-        flags.set_override("autonomous_flow", True)
-        flags.set_override("tone_semantic_tier2", False)
+        setup_autonomous_pipeline()
 
     llm = OllamaLLM()
     bot = SalesBot(llm, flow_name=args.flow)

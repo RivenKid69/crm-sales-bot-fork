@@ -60,10 +60,10 @@ class FeatureFlags:
         "unified_disambiguation": True,   # Унифицированный disambiguation для LLM и Hybrid классификаторов
 
         # Фаза 4.5: Cascade Classifier (семантический fallback)
-        "cascade_classifier": True,       # Каскадный классификатор с эмбеддингами
+        "cascade_classifier": False,      # ОТКЛЮЧЕН: Qwen 3.5 справляется, FRIDA не нужна как fallback
 
         # Фаза 4.6: Semantic Objection Detection
-        "semantic_objection_detection": True,  # Semantic fallback для возражений
+        "semantic_objection_detection": False,  # ОТКЛЮЧЕН: Qwen 3.5 обрабатывает возражения напрямую
 
         # Фаза 5: Dynamic CTA Fallback
         "dynamic_cta_fallback": False,    # Динамические подсказки в fallback tier_2
@@ -90,6 +90,8 @@ class FeatureFlags:
 
         # === LLM Classifier (Phase LLM) ===
         "llm_classifier": True,            # Использовать LLM классификатор вместо Hybrid
+        "semantic_frame": True,            # Additive semantic frame over primary intent
+        "semantic_intent_arbitration": True,  # Semantic-frame driven primary-intent arbitration
 
         # === Personalization v2 (Adaptive Personalization) ===
         # NOTE: personalization_v2 intentionally disabled — requires calibration
@@ -138,12 +140,21 @@ class FeatureFlags:
         "response_boundary_validator": True,      # Final boundary validation before sending response
         "response_boundary_retry": True,          # Single targeted retry on detected violations
         "response_boundary_fallback": True,       # Deterministic fallback if retry still violates boundary
+        "response_boundary_llm_judge": True,      # LLM-as-judge: catch ungrounded capability claims
         "response_factual_verifier": True,        # Same-model isolated factual verifier on autonomous factual turns
+        "response_semantic_relevance": True,      # LLM-based semantic relevance check (question↔answer match)
         "response_fact_disambiguation": False,    # Clarify conflicting factual entities before answering
+        # Post-verifier semantic mutations (Phase 1 migration controls)
+        "postprocess_semantic_mutations_after_verifier": True,        # Master switch for semantic changes after verifier
+        "postprocess_override_enforce_enterprise_tis_quote": True,    # _enforce_enterprise_tis_quote
+        "postprocess_override_strip_fabricated_claims": True,         # _strip_fabricated_claims
+        "postprocess_override_strip_ungrounded_integrations": True,   # _strip_ungrounded_integrations
+        "postprocess_override_low_quality_fallback": True,            # _low_quality_fallback
 
         # === Question Deduplication: Prevent Re-asking Already Answered Questions ===
         "question_deduplication": True,           # Фильтрация вопросов по collected_data
         "question_deduplication_logging": True,   # Логирование фильтраций для мониторинга
+        "soft_profile_collection": True,          # Мягкий сбор профиля клиента (имя/сфера/город/автоматизация)
 
         # === Apology System: Guaranteed Apology Insertion ===
         # SSoT: src/apology_ssot.py
@@ -177,7 +188,7 @@ class FeatureFlags:
         "phase_completion_gating": True,           # has_completed_minimum_phases condition
 
         # === ConversationGuard in Pipeline ===
-        "conversation_guard_in_pipeline": False,   # Gradual rollout: guard inside Blackboard pipeline
+        "conversation_guard_in_pipeline": True,    # Guard runs inside Blackboard pipeline by default
 
         # === Simulation Diagnostic Mode ===
         "simulation_diagnostic_mode": False,       # Higher sim limits for bug detection
@@ -272,13 +283,22 @@ class FeatureFlags:
         ],
         # Response Boundary Validator groups
         "response_boundary_all": [
-            "response_boundary_validator", "response_boundary_retry", "response_boundary_fallback"
+            "response_boundary_validator", "response_boundary_retry",
+            "response_boundary_fallback", "response_boundary_llm_judge",
+            "response_semantic_relevance",
         ],
         "response_factual_verifier_all": [
             "response_factual_verifier"
         ],
         "response_fact_disambiguation_all": [
             "response_fact_disambiguation"
+        ],
+        "postprocess_semantic_overrides": [
+            "postprocess_semantic_mutations_after_verifier",
+            "postprocess_override_enforce_enterprise_tis_quote",
+            "postprocess_override_strip_fabricated_claims",
+            "postprocess_override_strip_ungrounded_integrations",
+            "postprocess_override_low_quality_fallback",
         ],
         # Lost Question Fix groups
         "lost_question_fix": [
@@ -597,6 +617,16 @@ class FeatureFlags:
     def llm_classifier(self) -> bool:
         """Включён ли LLM классификатор вместо Hybrid"""
         return self.is_enabled("llm_classifier")
+
+    @property
+    def semantic_frame(self) -> bool:
+        """Включено ли извлечение additive semantic frame поверх интента"""
+        return self.is_enabled("semantic_frame")
+
+    @property
+    def semantic_intent_arbitration(self) -> bool:
+        """Включён ли semantic-frame arbitration для финального primary intent."""
+        return self.is_enabled("semantic_intent_arbitration")
 
     # =========================================================================
     # Personalization v2 flags

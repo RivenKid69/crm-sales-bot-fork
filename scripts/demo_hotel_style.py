@@ -12,7 +12,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.llm import OllamaClient
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 
 SEP  = "─" * 62
 SEP2 = "═" * 62
@@ -41,6 +41,7 @@ def run_dialog(llm, title: str, turns: list[tuple[str, str]]):
     print(SEP2)
     print(f"  {title}")
     print(SEP2)
+    setup_autonomous_pipeline()
     bot = SalesBot(llm, flow_name="autonomous")
     for client_msg, label in turns:
         print()

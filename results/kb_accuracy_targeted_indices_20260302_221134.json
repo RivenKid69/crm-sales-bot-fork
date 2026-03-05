@@ -1,0 +1,463 @@
+{
+  "timestamp": "20260302_221134",
+  "indices": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    14,
+    18,
+    20,
+    27,
+    29,
+    30,
+    32,
+    37,
+    38,
+    39
+  ],
+  "total": 18,
+  "passed": 11,
+  "pass_rate": 61.1,
+  "duration_s": 429.13,
+  "results": [
+    {
+      "idx": 1,
+      "cat": "equipment",
+      "question": "Что входит в комплект PRO оборудования и сколько он стоит?",
+      "response": "В комплект оборудования Wipon программа не входит: тариф Mini/Lite/Standard/Pro выбирается отдельно. Комплект PRO — готовый кассовый комплект оборудования для точек с высоким оборотом и интенсивным потоком покупателей.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [
+        "360 000",
+        "POS DUO",
+        "сканер",
+        "принтер",
+        "ящик"
+      ],
+      "forbidden_found": [
+        "тариф"
+      ],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 2,
+      "cat": "equipment",
+      "question": "Сколько стоит комплект Standard оборудования?",
+      "response": "Комплект Standard — базовый набор физического кассового оборудования для рабочего места кассира.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "168 000",
+        "POS i3",
+        "сканер",
+        "принтер"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 4,
+      "cat": "equipment",
+      "question": "Какие принтеры чеков у вас есть? Чем они отличаются?",
+      "response": "Принтеры чеков и этикеток: да. есть моноблоки, комплекты, сканеры, принтеры чеков и этикеток, денежные ящики.",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [
+        "58 мм",
+        "80 мм"
+      ],
+      "forbidden_found": [
+        "этикет"
+      ],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 5,
+      "cat": "equipment",
+      "question": "Сколько стоят весы Rongta RLS1100?",
+      "response": "Весы Rongta RLS1100 стоят 200 000 тенге за штуку. На них можно оформить рассрочку Kaspi 0-0-12 по 16 666 тенге в месяц.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "30 кг"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": null,
+      "factual_verifier_verdict": "pass",
+      "factual_verifier_changed": false,
+      "validation_events": [
+        {
+          "stage": "factual_verifier",
+          "used": true,
+          "changed": false,
+          "verdict": "pass",
+          "reason_codes": [
+            "pass"
+          ]
+        }
+      ]
+    },
+    {
+      "idx": 6,
+      "cat": "equipment",
+      "question": "Есть ли у вас умные весы? Сколько стоят?",
+      "response": "Да, у нас есть умные весы за 100 000 ₸ с рассрочкой от Kaspi. Они сразу передают вес в кассу без ручного ввода. Подскажите, у вас в ассортименте есть развесная косметика или товары, требующие взвешивания?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "30 кг"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": null,
+      "factual_verifier_verdict": "pass",
+      "factual_verifier_changed": false,
+      "validation_events": [
+        {
+          "stage": "factual_verifier",
+          "used": true,
+          "changed": false,
+          "verdict": "pass",
+          "reason_codes": [
+            "pass"
+          ]
+        }
+      ]
+    },
+    {
+      "idx": 7,
+      "cat": "equipment",
+      "question": "Чем отличается Wipon Triple от Wipon Quadro?",
+      "response": "Кассовый моноблок Wipon Quadro — устройство «всё в одном» для розничных точек. Wipon Triple — весовой кассовый моноблок с встроенными весами.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "330 000",
+        "365 000"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 9,
+      "cat": "equipment",
+      "question": "Сколько стоит денежный ящик Wipon?",
+      "response": "Денежный ящик Wipon WP-19: 19 000 ₸ (единоразово). Денежный ящик Wipon WP-405: 21 000 ₸ (единоразово).",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "купюр"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "factual_verifier",
+      "factual_verifier_verdict": "fail",
+      "factual_verifier_changed": true,
+      "validation_events": [
+        {
+          "stage": "factual_verifier",
+          "used": true,
+          "changed": true,
+          "verdict": "fail",
+          "reason_codes": [
+            "initial_fail",
+            "unsupported_claims:1",
+            "rewrite_failed",
+            "db_only_rewrite"
+          ]
+        }
+      ]
+    },
+    {
+      "idx": 10,
+      "cat": "pricing",
+      "question": "Какие тарифы есть у Wipon и сколько они стоят?",
+      "response": "Доступны четыре тарифа Wipon: Mini — 5 000 ₸/мес, Lite — 150 000 ₸/год, Standard — 220 000 ₸/год, Pro — 500 000 ₸/год.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "factual_verifier",
+      "factual_verifier_verdict": "fail",
+      "factual_verifier_changed": true,
+      "validation_events": [
+        {
+          "stage": "factual_verifier",
+          "used": true,
+          "changed": true,
+          "verdict": "fail",
+          "reason_codes": [
+            "initial_fail",
+            "rewrite_failed",
+            "db_only_rewrite"
+          ]
+        }
+      ]
+    },
+    {
+      "idx": 14,
+      "cat": "pricing",
+      "question": "Сколько стоит подключение ТИС?",
+      "response": "Стоимость подключения ТИС: 220 000 ₸/год за первую точку и 80 000 ₸/год за дополнительную. Стоимость ТИС включает тарифы на 1/2/5 лет и рассрочку от 22 000 ₸ в месяц.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "factual_verifier",
+      "factual_verifier_verdict": "fail",
+      "factual_verifier_changed": true,
+      "validation_events": [
+        {
+          "stage": "factual_verifier",
+          "used": true,
+          "changed": true,
+          "verdict": "fail",
+          "reason_codes": [
+            "initial_fail",
+            "unsupported_claims:1",
+            "rewrite_failed",
+            "db_only_rewrite"
+          ]
+        }
+      ]
+    },
+    {
+      "idx": 18,
+      "cat": "pricing",
+      "question": "Что такое Wipon PRO УКМ и сколько стоит?",
+      "response": "Стоимость Wipon рассчитывается по выбранному продукту: модуль Wipon Pro (УКМ), программа учёта или оборудование.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "12 000",
+        "акциз",
+        "алкоголь"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 20,
+      "cat": "products",
+      "question": "Что такое Wipon Kassa?",
+      "response": "Wipon Kassa — централизованное кассовое решение для малого и среднего бизнеса в Казахстане.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "бесплатн",
+        "онлайн-касс",
+        "ОФД",
+        "фискализац"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 27,
+      "cat": "products",
+      "question": "Я торгую алкоголем. Подходит ли ваша система?",
+      "response": "Wipon PRO УКМ — узкоспециализированный программный модуль для акцизной продукции и маркировки. Работа в сельской местности — система подходит для точек со слабой связью.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "алкоголь"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "factual_verifier",
+      "factual_verifier_verdict": "fail",
+      "factual_verifier_changed": true,
+      "validation_events": [
+        {
+          "stage": "factual_verifier",
+          "used": true,
+          "changed": true,
+          "verdict": "fail",
+          "reason_codes": [
+            "initial_fail",
+            "unsupported_claims:2",
+            "rewrite_failed",
+            "db_only_rewrite"
+          ]
+        }
+      ]
+    },
+    {
+      "idx": 29,
+      "cat": "products",
+      "question": "Какие продукты есть в экосистеме Wipon?",
+      "response": "В экосистеме Wipon есть программа учёта, онлайн-касса с фискализацией и система лояльности Cashback. Всё это работает как единое целое для вашего строительного магазина.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "Kassa",
+        "Desktop",
+        "ТИС"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": null,
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 30,
+      "cat": "tis",
+      "question": "Что такое ТИС и как расшифровывается?",
+      "response": "ТИС расшифровывается как Трёхкомпонентная интегрированная система, объединяющая учёт, онлайн-кассу и банковский терминал. Это позволяет предпринимателям на упрощёнке легально увеличивать лимиты доходов без перехода на ТОО.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": null,
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 32,
+      "cat": "tis",
+      "question": "Какие лимиты повышает ТИС для ИП?",
+      "response": "ТИС для ИП официально повышает лимиты по доходу и НДС и снимает лимит по безналу. Подключение ТИС даёт ИП повышенные лимиты по НДС и упрощёнке без смены статуса.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "567",
+        "78"
+      ],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 37,
+      "cat": "tis",
+      "question": "Входят ли продажи через Wildberries и Ozon в лимиты ТИС?",
+      "response": "Нет, продажи через Wildberries и Ozon не входят в лимиты ТИС, так как они проходят мимо кассы. Это позволяет вам масштабироваться без риска превышения порога.",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [
+        "входят в лимит"
+      ],
+      "error": null,
+      "postprocess_last_mutation_rule": null,
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    },
+    {
+      "idx": 38,
+      "cat": "tis",
+      "question": "Сколько стоит выезд специалиста для установки ТИС?",
+      "response": "ТИС в стандартном сценарии подключается удалённо через ЭЦП и AnyDesk, а выезд специалиста стоит 30 000 ₸.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "pass",
+      "factual_verifier_changed": false,
+      "validation_events": [
+        {
+          "stage": "factual_verifier",
+          "used": true,
+          "changed": false,
+          "verdict": "pass",
+          "reason_codes": [
+            "pass"
+          ]
+        }
+      ]
+    },
+    {
+      "idx": 39,
+      "cat": "tis",
+      "question": "Что предложить для ТОО вместо ТИС?",
+      "response": "Для ТОО вместо ТИС используют Wipon Розница под режим розничного налога.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "error": null,
+      "postprocess_last_mutation_rule": "kb_targeted_repairs",
+      "factual_verifier_verdict": "not_run",
+      "factual_verifier_changed": false,
+      "validation_events": []
+    }
+  ]
+}

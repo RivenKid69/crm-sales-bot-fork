@@ -15,14 +15,14 @@
 #   ./scripts/start_ollama.sh
 #
 llm:
-  # Модель Qwen 3.5 27B Q5_K_M через llama-server (OpenAI-совместимый API)
-  model: "qwen3.5-27b"
+  # Модель Qwen 3.5 27B Q4_K_M через Ollama
+  model: "qwen3.5:27b"
 
-  # URL llama-server (OpenAI-compatible API)
+  # URL Ollama сервера
   base_url: "http://localhost:8080"
 
   # Формат API: "ollama" или "openai" (llama-server, vLLM, etc.)
-  api_format: "openai"
+  api_format: "ollama"
 
   # Таймаут запроса в секундах
   timeout: 120
@@ -353,7 +353,7 @@ feature_flags:
   cta_generator: true         # Генерация Call-to-Action
   autonomous_flow: true       # LLM-driven sales flow
   response_factual_verifier: true  # Isolated same-model factual verifier
-  response_fact_disambiguation: true  # Clarify ambiguous factual entities
+  response_fact_disambiguation: false  # LLM handles disambiguation organically via retrieved_facts context
 
 # -----------------------------------------------------------------------------
 # PHONE VALIDATION (Валидация телефонных номеров)
@@ -370,6 +370,15 @@ phone_validation:
   kz_mobile_explicit: [747, 771, 775, 776, 777, 778]
   # City codes (Russia + Kazakhstan)
   city_codes: [495, 499, 812, 343, 383, 861, 727, 717]
+
+# -----------------------------------------------------------------------------
+# AUTONOMOUS DECISION (LLM-driven state transitions)
+# -----------------------------------------------------------------------------
+autonomous_decision:
+  # Температура для structured decision (низкая = детерминированные решения)
+  temperature: 0.05
+  # Максимум токенов вывода (потолок; нужен для reasoning-first schema)
+  num_predict: 2048
 
 # -----------------------------------------------------------------------------
 # DEVELOPMENT (Режим разработки)

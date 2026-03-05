@@ -68,9 +68,12 @@ logging.root.addHandler(_console)
 # ОСНОВНАЯ ЛОГИКА
 # =============================================================================
 def run_e2e(n_dialogs: int = 30, parallel: int = 2) -> None:
+    from src.bot import setup_autonomous_pipeline
     from src.llm import OllamaClient
     from src.simulator.runner import SimulationRunner
     from src.simulator.kb_questions import load_kb_question_pool
+
+    setup_autonomous_pipeline()
 
     TARGET_PERSONAS = ["price_sensitive", "tire_kicker"]
     DIALOGS_PER_PERSONA = n_dialogs // len(TARGET_PERSONAS)

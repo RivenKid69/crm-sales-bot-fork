@@ -1,0 +1,399 @@
+{
+  "label": "post",
+  "timestamp": "20260226_173055",
+  "results": [
+    {
+      "id": "S01",
+      "name": "Discovery: бизнес+боль → переход в qualification",
+      "focus": "graduation_criteria",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в системе?",
+          "state_after": "greeting",
+          "spin_phase": null,
+          "decision": null
+        },
+        {
+          "turn": 2,
+          "user": "Продуктовый магазин, 1 точка в Алматы. Проблема — постоянные недостачи, не понимаю где теряем товар.",
+          "bot": "Поняла, недостачи в продуктах — это больно. Сейчас товар учитываете вручную?",
+          "state_after": "autonomous_discovery",
+          "spin_phase": "discovery",
+          "decision": null
+        },
+        {
+          "turn": 3,
+          "user": "Раньше пробовали Excel, но это уже невозможно",
+          "bot": "Wipon автоматически считает остатки и фиксирует каждую операцию, чтобы вы видели реальную картину. Для продуктового магазина это исключает ручные ошибки и потери.",
+          "state_after": "autonomous_presentation",
+          "spin_phase": "presentation",
+          "decision": {
+            "should_transition": true,
+            "next_state": "autonomous_presentation",
+            "reasoning": "Цель этапа discovery (понять бизнес, ситуацию, боли) достигнута: мы знаем тип бизнеса (розничная тор",
+            "state_before": "autonomous_discovery"
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Сколько примерно стоит базовый вариант?",
+          "bot": "Базовый вариант Mini стоит 5 000 тенге в месяц, в него включена онлайн-касса и фискализация. Есть также годовой тариф Lite за 150 000 тенге/год, если планируете работать дольше.",
+          "state_after": "autonomous_presentation",
+          "spin_phase": "presentation",
+          "decision": {
+            "should_transition": false,
+            "next_state": "autonomous_presentation",
+            "reasoning": "Клиент задаёт вопрос о цене (price_question). Это классическое возражение или запрос на уточнение ус",
+            "state_before": "autonomous_presentation"
+          }
+        }
+      ],
+      "transitioned_at": 3,
+      "expected_transition_by": 4,
+      "expect": "transition",
+      "verdict": "PASS"
+    },
+    {
+      "id": "S02",
+      "name": "Discovery: только бизнес, нет боли → остаться в discovery",
+      "focus": "graduation_criteria",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Подскажите, что именно вас интересует в нашей системе?",
+          "state_after": "greeting",
+          "spin_phase": null,
+          "decision": null
+        },
+        {
+          "turn": 2,
+          "user": "Маленький магазин одежды, одна точка",
+          "bot": "Отлично, для магазина одежды Wipon идеально подходит: учтём размеры, цвета и остатки по каждой модели. А что сейчас больше всего напрягает в работе с ассортиментом?",
+          "state_after": "autonomous_discovery",
+          "spin_phase": "discovery",
+          "decision": null
+        },
+        {
+          "turn": 3,
+          "user": "Расскажите о системе",
+          "bot": "Wipon — это единая система для розницы, включающая учёт товаров и встроенную кассу. Для магазина одежды система поддерживает учёт по размерам, цветам и артикулам. Для одной торговой точки рекомендован тариф Standard за 220 000 тенге в год.",
+          "state_after": "autonomous_discovery",
+          "spin_phase": "discovery",
+          "decision": {
+            "should_transition": false,
+            "next_state": "autonomous_discovery",
+            "reasoning": "Клиент задал фактологический вопрос о системе (intention: question_features), что является перерывом",
+            "state_before": "autonomous_discovery"
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Интересно, какие возможности есть?",
+          "bot": "В системе есть учёт товаров, онлайн-касса с фискализацией и работа с ОФД. Встроенная аналитика покажет, какие позиции приносят больше всего прибыли. Какие именно задачи вы хотите автоматизировать в первую очередь?",
+          "state_after": "autonomous_discovery",
+          "spin_phase": "discovery",
+          "decision": {
+            "should_transition": false,
+            "next_state": "autonomous_discovery",
+            "reasoning": "Клиент задал вопрос о возможностях продукта (question_features). Согласно контекстным сигналам, это ",
+            "state_before": "autonomous_discovery"
+          }
+        }
+      ],
+      "transitioned_at": null,
+      "expected_transition_by": null,
+      "expect": "stay",
+      "verdict": "PASS"
+    },
+    {
+      "id": "S03",
+      "name": "Qualification: бюджет назван явно → переход в presentation",
+      "focus": "graduation_criteria",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в нашей системе?",
+          "state_after": "greeting",
+          "spin_phase": null,
+          "decision": null
+        },
+        {
+          "turn": 2,
+          "user": "Кофейня, 2 точки в Астане. Проблема — нет единого учёта между точками, данные расходятся.",
+          "bot": "Поняла, с двумя точками в Астане это особенно важно. В Wipon все данные синхронизируются в едином кабинете, чтобы вы видели остатки и продажи в реальном времени. А какие именно показатели сейчас расходятся сильнее всего?",
+          "state_after": "autonomous_discovery",
+          "spin_phase": "discovery",
+          "decision": null
+        },
+        {
+          "turn": 3,
+          "user": "Нам важна интеграция с Kaspi QR и складской учёт",
+          "bot": "Да, в Wipon есть поддержка Kaspi QR и полный складской учёт с синхронизацией остатков. Сейчас вы ведёте учёт товаров вручную?",
+          "state_after": "autonomous_discovery",
+          "spin_phase": "discovery",
+          "decision": {
+            "should_transition": false,
+            "next_state": "autonomous_discovery",
+            "reasoning": "Клиент задал фактологический вопрос об интеграциях (Kaspi QR, складской учёт). Согласно контекстным ",
+            "state_before": "autonomous_discovery"
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Бюджет у нас в районе 20 000 тенге в месяц, хотим подключиться в течение месяца",
+          "bot": "Цена Mini: 5 000 ₸/месяц Тариф Mini за 5 000 ₸/месяц — базовая программная конфигурация Wipon.",
+          "state_after": "autonomous_qualification",
+          "spin_phase": "qualification",
+          "decision": {
+            "should_transition": true,
+            "next_state": "autonomous_qualification",
+            "reasoning": "Цель этапа discovery достигнута: мы знаем тип бизнеса (логистика), боль (кошмар), срочность (очень в",
+            "state_before": "autonomous_discovery"
+          }
+        },
+        {
+          "turn": 5,
+          "user": "Что именно подойдёт для нашего случая?",
+          "bot": "При выборе кассы Wipon обычно предлагает POS i3 для небольших точек и POS Premium для высокой нагрузки. POS i3: для небольших точек",
+          "state_after": "autonomous_presentation",
+          "spin_phase": "presentation",
+          "decision": {
+            "should_transition": true,
+            "next_state": "autonomous_presentation",
+            "reasoning": "Цель этапа qualification (сбор BANT) достигнута: у нас есть pain_point, urgency, business_type и bud",
+            "state_before": "autonomous_qualification"
+          }
+        }
+      ],
+      "transitioned_at": 4,
+      "expected_transition_by": 5,
+      "expect": "transition",
+      "verdict": "PASS"
+    },
+    {
+      "id": "S04",
+      "name": "Qualification: потребность подтверждена сильно → переход в presentation",
+      "focus": "graduation_criteria",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в системе?",
+          "state_after": "greeting",
+          "spin_phase": null,
+          "decision": null
+        },
+        {
+          "turn": 2,
+          "user": "Аптека, 3 точки, Шымкент. Главная боль — расхождение остатков между складом и кассой.",
+          "bot": "Расхождения остатков — это действительно больно, особенно когда точек три. В Wipon учёт и касса в одной системе, поэтому остатки всегда актуальны. А как сейчас происходит сверка между складом и кассой?",
+          "state_after": "autonomous_discovery",
+          "spin_phase": "discovery",
+          "decision": null
+        },
+        {
+          "turn": 3,
+          "user": "Нам обязательно нужен складской учёт и контроль сроков годности — без этого нельзя работать",
+          "bot": "Поняла, это критично. В Wipon учёт сроков годности идёт по партиям, система сама покажет, что скоро просрочится. У вас уже есть список поставщиков, с которыми планируете работать?",
+          "state_after": "autonomous_presentation",
+          "spin_phase": "presentation",
+          "decision": {
+            "should_transition": true,
+            "next_state": "autonomous_presentation",
+            "reasoning": "Цель этапа discovery достигнута: мы знаем тип бизнеса (логистика) и ключевую боль (отсутствие контро",
+            "state_before": "autonomous_discovery"
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Да, это критично, мы готовы внедрять",
+          "bot": "Отлично, что готовы. Чтобы мы могли начать внедрение, оставьте, пожалуйста, ваш телефон или email.",
+          "state_after": "autonomous_closing",
+          "spin_phase": "closing",
+          "decision": {
+            "should_transition": true,
+            "next_state": "autonomous_closing",
+            "reasoning": "Клиент явно подтвердил готовность к внедрению ('мы готовы внедрять') и признал критичность проблемы.",
+            "state_before": "autonomous_presentation"
+          }
+        },
+        {
+          "turn": 5,
+          "user": "Что можете предложить конкретно для аптеки?",
+          "bot": "Для аптеки доступны тарифы Standard и Pro. Система включает учёт сроков годности, работу с маркировкой лекарств и встроенную онлайн-кассу с ОФД. Всё работает в одной программе без сторонних решений.",
+          "state_after": "autonomous_closing",
+          "spin_phase": "closing",
+          "decision": {
+            "should_transition": false,
+            "next_state": "autonomous_closing",
+            "reasoning": "Клиент задаёт уточняющий вопрос по функционалу ('Что можете предложить конкретно для аптеки?'), что ",
+            "state_before": "autonomous_closing"
+          }
+        }
+      ],
+      "transitioned_at": 3,
+      "expected_transition_by": 5,
+      "expect": "transition",
+      "verdict": "PASS"
+    },
+    {
+      "id": "S05",
+      "name": "Пограничный: вялый интерес без сигналов → детерминированность (3 sub-runs)",
+      "focus": "temperature_determinism",
+      "sub_runs": [
+        {
+          "turns": [
+            {
+              "turn": 1,
+              "user": "Здравствуйте",
+              "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в нашей системе?",
+              "state_after": "greeting",
+              "spin_phase": null,
+              "decision": null
+            },
+            {
+              "turn": 2,
+              "user": "Может быть интересно, у нас небольшой магазин",
+              "bot": "Небольшой магазин — отличный формат для старта с Wipon. Подскажите, что сейчас занимает больше всего времени: учёт остатков?",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": null
+            },
+            {
+              "turn": 3,
+              "user": "Ну расскажите что-нибудь про систему",
+              "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Комплект Pro\n2) Тариф Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": {
+                "should_transition": false,
+                "next_state": "autonomous_discovery",
+                "reasoning": "Клиент задал фактологический вопрос о системе (intention: question_features), что является перебиван",
+                "state_before": "autonomous_discovery"
+              }
+            },
+            {
+              "turn": 4,
+              "user": "Хм, понятно",
+              "bot": "Wipon — это облачная система, где всё видно с любого устройства: продажи, склад, касса. А как вы сейчас ведёте учёт: в Excel, на бумаге?",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": {
+                "should_transition": false,
+                "next_state": "autonomous_discovery",
+                "reasoning": "Клиент выразил согласие ('Хм, понятно'), но не дал явного сигнала к закрытию (демо, оплата, звонок).",
+                "state_before": "autonomous_discovery"
+              }
+            }
+          ],
+          "transitioned_at": null
+        },
+        {
+          "turns": [
+            {
+              "turn": 1,
+              "user": "Здравствуйте",
+              "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в нашей системе?",
+              "state_after": "greeting",
+              "spin_phase": null,
+              "decision": null
+            },
+            {
+              "turn": 2,
+              "user": "Может быть интересно, у нас небольшой магазин",
+              "bot": "Небольшой магазин — отличный формат для старта. Wipon идеально подходит для таких точек, всё включено в одной системе. А что сейчас больше всего отнимает время у вас?",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": null
+            },
+            {
+              "turn": 3,
+              "user": "Ну расскажите что-нибудь про систему",
+              "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Комплект Pro\n2) Тариф Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": {
+                "should_transition": false,
+                "next_state": "autonomous_discovery",
+                "reasoning": "Клиент находится на этапе discovery, но задал фактологический вопрос о системе (question_features). ",
+                "state_before": "autonomous_discovery"
+              }
+            },
+            {
+              "turn": 4,
+              "user": "Хм, понятно",
+              "bot": "В Wipon всё включено: касса, учёт и аналитика в одном окне. А какой товар у вас в магазине самый популярный?",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": {
+                "should_transition": false,
+                "next_state": "autonomous_discovery",
+                "reasoning": "Клиент выразил согласие ('Хм, понятно'), но не дал явного сигнала к закрытию (демо, оплата, звонок).",
+                "state_before": "autonomous_discovery"
+              }
+            }
+          ],
+          "transitioned_at": null
+        },
+        {
+          "turns": [
+            {
+              "turn": 1,
+              "user": "Здравствуйте",
+              "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Расскажите, что именно вас интересует в системе для вашего магазина?",
+              "state_after": "greeting",
+              "spin_phase": null,
+              "decision": null
+            },
+            {
+              "turn": 2,
+              "user": "Может быть интересно, у нас небольшой магазин",
+              "bot": "Небольшой магазин — это отличный формат для старта. А что именно сейчас занимает больше всего времени в работе?",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": null
+            },
+            {
+              "turn": 3,
+              "user": "Ну расскажите что-нибудь про систему",
+              "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Комплект Pro\n2) Тариф Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": {
+                "should_transition": false,
+                "next_state": "autonomous_discovery",
+                "reasoning": "Клиент находится на этапе discovery, но задал фактологический вопрос о системе (question_features). ",
+                "state_before": "autonomous_discovery"
+              }
+            },
+            {
+              "turn": 4,
+              "user": "Хм, понятно",
+              "bot": "Для небольшого магазина Wipon предлагает тариф Mini за 5 000 ₸ в месяц с кассой и чеками. Скажите, вам нужен просто учёт продаж?",
+              "state_after": "autonomous_discovery",
+              "spin_phase": "discovery",
+              "decision": {
+                "should_transition": false,
+                "next_state": "autonomous_discovery",
+                "reasoning": "Клиент выразил согласие ('Хм, понятно'), но не дал явного сигнала к закрытию (демо, оплата, звонок).",
+                "state_before": "autonomous_discovery"
+              }
+            }
+          ],
+          "transitioned_at": null
+        }
+      ],
+      "transitions": [
+        null,
+        null,
+        null
+      ],
+      "deterministic": true,
+      "verdict": "PASS"
+    }
+  ]
+}

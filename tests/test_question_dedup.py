@@ -239,6 +239,9 @@ class TestPhaseSpecificQuestions:
             "проблем" in questions_text,
             "головн" in questions_text,
             "боль" in questions_text.replace("больше", ""),
+            "теря" in questions_text,
+            "заказ" in questions_text,
+            "путать" in questions_text,
         ])
 
     def test_implication_phase_questions(self, engine):

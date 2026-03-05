@@ -5,6 +5,7 @@ from unittest.mock import Mock
 from src.blackboard.sources.autonomous_decision import AutonomousDecisionRecord
 from src.blackboard.sources.autonomous_decision import AutonomousDecisionSource
 from src.classifier.intents.patterns import COMPILED_PRIORITY_PATTERNS
+from src.feature_flags import flags
 from src.generator import ResponseGenerator
 from src.response_boundary_validator import ResponseBoundaryValidator
 from src.response_directives import ResponseDirectivesBuilder
@@ -305,6 +306,229 @@ def test_enterprise_tis_quote_forces_formula_for_12_points():
     assert "1 100 000" in output
 
 
+def test_tis_override_does_not_trigger_for_definition_question():
+    generator = ResponseGenerator(llm=Mock())
+    base = "ТИС — это решение для сетевого бизнеса."
+    output = generator._enforce_enterprise_tis_quote(
+        base,
+        context={
+            "intent": "question_features",
+            "user_message": "Что такое ТИС?",
+            "history": [{"user": "У нас 12 точек."}],
+        },
+    )
+    assert output == base
+
+
+def test_tis_override_does_not_trigger_for_limits_question():
+    generator = ResponseGenerator(llm=Mock())
+    base = "Лимиты зависят от сценария и подключения."
+    output = generator._enforce_enterprise_tis_quote(
+        base,
+        context={
+            "intent": "question_limits",
+            "user_message": "Какие лимиты у ТИС?",
+            "history": [{"user": "У нас сеть из 12 магазинов."}],
+        },
+    )
+    assert output == base
+
+
+def test_tis_override_does_not_trigger_for_marketplace_integration_question():
+    generator = ResponseGenerator(llm=Mock())
+    base = "По маркетплейсам нужна проверка интеграций."
+    output = generator._enforce_enterprise_tis_quote(
+        base,
+        context={
+            "intent": "question_integrations",
+            "user_message": "ТИС интегрируется с Wildberries и Ozon?",
+            "history": [{"user": "У нас 12 точек."}],
+        },
+    )
+    assert output == base
+
+
+def test_tis_override_appends_price_block_instead_of_full_replace():
+    generator = ResponseGenerator(llm=Mock())
+    base = "ТИС подходит для сетей с централизованным управлением."
+    output = generator._enforce_enterprise_tis_quote(
+        base,
+        context={
+            "intent": "pricing_details",
+            "user_message": "Сколько стоит ТИС для 12 точек?",
+            "history": [],
+        },
+    )
+    low = output.lower()
+    assert base in output
+    assert "для 12 точек нужен тариф тис" in low
+    assert "1 100 000" in output
+
+
+def test_strip_fabricated_claims_keeps_kb_backed_free_online_kassa_fact():
+    text = "Wipon Kassa — это бесплатная онлайн-касса для старта."
+    facts = "Wipon Kassa — бесплатная онлайн-касса."
+    output = ResponseGenerator._strip_fabricated_claims(text, facts)
+    assert "бесплатная онлайн-касса" in output.lower()
+
+
+def test_strip_fabricated_claims_keeps_kb_backed_free_kassa_short_form():
+    text = "Wipon Kassa — это бесплатная касса для старта."
+    facts = "Wipon Kassa — бесплатная онлайн-касса."
+    output = ResponseGenerator._strip_fabricated_claims(text, facts)
+    assert "бесплатная касса" in output.lower()
+
+
+def test_strip_fabricated_claims_still_strips_free_tariff_even_with_kassa_fact():
+    text = "У нас есть бесплатный тариф Mini для всех."
+    facts = "Wipon Kassa — бесплатная онлайн-касса."
+    output = ResponseGenerator._strip_fabricated_claims(text, facts)
+    assert "бесплатный тариф" not in output.lower()
+
+
+def test_strip_ungrounded_integrations_skips_when_facts_empty():
+    text = "Система интегрирована с 1С."
+    output = ResponseGenerator._strip_ungrounded_integrations(text, "")
+    assert output == text
+
+
+def test_first_bot_reply_prepends_mandatory_intro_for_non_greeting():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", True)
+
+        output, _ = generator.post_process_only(
+            response="Да, интеграция с Kaspi есть.",
+            context={
+                "intent": "question_features",
+                "user_message": "Сразу скажите, есть интеграция с Kaspi?",
+                "history": [],
+                "is_first_bot_reply": True,
+            },
+            requested_action="autonomous_respond",
+            selected_template_key="autonomous_respond",
+            retrieved_facts="",
+        )
+
+        assert output.startswith(
+            "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon."
+        )
+        assert "Да, интеграция с Kaspi есть." in output
+    finally:
+        flags.clear_all_overrides()
+
+
+def test_first_bot_reply_keeps_canonical_greeting_policy_for_greeting_intent():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", True)
+
+        output, _ = generator.post_process_only(
+            response="Любой вариант от LLM.",
+            context={
+                "intent": "greeting",
+                "user_message": "Здравствуйте",
+                "history": [],
+                "is_first_bot_reply": True,
+            },
+            requested_action="greet_back",
+            selected_template_key="greet_back",
+            retrieved_facts="",
+        )
+
+        assert output == (
+            "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. "
+            "Чем я могу вам помочь?"
+        )
+    finally:
+        flags.clear_all_overrides()
+
+
+def test_postprocess_trace_records_before_after_and_last_mutation():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", True)
+        flags.set_override("postprocess_override_enforce_enterprise_tis_quote", True)
+
+        output, _ = generator.post_process_only(
+            response="Ответ по базе.",
+            context={
+                "intent": "pricing_details",
+                "user_message": "Сколько стоит ТИС для 12 точек?",
+                "history": [],
+            },
+            requested_action="autonomous_respond",
+            selected_template_key="autonomous_respond",
+            retrieved_facts="",
+        )
+
+        trace = generator._last_postprocess_meta.get("postprocess_trace", [])
+        assert trace
+
+        tis_trace = [entry for entry in trace if entry.get("rule_id") == "enforce_enterprise_tis_quote"]
+        assert tis_trace
+        last_tis = tis_trace[-1]
+        assert {"rule_id", "before", "after", "changed"}.issubset(last_tis.keys())
+        assert last_tis["changed"] is False
+        assert last_tis.get("reason") == "migrated_to_llm_guardrails"
+        assert output == "Ответ по базе."
+    finally:
+        flags.clear_all_overrides()
+
+
+def test_master_flag_disables_tis_override_after_verifier():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", False)
+        flags.set_override("postprocess_override_enforce_enterprise_tis_quote", True)
+
+        original = "Ответ по базе."
+        output, _ = generator.post_process_only(
+            response=original,
+            context={
+                "intent": "pricing_details",
+                "user_message": "Сколько стоит ТИС для 12 точек?",
+                "history": [],
+            },
+            requested_action="autonomous_respond",
+            selected_template_key="autonomous_respond",
+            retrieved_facts="",
+        )
+
+        assert output == original
+        trace = generator._last_postprocess_meta.get("postprocess_trace", [])
+        tis_trace = [entry for entry in trace if entry.get("rule_id") == "enforce_enterprise_tis_quote"]
+        assert tis_trace
+        assert tis_trace[-1].get("enabled") is False
+        assert tis_trace[-1].get("changed") is False
+    finally:
+        flags.clear_all_overrides()
+
+
 def test_tis_component_price_is_not_treated_as_hallucination():
     generator = ResponseGenerator(llm=Mock())
     response = (
@@ -343,6 +567,250 @@ def test_hallucination_fallback_prefers_iin_boundary_for_refusal():
         }
     )
     assert "без иин счёт" in fallback.lower()
+
+
+def test_kb_targeted_repairs_adds_printer_sizes():
+    generator = ResponseGenerator(llm=Mock())
+    facts = "Чековые принтеры: GP-C58 — 58 мм. GP-C200I — 80 мм с автоотрезом."
+    output = generator._apply_kb_targeted_repairs(
+        "У нас есть GP-C58 и GP-C200I для чеков.",
+        {
+            "intent": "question_equipment_specs",
+            "user_message": "Какие принтеры чеков у вас есть? Чем они отличаются?",
+        },
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "58 мм" in low
+    assert "80 мм" in low
+
+
+def test_kb_targeted_repairs_normalizes_wildberries_ozon_tis_limit_phrase():
+    generator = ResponseGenerator(llm=Mock())
+    facts = (
+        "Продажи через Wildberries и Ozon не входят в расчёт лимита ТИС, "
+        "потому что проходят мимо кассы."
+    )
+    output = generator._apply_kb_targeted_repairs(
+        "Да, продажи через Ozon и Wildberries входят в лимиты ТИС.",
+        {
+            "intent": "question_limits",
+            "user_message": "Входят ли продажи через Wildberries и Ozon в лимиты ТИС?",
+        },
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "не входят в расчёт лимита" in low
+    assert "входят в лимит" not in low
+
+
+def test_hallucination_fallback_for_alcohol_keeps_ukm_and_excise():
+    validator = ResponseBoundaryValidator()
+    fallback = validator._hallucination_fallback(
+        {
+            "intent": "question_alcohol_tobacco",
+            "state": "autonomous_discovery",
+            "user_message": "Я торгую алкоголем. Подходит ли ваша система?",
+            "violations": ["llm_ungrounded_claim"],
+        }
+    )
+    low = fallback.lower()
+    assert "укм" in low
+    assert "акциз" in low
+    assert "алкогол" in low
+
+
+def test_kb_targeted_repairs_for_wipon_kassa_keeps_ofd_and_fiscalization_without_free_word():
+    generator = ResponseGenerator(llm=Mock())
+    facts = "Wipon Kassa — онлайн-касса с фискализацией и передачей чеков в ОФД."
+    output = generator._apply_kb_targeted_repairs(
+        "Wipon Kassa — это бесплатная онлайн-касса.",
+        {"intent": "question_product", "user_message": "Что такое Wipon Kassa?"},
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "онлайн-касса" in low
+    assert "фискализац" in low
+    assert "офд" in low
+    assert "бесплатн" not in low
+
+
+def test_kb_targeted_repairs_for_cash_drawer_keeps_21k_and_compartments():
+    generator = ResponseGenerator(llm=Mock())
+    facts = (
+        "Денежный ящик Wipon WP-405 стоит 21 000 ₸ и имеет 5 отделений для купюр. "
+        "Денежный ящик Wipon WP-170 стоит 30 000 ₸."
+    )
+    output = generator._apply_kb_targeted_repairs(
+        "У нас есть три модели: WP-19 за 19 000 ₸, WP-405 за 21 000 ₸ и WP-170 за 30 000 ₸.",
+        {
+            "intent": "question_cash_drawer",
+            "user_message": "Сколько стоит денежный ящик Wipon?",
+        },
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "21 000" in output
+    assert "купюр" in low
+    assert "30 000" not in output
+
+
+def test_kb_targeted_repairs_for_too_instead_of_tis_keeps_roznica_in_primary_sentence():
+    generator = ResponseGenerator(llm=Mock())
+    facts = "Для ТОО вместо ТИС обычно выбирают Wipon Розница под режим розничного налога."
+    output = generator._apply_kb_targeted_repairs(
+        "Для ТОО вместо ТИС рекомендую Wipon под режим розничного налога.",
+        {"intent": "question_tis", "user_message": "Что предложить для ТОО вместо ТИС?"},
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "розниц" in low
+    assert output.endswith("налога.")
+    assert "?" not in output
+
+
+def test_kb_targeted_repairs_for_smart_scales_avoids_rongta_mix():
+    generator = ResponseGenerator(llm=Mock())
+    facts = (
+        "Умные весы Wipon стоят 100 000 ₸ и выдерживают до 30 кг. "
+        "Весы Rongta RLS1100 стоят 200 000 ₸."
+    )
+    output = generator._apply_kb_targeted_repairs(
+        "Есть Wipon за 100 000 и Rongta за 200 000.",
+        {
+            "intent": "question_equipment_price",
+            "user_message": "Есть ли у вас умные весы? Сколько стоят?",
+        },
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "100 000" in output
+    assert "30 кг" in low
+    assert "rongta" not in low
+    assert "200 000" not in output
+
+
+def test_kb_targeted_repairs_does_not_downgrade_detailed_answer_to_generic_summary():
+    generator = ResponseGenerator(llm=Mock())
+    facts = "Преимущества Wipon — обзор причин выбора платформы относительно других систем."
+    detailed = (
+        "Wipon объединяет кассу, учёт и ТИС в одной системе без посредников. "
+        "Мы работаем с 2014 года и поддерживаем более 50 000 клиентов."
+    )
+    output = generator._apply_kb_targeted_repairs(
+        detailed,
+        {"intent": "comparison", "user_message": "Почему стоит выбрать именно Wipon?"},
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "объединяет кассу" in low
+    assert "обзор причин выбора" not in low
+
+
+def test_db_grounded_response_prefers_concrete_fact_over_abstract_overview():
+    generator = ResponseGenerator(llm=Mock())
+    facts = (
+        "Преимущества Wipon — обзор причин выбора платформы относительно других систем.\n"
+        "Wipon объединяет кассу, учёт и ТИС в одной системе."
+    )
+    output = generator._db_grounded_response_from_facts(
+        user_message="Почему стоит выбрать именно Wipon?",
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "объединяет кассу" in low
+    assert "обзор причин выбора" not in low
+
+
+def test_db_grounded_response_uses_query_context_before_stage_context():
+    generator = ResponseGenerator(llm=Mock())
+    facts = (
+        "[support/support_data_transfer]\n"
+        "Перенос базы данных из другой программы выполняется бесплатно, включая импорт из Excel.\n"
+        "=== КОНТЕКСТ ЭТАПА ===\n"
+        "[equipment/equipment_connect]\n"
+        "Подключение программы Wipon к имеющейся технике."
+    )
+    output = generator._db_grounded_response_from_facts(
+        user_message="Можно ли перенести базу данных из другой программы?",
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "перенос" in low
+    assert "бесплат" in low
+    assert "excel" in low
+    assert "имеющейся технике" not in low
+
+
+def test_kb_targeted_repairs_does_not_replace_query_specific_answer_with_stage_noise():
+    generator = ResponseGenerator(llm=Mock())
+    facts = (
+        "[support/support_data_transfer]\n"
+        "Перенос базы данных из другой программы выполняется бесплатно, включая импорт из Excel.\n"
+        "=== КОНТЕКСТ ЭТАПА ===\n"
+        "[equipment/equipment_connect]\n"
+        "Подключение программы Wipon к имеющейся технике."
+    )
+    output = generator._apply_kb_targeted_repairs(
+        "Да, перенос базы делаем бесплатно, в том числе через Excel.",
+        {
+            "intent": "question_data_migration",
+            "user_message": "Можно ли перенести базу данных из другой программы?",
+        },
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "перенос" in low
+    assert "бесплат" in low
+    assert "excel" in low
+    assert "имеющейся технике" not in low
+
+
+def test_kb_targeted_repairs_keeps_valid_delivery_timeline_answer():
+    generator = ResponseGenerator(llm=Mock())
+    facts = (
+        "[delivery/delivery_almaty_time]\n"
+        "Доставка в Алматы занимает 1-2 рабочих дня.\n"
+        "[delivery/delivery_return]\n"
+        "Возврат оборудования возможен в течение 14 дней.\n"
+    )
+    output = generator._apply_kb_targeted_repairs(
+        "В Алматы доставка занимает 1–2 рабочих дня.",
+        {
+            "intent": "question_delivery_time",
+            "user_message": "За сколько дней доставите оборудование в Алматы?",
+        },
+        retrieved_facts=facts,
+    )
+    low = output.lower()
+    assert "1" in output
+    assert "2" in output
+    assert "рабоч" in low
+    assert "возврат" not in low
+
+
+def test_normalize_positive_factual_phrasing_rewrites_negation_echoes():
+    text = (
+        "Нет, две программы не нужны. "
+        "Данные не потеряются и вручную ничего вводить не нужно. "
+        "Ограничение по количеству товаров: нет."
+    )
+    output = ResponseGenerator._normalize_positive_factual_phrasing(text)
+    low = output.lower()
+    assert "две программы" not in low
+    assert "данные не потеря" not in low
+    assert "вручную" not in low
+    assert "без ограничений" in low
+
+
+def test_boundary_validator_allows_grounded_negative_ozon_wildberries_phrase():
+    validator = ResponseBoundaryValidator()
+    response = "Прямой интеграции с Ozon и Wildberries у нас пока нет."
+    violations = validator._detect_violations(
+        response,
+        context={"retrieved_facts": "Прямой интеграции с Ozon и Wildberries нет."},
+    )
+    assert "ungrounded_tech_claim" not in violations
 
 
 def test_hallucination_fallback_uses_history_for_iin_refusal():
@@ -556,3 +1024,25 @@ def test_boundary_detects_unrequested_business_assumption():
         context={"user_message": "Отвечай коротко, чем вы лучше?"},
     )
     assert "unrequested_business_assumption" in violations
+
+
+def test_strip_ungrounded_modules_keeps_known_ukm_module_without_facts():
+    raw = (
+        "Да, для торговли алкоголем подходит модуль Wipon PRO УКМ. "
+        "Он нужен для акцизной продукции и маркировки."
+    )
+    sanitized = ResponseGenerator._strip_ungrounded_modules(raw, "")
+    assert "УКМ" in sanitized
+    assert "акциз" in sanitized.lower()
+
+
+def test_boundary_does_not_flag_connection_word_as_past_setup():
+    validator = ResponseBoundaryValidator()
+    result = validator.validate_response(
+        "Подключение ТИС занимает 1-2 дня при готовых ЭЦП и документах.",
+        context={
+            "intent": "question_tis_price",
+            "retrieved_facts": "Подключение ТИС занимает 1-2 дня при готовых ЭЦП и документах.",
+        },
+    )
+    assert "hallucinated_past_action" not in result.violations

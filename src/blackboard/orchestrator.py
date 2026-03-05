@@ -259,6 +259,7 @@ class DialogueOrchestrator:
         context_envelope: Optional[Any] = None,
         user_message: str = "",
         frustration_level: int = 0,
+        dialog_history: list = None,
     ) -> ResolvedDecision:
         """
         Process a dialogue turn through the Blackboard system.
@@ -289,6 +290,7 @@ class DialogueOrchestrator:
                 context_envelope=context_envelope,
                 user_message=user_message,
                 frustration_level=frustration_level,
+                dialog_history=dialog_history,
             )
 
             self._event_bus.emit(TurnStartedEvent(

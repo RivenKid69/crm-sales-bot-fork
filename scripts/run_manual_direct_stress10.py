@@ -16,7 +16,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 from src.llm import OllamaClient
 
 
@@ -184,6 +184,7 @@ def collect_quality_flags(dialog_trace: List[Dict[str, Any]]) -> Dict[str, int]:
 
 
 def run_dialog(llm: OllamaClient, scenario: Dict[str, Any]) -> Dict[str, Any]:
+    setup_autonomous_pipeline()
     bot = SalesBot(llm, flow_name="autonomous", persona=scenario.get("persona"), enable_tracing=True)
     trace: List[Dict[str, Any]] = []
 

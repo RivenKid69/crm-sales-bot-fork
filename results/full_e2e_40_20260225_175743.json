@@ -1,0 +1,1541 @@
+{
+  "timestamp": "20260225_175743",
+  "scenarios_count": 40,
+  "dialogs": [
+    {
+      "id": "A01",
+      "name": "Mini: 5 000 ₸/мес — точная цена",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "У меня один маленький магазин",
+          "bot": "А, маленький магазин — значит, всё на вас лежит! А что именно не нравится в текущем учёте — ручками считаете или какая-то программа? Или проблема с остатками/скоростью?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит тариф Mini?",
+          "bot": "Тариф Mini стоит 5 000 ₸ в месяц и включает онлайн-кассу с фискализацией, базовый учёт продаж и работу через компьютер или кассовое устройство. Подходит для небольших торговых точек с базовыми требованиями. Ограничения: недоступны возвраты, счёт на оплату, отчёты, налоговые формы и часть складских операций.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "A02",
+      "name": "Lite: 150 000 ₸/год — точная цена",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Коллега по *Wipon* для казахстанских магазинов на связи. Подскажите, с чем нужна помощь — учетом продаж, настройкой кассы или чем-то ещё?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Один магазин косметики",
+          "bot": "А, магазин косметики! А как сейчас ведёте учёт — всё ручками или уже на каком-то ПО? Главное — что именно не устраивает в текущем процессе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит Lite в год?",
+          "bot": "Для одного магазина тариф Lite обойдётся в 150 000 ₸ в год. Включает учёт продаж, интеграцию с POS-терминалами и фискализацию через Wipon ОФД.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "A03",
+      "name": "Standard: 220 000 ₸/год — точная цена",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно интересует в нашей системе для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Сеть из 3 магазинов",
+          "bot": "А, сеть из трёх магазинов — уже серьёзная задача! Расскажите, какие именно боли вы хотите решить с автоматизацией? Например, часто ли у вас бывают разнобои в учёте остатков между точками?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Цена Standard?",
+          "bot": "Для сети из трёх магазинов тариф Standard стоит 300 000 ₸ в год (220 000 ₸ за первую точку + 80 000 ₸ за каждую из двух дополнительных). Он обеспечивает единый учёт остатков между всеми точками сети.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "A04",
+      "name": "Pro: 500 000 ₸/год — точная цена",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно в работе ваших трёх магазинов вызывает наибольшие сложности?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Крупная сеть 15 точек, нужен максимальный тариф",
+          "bot": "Для 15 точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую дополнительную, итого 1 340 000 ₸/год.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит Pro?",
+          "bot": "Тариф Pro стоит 500 000 ₸/год и предназначен для сетей магазинов с централизованным управлением до 5 складов.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "A05",
+      "name": "Моноблок POS i3: 140 000 ₸ — оборудование из KB",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Какой вопрос по системе Wipon для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Один магазин продуктов",
+          "bot": "Ага, продуктовый магазин! Сейчас товар учитываете на бумаге, в Excel или через какую-то программу?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит самый простой кассовый моноблок?",
+          "bot": "Самый простой кассовый моноблок — это модель POS i3, его стоимость составляет 140 000 ₸ (единоразово). Он включает в себя кассовый функционал с фискализацией и поддерживает маркировку обязательных категорий товаров.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "A06",
+      "name": "Бот НЕ считает за клиента (5×Mini ≠ 25000)",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Айбота — коллега по Wipon для торговых точек. В чём именно нужна помощь с магазином?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "5 маленьких точек",
+          "bot": "Понятно, у вас 5 небольших магазинов. А что именно сейчас мешает автоматизировать учёт или продажи? Например, теряете товар, ручной учёт долгий?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Если взять Mini на каждую, сколько суммарно в месяц?",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [
+        "FAIL must_contain_any: none of ['5 000', 'Mini'] found in bot responses"
+      ],
+      "passed": false
+    },
+    {
+      "id": "A07",
+      "name": "Рассрочка Kaspi 0-0-12 — факт из KB",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас волнует в системе Wipon для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Есть ли рассрочка на оборудование?",
+          "bot": "Да, оборудование Wipon можно оформить в рассрочку через Kaspi на условиях 0-0-12 без переплаты.",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "A08",
+      "name": "ТИС: 220 000 ₸/год за 1 точку — отдельный продукт",
+      "group": "pricing_accuracy",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Чем именно вас интересует по Wipon?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Нужна ТИС для ИП, 1 точка",
+          "bot": "А, поняла! У вас ИП с одной точкой — значит, автоматизация нужна компактная и недорогая. Сейчас вы как-то ведёте учёт и кассу?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит ТИС?",
+          "bot": "Стоимость ТИС для одной точки составляет 220 000 ₸ в год. Включает кассу с фискализацией, передачу чеков в ОФД и учёт. Также доступны тарифы на 2 года (350 000 ₸) и 5 лет (500 000 ₸).",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B01",
+      "name": "Kaspi интеграция: Lite/Standard/Pro — да, Mini — нет",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Чем именно вы хотели бы улучшить работу своего магазина?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Нам важна интеграция с Kaspi",
+          "bot": "Расскажите, какие именно функции Kaspi важны для вас: приём платежей, синхронизация заказов?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Mini поддерживает Kaspi?",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B02",
+      "name": "1С интеграция — есть (в KB)",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Расскажите, для чего вам нужна система Wipon для магазина?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "У нас учёт в 1С",
+          "bot": "У вас уже учёт в 1С, поэтому интеграция с Wipon упростит синхронизацию остатков и продаж, а также обмен данными для упрощения бухгалтерского учёта. Настройка не требует отдельного программиста. Также доступна аналитика эффективности сотрудников и точек, интеграция со складом, закупками и финансами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Wipon работает с 1С?",
+          "bot": "Да, Wipon поддерживает интеграцию с 1С. Синхронизация остатков и продаж, а также обмен данными для упрощения бухгалтерского учёта доступны без привлечения программиста.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B03",
+      "name": "Wipon Pro УКМ: маркировка, алкоголь — 12 000 ₸/год",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вы хотите узнать о нашей системе Wipon для вашего розничного бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Магазин алкоголя",
+          "bot": "Алкоголь — это строгий контроль остатков и быстрая касса, да? Сейчас как ведёте учёт? Может, ручками?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли у вас поддержка маркировки для акцизной продукции?",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B04",
+      "name": "Складской учёт — есть в Standard+",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Чем именно хотите улучшить работу вашего магазина? Я — ваш эксперт по Wipon и готов помочь.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Продуктовый магазин, 2 точки",
+          "bot": "А, продуктовый с двумя точками! А как сейчас следите за остатками товара? Иногда ли случаются переборы или недозаказы?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли складской учёт? Нужно контролировать остатки",
+          "bot": "В Wipon есть складской учёт с полным циклом управления товарами, остатками и складскими операциями. Он включает учёт товаров, остатков, закупок и перемещений, а также автоматические уведомления при малом количестве остатков. База товаров формируется автоматически, без ручного ввода.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B05",
+      "name": "Аналитика продаж — есть в Pro",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "В чём нужна помощь с нашей системой?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Большая сеть магазинов",
+          "bot": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Какая аналитика продаж доступна?",
+          "bot": "В Wipon доступна аналитика продаж по следующим параметрам: Срезы аналитики: по количеству и прибыли, отслеживание бестселлеров (какие товары продаются чаще и какие приносят больше дохода). Периоды: динамика продаж и выручки по дням, неделям и месяцам. Отчёты по категориям: анализ продаж по группам товаров.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B06",
+      "name": "Кадровый учёт — только Pro",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "В чем нужна поддержка с нашей системой прямо сейчас?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Сеть из 10 магазинов, много сотрудников",
+          "bot": "А, сеть из 10 магазинов — это уже не локальная точка! Сейчас вы на чем работаете — 1С или что-то другое? Главное — что именно не устраивает в текущей системе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли кадровый учёт?",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B07",
+      "name": "ОФД — включён во все тарифы",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Чем именно вас интересует — настройка системы или что-то другое?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "ОФД входит в стоимость или отдельно платить?",
+          "bot": "ОФД оплачивается отдельно — 1 400 ₸ каждый месяц. Списание происходит автоматически. Онлайн-касса и фискализация включены в тариф.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "B08",
+      "name": "Cashback модуль — только в Pro",
+      "group": "feature_grounding",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Вы уже используете какую-то систему учёта сотрудников?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Хотим начислять клиентам кешбек с покупок",
+          "bot": "Кешбек — супер идея для лояльности! В Wipon есть встроенная система бонусов и кешбека — начисляете клиентам автоматически по правилам, которые сами зададите. А каким бизнесом занимаетесь?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли у вас система кешбека?",
+          "bot": "Да, у нас есть встроенная система кешбека на базе модуля Wipon Cashback. Она позволяет автоматически начислять и списывать бонусы по настраиваемым правилам, а также отображать баланс клиента в системе.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C01",
+      "name": "Пробный период — ответ из БД: 7 дней, бесплатно",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует по Wipon?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Магазин одежды в Астане",
+          "bot": "О, магазин одежды! А что именно сейчас не так в учёте товаров или продажах? Может, задержки с остатками?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли пробный период чтобы протестировать?",
+          "bot": "Да, пробный период доступен — 7 календарных дней для бесплатного тестирования функционала системы в реальном сценарии. Пробный доступ предоставляется бесплатно (0 ₸).",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C02",
+      "name": "CRM модуль — НЕТ",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Какую именно задачу вы хотите решить в магазине прямо сейчас?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Нам нужна CRM для ведения клиентской базы",
+          "bot": "О, CRM! А вы сейчас клиентов записываете как-то — в блокноте или в Excel?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли CRM-модуль в Wipon?",
+          "bot": "По предоставленным фактам БД нет подтверждённого ответа в текущем виде. Уточните, пожалуйста, тариф или интеграцию.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C03",
+      "name": "Wolt интеграция — НЕТ",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Расскажите, пожалуйста, в чём именно нуждается ваш магазин прямо сейчас?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Доставляем еду через Wolt",
+          "bot": "А через Wolt всё работает стабильно, или есть проблемы с отчётами или заказами? Хотите независимость и свой контроль над логистикой?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Можно подключить Wipon к Wolt?",
+          "bot": "Доступны интеграции с Kaspi и Halyk для объединения заказов с разными платформами в одном месте.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C04",
+      "name": "SAP интеграция — НЕТ",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Чем вас заинтересовала наша торгово-информационная система?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Наш головной офис использует SAP",
+          "bot": "А, SAP — это мощная, но сложная система. У нас для розницы есть решения с кассой и учётом в одном, без интеграционных головняков. А ваш бизнес — это розница или скорее опт/склад?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Wipon может интегрироваться с SAP?",
+          "bot": "В системе доступны интеграции с 1С для обмена данными с бухгалтерским контуром, а также с маркетплейсами Kaspi и Halyk для единого учёта онлайн-продаж.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C05",
+      "name": "Мобильное приложение для покупателей — НЕТ",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, коллега по Wipon для розничных магазинов Казахстана. Расскажите, что именно привлекло вас в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Хотим чтобы клиенты заказывали через приложение",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли мобильное приложение для покупателей?",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C06",
+      "name": "Аренда оборудования — НЕТ (бот отказывает)",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Расскажите подробнее, что именно интересует о системе **Wipon** для вашего розничного бизнеса.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Не хочу покупать оборудование сразу",
+          "bot": "Поняла, сейчас важнее сэкономить на старте. Спасибо, что поделились — всегда готова помочь, если ситуация изменится!",
+          "state": "soft_close",
+          "action": "soft_close",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Можно взять кассу в аренду?",
+          "bot": "Арендовать кассу в Wipon нельзя. Доступны только покупка оборудования или рассрочка на 12 месяцев без переплаты через Kaspi. Если нужен низкий стартовый платёж, рассрочка может быть хорошим вариантом.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C07",
+      "name": "SLA 99.9% — НЕТ (не раскрываем)",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, коллега по Wipon для розницы в Казахстане. Вы подбираете систему для нового магазина?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Для нас критична надёжность системы",
+          "bot": "Для нас важна стабильность связи — система поддерживает сертифицированные весы WIPON или Rongta. Подключаются разово и работают без перенастройки. А как вы планируете учитывать товар: вручную?",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Какой у вас SLA? Гарантируете ли 99.9% аптайм?",
+          "bot": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon.",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "C08",
+      "name": "Bitrix24 интеграция — НЕТ",
+      "group": "hallucination_prevention",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Чем именно вас интересует по *Wipon*? Расскажите подробнее.",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Используем Bitrix24 для учёта",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Wipon интегрируется с Bitrix24?",
+          "bot": "По техническим параметрам в чате даю только подтверждённые факты. Точные SLA/RPO/RTO, размещение данных и детали API уточню у коллег.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D01",
+      "name": "Discovery → цена: бот отвечает фактами из KB",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует в системе Wipon для розницы: учёт продаж, касса, отчётность или другое?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Продуктовый магазин, 1 точка, Алматы",
+          "bot": "А как сейчас считаете товары и продажи? Что у вас за инструмент сейчас?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Интересуют цены на вашу систему",
+          "bot": "Для вашей точки в Алматы подходит тариф Mini — 5 000 ₸ в месяц (60 000 ₸ в год) или Lite — 150 000 ₸ в год. Эти тарифы включают базовый учёт продаж, фискализацию и работу с товарами (до 5 000 позиций для Mini).",
+          "state": "autonomous_presentation",
+          "action": "autonomous_respond",
+          "spin_phase": "presentation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D02",
+      "name": "Возражение 'дорого' → конкурентное сравнение из KB",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, ваш персональный консультант по Wipon. В чём ваш вопрос или задача?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Ресторан, 2 точки",
+          "bot": "Разные форматы у вас — это круто! А что именно хотите автоматизировать: касса, учёт заказов или как-то ещё синхронизировать две точки?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит Standard?",
+          "bot": "Тариф Standard для одной точки обходится в 220 000 ₸/год. Для второй точки действует доплата в 80 000 ₸/год, итого 300 000 ₸/год за две точки. Тариф включает неограниченную номенклатуру, до 3 складов, оптовые и розничные цены, а также поддержку налоговых режимов (ТИС, Розничный налог, СНР 2026).",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "Дорого. Poster дешевле вроде",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D03",
+      "name": "Ready buyer → быстрый путь к closing + сбор контакта",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует в системе Wipon?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Мне нужна касса для магазина, одна точка",
+          "bot": "А, одна точка — это хорошо! А какой у вас ассортимент — в основном продукты, одежда или что-то другое? Это важно, чтобы правильно подобрать функционал.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Хочу подключиться, давайте оформим",
+          "bot": "Для оплаты через Kaspi нужны ваш ИИН и номер Kaspi. Пожалуйста, укажите их — и мы сразу оформим подписку.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "Мой номер 87077654321",
+          "bot": "Мой номер уже в базе — спасибо! Расскажите, а что именно в текущей кассе не устраивает?",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D04",
+      "name": "Казахоязычный клиент — бот отвечает на казахском",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Сәлеметсіз бе",
+          "bot": "Сәлеметсіз бе! Рада помочь. А какая у вас точка: магазин или кафе/фастфуд?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Менің шағын дүкенім бар, Алматыда",
+          "bot": "Ах, продуктовый дюкен в Алматы — это круто! Расскажите, что сейчас больше всего \"ест\" время или нервы: ручной учёт товаров, частые ошибки в кассе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Бағасы қанша?",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_presentation",
+          "action": "autonomous_respond",
+          "spin_phase": "presentation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D05",
+      "name": "Переговоры: бот не придумывает скидки",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует у нас по Wipon?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Сеть 5 магазинов одежды",
+          "bot": "pooltyn, 5 магазинов одежды — это уже солидно! А что сейчас с учетом товаров и продаж напрягает больше всего? Например, синхронизация между точками, ручной ввод?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит Standard?",
+          "bot": "Тариф Standard рассчитан на до 3 торговых точек и стоит 220 000 ₸/год. Для 5 магазинов он не подходит — необходимо переходить на тариф Pro (500 000 ₸/год) или ТИС (220 000 ₸/год за первую точку + 80 000 ₸/год за каждую дополнительную).",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "Дорого, дайте скидку",
+          "bot": "Уточню у коллег — хочу дать только проверенную информацию. Что именно вас интересует?",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D06",
+      "name": "Технический deep-dive: оборудование из KB",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Какой аспект работы вашего магазина вы хотели бы улучшить?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Продуктовый магазин с весовым товаром",
+          "bot": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Какое оборудование мне нужно? Сканер, весы, принтер?",
+          "bot": "Для продуктового магазина с весовым товаром Wipon поддерживает следующее оборудование: Сканеры: проводные USB (HID), беспроводные Bluetooth, а также возможность использования камеры смартфона. Весы: торговые модели с интерфейсами RS-232/USB. Принтеры: термопринтеры 58 мм и 80 мм с протоколом ESC/POS и интерфейсами USB/Bluetooth/Wi-Fi (например, GP-C58, GP-C200I).",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D07",
+      "name": "Длинный диалог 8 ходов — нет повторов вопросов",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно хотели бы обсудить в системе Wipon для вашего розничного бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Аптека, 3 точки в Алматы",
+          "bot": "Три аптеки в Алматы — это уже не маленький бизнес. А что именно вызывает сложности сейчас: учёт лекарств и остатков?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Главная проблема — расхождения остатков",
+          "bot": "Аптеки — это особый бизнес с быстрой порчей и строгим учётом. Расхождения в остатках могут быть из-за ручного ввода или проблем с синхронизацией между точками? Сконцентрируйся на уточнении именно тех деталей, которые помогут выявить корень проблемы.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "Какой тариф подойдёт?",
+          "bot": "Для трёх аптек в Алматы подходит тариф Standard (220 000 ₸/год), так как он поддерживает до трёх складов и расширенную аналитику, необходимую для синхронизации остатков между точками. Если требуется более глубокая аналитика или оптовые цены, можно рассмотреть тариф Pro (до пяти складов).",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 5,
+          "user": "А Kaspi QR работает?",
+          "bot": "Да, Kaspi QR поддерживается в Wipon для приёма оплаты на кассе.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 6,
+          "user": "Что по оборудованию?",
+          "bot": "Для аптек Wipon поддерживает следующее оборудование: сканеры штрихкода (проводные USB и беспроводные Bluetooth), термопринтеры 58 мм и 80 мм (протокол ESC/POS, интерфейсы USB/Bluetooth/Wi-Fi), торговые весы (с интерфейсами RS-232/USB), а также терминалы сбора данных (ТСД) на базе Android и специализированные устройства. POS-терминалы Kaspi/Halyk также поддерживаются для приёма оплаты.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 7,
+          "user": "Есть рассрочка?",
+          "bot": "Да, рассрочка доступна по следующим условиям: Тариф Wipon: рассрочка на 12 месяцев (0-0-12) без переплаты. Оборудование Wipon: рассрочка на 12 месяцев (0-0-12) без переплаты через Kaspi. Кассовый комплект Wipon: рассрочка на 24 месяца (0-0-24) без переплаты через Kaspi.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 8,
+          "user": "Хорошо, хочу подключиться",
+          "bot": "Отлично, давайте организуем. Оставьте телефон или email — мой коллега позвонит и подберёт оптимальный тариф.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "D08",
+      "name": "Клиент меняет тему: цена → поддержка → closing",
+      "group": "multi_turn_quality",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Кафе в Шымкенте",
+          "bot": "В кафе в Шымкенте всё зависит от масштаба: много точек или одна? Сейчас что больше всего замедляет работу — оформление заказов?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Какие тарифы есть?",
+          "bot": "Для кафе в Шымкенте с одной торговой точкой доступны следующие тарифы: Mini: 5 000 ₸/месяц. Подходит для базовой кассовой функции без складского учёта. Lite: 150 000 ₸/год.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "А поддержка как работает? Быстро отвечаете?",
+          "bot": "Поддержка Wipon работает ежедневно, включая выходные, с быстрым первичным откликом. Обращения принимаются через чат, а также доступен рабочий WhatsApp для оперативных вопросов. Время ответа в среднем составляет 10–15 минут.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 5,
+          "user": "Ок, давайте подключим Standard",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Standard»:\n1) Комплект Standard\n2) Тариф Standard\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "E01",
+      "name": "Омоним 'стоит': 'не стоит тратить время' ≠ вопрос о цене",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Чем именно интересуетесь в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Магазин обуви, 1 точка",
+          "bot": "Магазин обуви — классный формат! А что сейчас больше всего напрягает: постоянно подсчитывать остатки вручную?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Не стоит тратить время на дорогие системы",
+          "bot": "А вот в Wipon цены стартуют от 5 000 ₸/мес — это полная касса с фискализацией для 1 точки. Поняла, что важно, чтобы система не тянула бюджет. А какие еще расходы сейчас \"едят\" бюджет: зарплаты сотрудников или что-то с поставщиками?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [
+        "FAIL must_not_contain: '₸' at turn 3: «А вот в Wipon цены стартуют от 5 000 ₸/мес — это полная касса с фискализацией для 1 точки. Поняла, что важно, чтобы система не тянула бюджет. А какие еще расходы сейчас \"едят\" бюджет: зарплаты сотрудн»",
+        "FAIL must_not_contain: '5 000' at turn 3: «А вот в Wipon цены стартуют от 5 000 ₸/мес — это полная касса с фискализацией для 1 точки. Поняла, что важно, чтобы система не тянула бюджет. А какие еще расходы сейчас \"едят\" бюджет: зарплаты сотрудн»"
+      ],
+      "passed": false
+    },
+    {
+      "id": "E02",
+      "name": "Клиент называет неправильную цену — бот поправляет из KB",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует в нашей системе для розничного бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Один магазин",
+          "bot": "А у вас какие-то сложности сейчас с учётом товара или кассой? Например, что чаще всего \"тормозит\" в работе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Мне сказали что Lite стоит 100 000 в год, это правда?",
+          "bot": "Нет, тариф Lite стоит 150 000 ₸ в год для одной торговой точки. Это фиксированная цена без дополнительных доплат.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "E03",
+      "name": "Сравнение с конкурентом — честные факты из KB",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота — помощник Wipon для розничных магазинов Казахстана. Какие именно аспекты торговли вы хотели бы оптимизировать?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Сейчас используем Poster",
+          "bot": "Постер работает стабильно, но многие магазины на нём сталкиваются с проблемами синхронизации данных между точками. А что именно вас не устраивает в текущем решении? На чём теряете больше всего времени?",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Чем вы лучше Poster?",
+          "bot": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon.",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "spin_phase": "objection_handling",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "E04",
+      "name": "Смешанный язык: рус+каз — бот не ломается",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Сәлем, здравствуйте",
+          "bot": "Чем торгуете?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Менің дүкенім бар, продукты продаю",
+          "bot": "А, продуктовый магазин! А как сейчас ведёте учёт товаров и продаж? На бумаге или каким-то программным решением?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Бағасы қанша ваших тарифов?",
+          "bot": "Бағасы 220 000 тенге/жыл, 350 000 тенге/2 жыл немесе 500 000 тенге/5 жыл болып келеді. Тарифтарды уақыттық горизонт пен бюджетіңізге сәйкес таңдауға болады.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "E05",
+      "name": "Расплывчатый вопрос → бот использует контекст из KB",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует в системе для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Магазин электроники",
+          "bot": "А, магазин электроники! Это сложная логистика с гаджетами и запасными частями — всё должно быть под контролем. А что сейчас больше всего напрягает: учётом остатков?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Ну и что вы можете предложить?",
+          "bot": "Для магазина электроники в Wipon предлагается решение Wipon Розница под режим розничного налога. Включает: Товарный и складской учёт с мобильным приложением для управления остатками и складскими операциями. Встроенную онлайн-кассу с фискализацией и передачей чеков в ОФД.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "E06",
+      "name": "Два вопроса в одном сообщении: цена + пробный период",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Расскажите, пожалуйста, какой именно аспект системы Wipon для розничных проектов вас интересует в первую очередь?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Магазин продуктов, 1 точка",
+          "bot": "Магазин продуктов — отличный выбор! А что именно сейчас больше всего напрягает: постоянный ручной учёт остатков?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит и есть ли пробный период?",
+          "bot": "Пробный период доступен — вы можете протестировать систему бесплатно в течение 7 календарных дней с полноценным функционалом. Подробности по тарифам уточните после тестирования.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "E07",
+      "name": "Follow-up после цены: уточнение не сбрасывает контекст",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что вас интересует в торговой системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Кондитерская, 1 точка",
+          "bot": "А, кондитерская — класс! А что именно сейчас тяжело в работе: учёт остатков или продажи на кассе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Сколько стоит Lite?",
+          "bot": "Тариф Lite стоит 150 000 ₸ в год для одной торговой точки. Включает полный учёт, кассу и интеграцию с POS-терминалами.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "А что в него входит?",
+          "bot": "Тариф Lite включает полный учёт товара и заказов, онлайн-кассу с фискализацией и интеграцию с POS-терминалами. Данные автоматически синхронизируются между кассой и учётом.",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        },
+        {
+          "turn": 5,
+          "user": "А оборудование отдельно?",
+          "bot": "Оборудование для работы с Wipon продаётся отдельно. Это совместимые сканеры (проводные USB, беспроводные Bluetooth, камера смартфона), принтеры (термопринтеры 58 мм и 80 мм по протоколу ESC/POS), торговые весы (с интерфейсами RS-232/USB), ТСД (Android-устройства и специализированные терминалы сбора данных) и POS-терминалы (включая Kaspi Pay и Halyk).",
+          "state": "autonomous_negotiation",
+          "action": "autonomous_respond",
+          "spin_phase": "negotiation",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "id": "E08",
+      "name": "Клиент говорит 14 дней — бот поправляет на 7 (из БД)",
+      "group": "edge_cases",
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Что именно вас интересует в нашей системе для бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Магазин одежды",
+          "bot": "А, магазин одежды! А что сейчас больше всего мешает: учёт товаров?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Мне сказали что у вас тестовый период 14 дней, верно?",
+          "bot": "Пробный период у нас составляет 7 календарных дней с полным функционалом. Это бесплатный доступ для проверки системы перед оплатой.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "issues": [],
+      "passed": true
+    }
+  ]
+}

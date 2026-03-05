@@ -122,7 +122,15 @@ class SemanticClassifier:
                 self._np = np
 
                 model_name = self._get_model_name()
-                self._embedder = SentenceTransformer(model_name)
+                try:
+                    self._embedder = SentenceTransformer(model_name)
+                except Exception as e:
+                    if "out of memory" in str(e).lower() or "CUDA" in str(e):
+                        import torch
+                        torch.cuda.empty_cache()
+                        self._embedder = SentenceTransformer(model_name, device="cpu")
+                    else:
+                        raise
 
                 # Собираем все примеры
                 all_examples = []

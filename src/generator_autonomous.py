@@ -29,8 +29,13 @@ MAX_GATED_RULES = 5
 MAX_PROMPT_CHARS = 35_000
 
 SAFETY_RULES_V2 = """⛔ КРИТИЧЕСКИЕ ПРАВИЛА (нарушение = провал):
-1. ЛЮБАЯ цифра, цена — ТОЛЬКО из БАЗЫ ЗНАНИЙ ниже. Нет в базе → "уточню у коллег". НЕ считай, НЕ округляй.
-   ТАРИФЫ (только эти 4!): Mini=5000₸/мес, Lite=150000₸/ГОД, Standard=220000₸/ГОД, Pro=500000₸/ГОД. Lite/Standard/Pro — ГОДОВЫЕ, НЕ месячные. НЕ придумывай названия тарифов.
+1. ЦЕНЫ — ТОЛЬКО из БАЗЫ ЗНАНИЙ ниже + тарифы этого блока. НЕ придумывай тарифы, НЕ считай, НЕ округляй.
+   ТАРИФЫ (только эти 4!): Mini=5 000₸/мес, Lite=150 000₸/ГОД, Standard=220 000₸/ГОД, Pro=500 000₸/ГОД.
+   Lite/Standard/Pro — ГОДОВЫЕ, НЕ месячные. Pro поддерживает до 5 точек. Более 5 точек → тариф ТИС.
+   ⚠️ Если клиент спрашивает цену/тарифы — НАЗЫВАЙ их напрямую из этого блока или из БАЗЫ ЗНАНИЙ.
+   Фраза "уточню у коллег" по стандартным тарифам — ЗАПРЕЩЕНА.
+   "Уточню у коллег" — ТОЛЬКО для нестандартных условий (скидки от объёма, долгосрочный договор)
+   и технических деталей (SLA, API, интеграции), которых нет в БАЗЕ ЗНАНИЙ.
 2. Продукт = WIPON (НЕ "Wipro", НЕ "WiPon Pro"). Не упоминай WMS, 1C, Битрикс, WisePOS, Shopify, WooCommerce, iiko, R-Keeper, SAP и любые другие системы/конкуренты.
 3. Не выдумывай кейсы, названия клиентов, истории успеха, кафе/магазины, метрики ("сэкономил 12 часов"). Нет в базе = ложь.
    Pro = до 5 точек (НЕ безлимит). Более 5 точек → ТИС.
@@ -45,7 +50,8 @@ SAFETY_RULES_V2 = """⛔ КРИТИЧЕСКИЕ ПРАВИЛА (нарушени
 11. НЕ обещай функции, которых нет в БАЗЕ ЗНАНИЙ (white-label, партнёрская программа, реферальная скидка, бесплатный период). Нет в базе → "уточню у коллег".
 12. Слово "менеджер" ЗАПРЕЩЕНО. Используй "коллега" или "я". Ты говоришь как живой сотрудник, а не робот.
 13. Твоё имя — АЙБОТА. Если клиент спрашивает "как тебя зовут" — ТОЛЬКО "Айбота". НИКОГДА не используй другие имена (Ирина, Мария, Анна и т.д.).
-14. НЕ сравнивай с конкурентами. Не пиши "у конкурентов нет X", "у них дороже/хуже" — ты не знаешь их продукт. Расскажи только про Wipon."""
+14. НЕ сравнивай с конкурентами. Не пиши "у конкурентов нет X", "у них дороже/хуже" — ты не знаешь их продукт. Расскажи только про Wipon.
+15. Если в БАЗЕ ЗНАНИЙ несколько разных сущностей с похожим именем — реши по контексту диалога о чём клиент. Если контекст не помогает — уточни коротко."""
 
 HARD_NO_CONTACT_MARKERS: Tuple[str, ...] = (
     "контакты не дам",
@@ -115,7 +121,7 @@ def build_autonomous_objection_instructions(intent: str) -> str:
 1. ПАУЗА — признай опасения клиента, покажи что понимаешь
 2. УТОЧНЕНИЕ — задай уточняющий вопрос чтобы понять корень возражения
 3. ПРЕЗЕНТАЦИЯ ЦЕННОСТИ — приведи конкретный аргумент из базы знаний
-4. ПРОДВИЖЕНИЕ — предложи следующий шаг (расчёт ROI, связь с менеджером, тестовый период)
+4. ПРОДВИЖЕНИЕ — предложи следующий шаг (расчёт ROI, связь с коллегой, тестовый период)
 Отработай возражение мягко, без давления. Используй данные из базы знаний."""
     return f"""=== ОБРАБОТКА ВОЗРАЖЕНИЯ: {objection_type} ===
 Клиент выразил эмоциональное возражение. Используй подход 3F:
@@ -132,6 +138,7 @@ def build_state_gated_rules(
     history: List[Dict[str, Any]],
     collected: Dict[str, Any],
     secondary_intents: Optional[List[str]] = None,
+    semantic_frame: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Build Layer-2 rules that appear only when state/intent makes them relevant."""
     _ = collected
@@ -148,6 +155,17 @@ def build_state_gated_rules(
         if isinstance(turn, dict)
     ).lower()
     secondary_set = {str(i) for i in (secondary_intents or []) if i}
+    frame = semantic_frame if isinstance(semantic_frame, dict) else {}
+    frame_dims = {str(d).strip().lower() for d in (frame.get("asked_dimensions") or []) if d}
+    frame_price_requested = bool(frame.get("price_requested")) or "pricing" in frame_dims
+
+    # Semantic-frame topic lock: keep recommendation requests from drifting into pricing.
+    if frame_dims & {"product_fit", "features", "integrations", "equipment"} and not frame_price_requested:
+        rules.append((2,
+            "⚠️ SEMANTIC-FRAME TOPIC-LOCK: клиент просит подбор/функции, а не цену. "
+            "Сфокусируй ответ на подходящем решении и сценарии использования. "
+            "Не называй тарифы и цены, если клиент не запросил их прямо."
+        ))
 
     if state_value == "autonomous_closing":
         rules.append((1,
@@ -180,24 +198,6 @@ def build_state_gated_rules(
             "«Актуальные условия скидок уточню у коллег»."
         ))
 
-    points_blob = f"{message_lower} {history_user_lower}"
-    points_match = re.search(
-        r'(\d{1,2})\s+(?:торгов\w+\s+)?(?:точ\w*|магазин\w*|филиал\w*|касс\w*|локаци\w*)',
-        points_blob,
-    )
-    if points_match:
-        try:
-            points_count = int(points_match.group(1))
-        except ValueError:
-            points_count = 0
-        if points_count > 5:
-            rules.append((1,
-                "⚠️ 5+ ТОЧЕК: предлагай ТИС, а не Mini/Lite/Standard/Pro. "
-                "Для ТИС используй только факты: 220 000 ₸/год за первую точку "
-                "и +80 000 ₸/год за каждую дополнительную. "
-                "Если не хватает данных, пиши: «точную стоимость уточнит менеджер»."
-            ))
-
     competitor_names = ("iiko", "poster", "r-keeper", "1с", "1c", "умаг", "beksar", "paloma")
     price_concession_words = ("дороже", "дешевле", "цена", "стоимость")
     has_competitor_context = any(
@@ -209,7 +209,7 @@ def build_state_gated_rules(
         rules.append((3,
             "⚠️ КОНКУРЕНТЫ: не придумывай сравнительные цифры по конкурентам. "
             "Если в БАЗЕ ЗНАНИЙ нет точного сравнения цен/условий — признай это и предложи "
-            "уточнить детали у менеджера."
+            "уточнить детали у коллеги."
         ))
 
     explicit_buy_markers = (
@@ -382,9 +382,15 @@ def should_suppress_followup_question_for_interrupt(
     secondary_set = {str(i) for i in (secondary_intents or []) if i}
     has_question_intent = (
         intent_value.startswith("question_")
-        or intent_value in {"comparison", "pricing_comparison", "question_tariff_comparison"}
+        or intent_value in {
+            "comparison", "pricing_comparison", "question_tariff_comparison",
+            "budget_question", "cost_inquiry", "discount_request",
+        }
         or any(i.startswith("question_") for i in secondary_set)
-        or bool({"comparison", "pricing_comparison", "question_tariff_comparison"} & secondary_set)
+        or bool({
+            "comparison", "pricing_comparison", "question_tariff_comparison",
+            "budget_question", "cost_inquiry", "discount_request",
+        } & secondary_set)
     )
     if has_question_intent:
         return True
@@ -658,7 +664,10 @@ def format_client_card(collected: dict) -> str:
         "company_name": "Компания",
         "company_size": "Размер компании (сотрудников)",
         "business_type": "Сфера бизнеса",
+        "city": "Город",
         "current_tools": "Текущие инструменты",
+        "automation_before": "Автоматизация раньше",
+        "automation_now": "Автоматизация сейчас",
         "pain_point": "Основная боль",
         "budget_range": "Бюджет",
         "role": "Должность",

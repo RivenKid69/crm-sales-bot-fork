@@ -1,0 +1,1427 @@
+{
+  "timestamp": "20260302_114907",
+  "label": "disambiguation=ON",
+  "fact_disambiguation_enabled": true,
+  "scenarios": [
+    {
+      "id": "S01",
+      "group": "A",
+      "name": "«Расскажите про тариф Pro» — явное слово 'тариф'",
+      "desc": "Клиент прямо говорит «тариф Pro». Disambiguator может сработать т.к. в retrieved_facts есть и тариф и комплект Pro. Но контекст однозначен — тариф.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T4: autonomous_discovery → autonomous_closing"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, у меня 4 магазина электроники",
+          "bot": "Четыре точки электроники — это солидно. В Wipon есть учёт серийных номеров и гарантий, что для вашей ниши критично. Расскажите, что сейчас больше всего отнимает время у кассиров?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 8.74,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите про тариф Pro — нам подойдёт?",
+          "bot": "Тариф Pro стоит 500 000 тенге в год и поддерживает до пяти точек, что идеально для вашей сети из четырёх магазинов. В него включены три оптовые цены, план закупок и полный бухгалтерский учёт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_features",
+          "template_key": "?",
+          "elapsed_s": 20.06,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 3,
+          "user": "500 тысяч в год — а помесячная оплата есть?",
+          "bot": "Помесячная оплата доступна только для тарифа Mini, который стоит 5 000 тенге в месяц. Для тарифа Pro действует только годовая модель подписки.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "payment_terms",
+          "template_key": "?",
+          "elapsed_s": 97.51,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Понял. Давайте оформим. Телефон: 87715551234",
+          "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 7.92,
+          "is_final": false,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [],
+      "organic_turns": 0,
+      "passed": true,
+      "total_time_s": 134.23,
+      "num_turns": 4,
+      "final_state": "autonomous_closing"
+    },
+    {
+      "id": "S02",
+      "group": "A",
+      "name": "«Сколько стоит Lite?» — ценовой контекст = тариф",
+      "desc": "Слово 'стоит' + 'Lite' — однозначно ценовой запрос о тарифе. Disambiguator видит Lite тариф + Lite комплект в фактах и может сработать. Но ценовой контекст делает тариф очевидным.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T4: autonomous_discovery → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Добрый день, у меня 1 точка продаж в Костанае",
+          "bot": "Костанай — отличный город для старта. Расскажите, какой у вас формат торговли и что сейчас занимает больше всего времени?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 3.21,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Сколько стоит Lite?",
+          "bot": "Lite: 150 000 ₸/год, включает 1 торговую точку В Wipon Розница доступны три тарифа: Lite 150 000 ₸/год, Standard 220 000 ₸/год и Pro 500 000 ₸/год.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_lite",
+          "template_key": "?",
+          "elapsed_s": 16.87,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 3,
+          "user": "А Mini за 5000 в месяц — это дешевле?",
+          "bot": "Да, Mini — 5 000 ₸ в месяц, это выгоднее для одной точки. Он включает кассу, фискализацию и базовый учёт продаж.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_mini",
+          "template_key": "?",
+          "elapsed_s": 19.54,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Lite за 150 тысяч в год выгоднее. Берём. Почта: shop@mail.kz",
+          "bot": "Обучение в Wipon включено в тарифы Lite, Standard и Pro и проводится на запуске без доплаты. Включено: Lite, Standard, Pro",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 8.51,
+          "is_final": true,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [],
+      "organic_turns": 0,
+      "passed": true,
+      "total_time_s": 48.14,
+      "num_turns": 4,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "S03",
+      "group": "A",
+      "name": "Сравнение «Mini или Standard» — сравнивают тарифы",
+      "desc": "Клиент сравнивает два тарифа. Disambiguator может сработать на обоих (Mini тариф/комплект + Standard тариф/комплект). Но никто не сравнивает комплекты так — только тарифы.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T4: autonomous_discovery → autonomous_closing"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Привет, мы открываем магазин сувениров в Алматы",
+          "bot": "Сувениры — это очень красиво, Алматы будет этому рада! А что сейчас больше всего напрягает в учёте или кассе, если уже пробовали работать?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 3.11,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Что лучше — Mini или Standard для одной кассы?",
+          "bot": "Для одной кассы без складского учёта подходит тариф Mini за 5 000 ₸ в месяц (включает кассу, чеки, продажи). Если нужен складской учёт и разные цены для опта и розницы, выбирайте тариф Standard за 220 000 ₸ в год (до 3 складов).",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_comparison",
+          "template_key": "?",
+          "elapsed_s": 37.57,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 3,
+          "user": "5000 в месяц против 220 000 в год — Standard выгоднее?",
+          "bot": "Тариф Standard стоит 220 000 ₸ в год и включает до 3 торговых точек, складской учёт и оптовые цены. Тариф Mini стоит 5 000 ₸ в месяц и подходит для одной кассы без складского учёта. Если вам нужен учёт остатков на складе, выбирайте Standard.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "pricing_comparison",
+          "template_key": "?",
+          "elapsed_s": 37.44,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Хорошо, возьмём Standard. Как подключиться? Мой номер 87013456789",
+          "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 8.12,
+          "is_final": false,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [],
+      "organic_turns": 0,
+      "passed": true,
+      "total_time_s": 86.24,
+      "num_turns": 4,
+      "final_state": "autonomous_closing"
+    },
+    {
+      "id": "S04",
+      "group": "A",
+      "name": "«Pro подходит?» после обсуждения бизнеса — тариф из контекста",
+      "desc": "Клиент описал бизнес (5 точек), обсудил потребности. Когда спрашивает 'Pro подойдёт?' — это про тариф, ясно из контекста.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T4: autonomous_discovery → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, у нас 5 продуктовых магазинов в Астане",
+          "bot": "Пять магазинов — это уже сеть. Скажите, а что сейчас больше всего напрягает в работе: учёт остатков?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 3.39,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Нужен складской учёт и аналитика продаж по каждой точке",
+          "bot": "Да, в Wipon есть централизованный учёт и аналитика по каждой точке отдельно. А как сейчас управляете сетью: всё вручную?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "need_expressed",
+          "template_key": "?",
+          "elapsed_s": 11.32,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 3,
+          "user": "Значит Pro подойдёт? Сколько платить в год?",
+          "bot": "Да, тариф Pro создан именно для сетей до 5 точек. Годовая абонентская плата составляет 500 000 тенге/год. В эту сумму уже включены бесплатные ОФД и касса, а также полный бухгалтерский учёт.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_pro",
+          "template_key": "?",
+          "elapsed_s": 25.73,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "500 тысяч за все 5 — нормально. Оформляем. 87071112233",
+          "bot": "Айбота, мне очень приятно, что вы готовы начать. Подскажите, как к вам лучше обращаться?",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 5.65,
+          "is_final": true,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [],
+      "organic_turns": 0,
+      "passed": true,
+      "total_time_s": 46.08,
+      "num_turns": 4,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "S05",
+      "group": "A",
+      "name": "«Что входит в Standard?» после ценового вопроса — функционал тарифа",
+      "desc": "Клиент уже спрашивал про цены, теперь просит перечислить что входит в Standard. Контекст — тарифный.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T5: autonomous_discovery → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Добрый день, 2 точки обувного магазина",
+          "bot": "Две точки обуви — отличный формат. Расскажите, что сейчас в работе вызывает больше всего сложностей?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 2.94,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Какие у вас тарифы?",
+          "bot": "У нас четыре тарифа: Mini 5 000 ₸ в месяц, Lite 150 000 ₸ в год, Standard 220 000 ₸ в год и Pro 500 000 ₸ в год. Тариф Standard включает до трёх торговых точек и расширенную аналитику.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "pricing_details",
+          "template_key": "?",
+          "elapsed_s": 22.69,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 3,
+          "user": "Что входит в Standard? Какие функции?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Standard»:\n1) Тариф Standard\n2) Комплект Standard\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_features",
+          "template_key": "?",
+          "elapsed_s": 12.13,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": true,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "FAIL",
+            "issue": "T3: жёсткий disambiguation формат в ответе (контекст был ясен)"
+          }
+        },
+        {
+          "turn": 4,
+          "user": "А складской учёт есть в Standard?",
+          "bot": "Да, полный складской учёт входит в тариф Standard: приёмка, перемещения, контроль остатков и работа с до трёх складов. А сейчас как управляете запасами на двух точках?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_features",
+          "template_key": "?",
+          "elapsed_s": 26.78,
+          "is_final": false,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 5,
+          "user": "Подходит. Давайте Standard. Email: shoes@company.kz",
+          "bot": "Рекомендуем комплект Standard — касса, сканер и принтер чеков. К нему подключаем программу Wipon Standard для учёта продаж и склада.",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 9.98,
+          "is_final": true,
+          "chk": {
+            "turn": 5,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T3: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 5,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [
+        {
+          "turn": 3,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T3: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        }
+      ],
+      "organic_turns": 0,
+      "passed": false,
+      "total_time_s": 74.53,
+      "num_turns": 5,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "S06",
+      "group": "A",
+      "name": "Казахский: «Pro қанша тұрады?» — ценовой вопрос на казахском",
+      "desc": "Клиент спрашивает про Pro на казахском ('сколько стоит Pro?'). Disambiguator не учитывает казахский контекст и может сработать.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T3: autonomous_discovery → autonomous_closing",
+        "T4: autonomous_closing → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Сәлем, менде 3 дүкен бар Шымкентте",
+          "bot": "Три точки в Шымкенте — это уже сеть. Сейчас все процессы ведёте вручную?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 10.05,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Pro тарифі қанша тұрады?",
+          "bot": "Тариф Pro стоит 500 000 тенге в год. Он включает до 5 точек, неограниченное количество товаров и сотрудников, а также полную бухгалтерию и аналитику.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_pro",
+          "template_key": "?",
+          "elapsed_s": 22.07,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 3,
+          "user": "500 мың теңге жылына — жақсы. Оформляймыз",
+          "bot": "Для оплаты через Kaspi нужны ваш ИИН и номер Kaspi. Пожалуйста, укажите их — и мы сразу оформим подписку.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "intent": "agreement",
+          "template_key": "?",
+          "elapsed_s": 7.88,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Байланыс: 87751234567",
+          "bot": "Спасибо за номер. Как к вам обращаться? Сейчас оформлю доступ к тарифу Pro для ваших трёх точек.",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 9.95,
+          "is_final": true,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [],
+      "organic_turns": 0,
+      "passed": true,
+      "total_time_s": 49.95,
+      "num_turns": 4,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "S07",
+      "group": "B",
+      "name": "«Расскажите про Pro» без контекста — настоящая неоднозначность",
+      "desc": "Клиент не дал никакого контекста — ни ценового, ни оборудовательного. 'Расскажите про Pro' реально неоднозначно. LLM должен уточнить ОРГАНИЧНО, не жёстким списком 1) 2) 3).",
+      "expect_rigid": false,
+      "expect_clarification": true,
+      "transitions": [
+        "T2: greeting → autonomous_discovery",
+        "T4: autonomous_discovery → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Меня зовут Айбота, я ваш персональный консультант Wipon. Что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "intent": "greeting",
+          "template_key": "?",
+          "elapsed_s": 2.13,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": true,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите про Pro",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Комплект Pro\n2) Тариф Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_features",
+          "template_key": "?",
+          "elapsed_s": 6.52,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": true,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "FAIL",
+            "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+          }
+        },
+        {
+          "turn": 3,
+          "user": "Тариф интересует, сколько стоит?",
+          "bot": "Тариф Pro стоит 500 000 тенге в год и включает до пяти торговых точек с полным функционалом, включая бухгалтерский учёт и расширенную аналитику. В этом плане доступны три оптовые цены для работы с крупными клиентами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "price_question",
+          "template_key": "?",
+          "elapsed_s": 21.41,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Понял, 500 тысяч в год. Подходит. 87019998877",
+          "bot": "Спасибо! Мой коллега позвонит вам в ближайшее время и согласует удобное время.",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 5.54,
+          "is_final": true,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": true,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [
+        {
+          "turn": 2,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        }
+      ],
+      "organic_turns": 1,
+      "passed": false,
+      "total_time_s": 35.6,
+      "num_turns": 4,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "S08",
+      "group": "B",
+      "name": "«Что есть в Mini?» без контекста — тариф или комплект?",
+      "desc": "Клиент спрашивает 'что есть в Mini' — может быть тариф (функции) или комплект (оборудование). LLM должен ответить органично.",
+      "expect_rigid": false,
+      "expect_clarification": true,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T4: autonomous_discovery → autonomous_closing"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Привет, только открываюсь",
+          "bot": "Супер, поздравляю с открытием! Чтобы не усложнять старт, расскажите, какой у вас формат торговли?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 10.58,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Что есть в Mini?",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Mini»:\n1) Комплект Mini\n2) Тариф Mini\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_tariff_mini",
+          "template_key": "?",
+          "elapsed_s": 18.19,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": true,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "FAIL",
+            "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+          }
+        },
+        {
+          "turn": 3,
+          "user": "Меня тариф интересует — какие функции в Mini?",
+          "bot": "Тариф Mini стоит 5 000 тенге в месяц и включает онлайн-касса с фискализацией, учёт продаж и работу с наличными или картой. Подходит для одной точки без сложного складского учёта.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_features",
+          "template_key": "?",
+          "elapsed_s": 18.1,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Годится, 5000 в месяц устроит. Как оплатить? 87025554433",
+          "bot": "Для выставления счёта нужен ИИН и номер телефона Kaspi. Если сейчас неудобно, можем вернуться к оформлению позже.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 17.72,
+          "is_final": false,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [
+        {
+          "turn": 2,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        }
+      ],
+      "organic_turns": 0,
+      "passed": false,
+      "total_time_s": 64.6,
+      "num_turns": 4,
+      "final_state": "autonomous_closing"
+    },
+    {
+      "id": "S09",
+      "group": "C",
+      "name": "Closing state: клиент уточняет Pro, disambiguator блокирует закрытие",
+      "desc": "Клиент в closing даёт контакт + уточняет про Pro. Disambiguator может перехватить и сломать закрытие сделки. Жёсткое уточнение в closing — категорически неприемлемо.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T3: autonomous_discovery → autonomous_closing",
+        "T4: autonomous_closing → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте, у меня 4 магазина косметики в Алматы",
+          "bot": "Четыре магазина косметики — отличный масштаб для централизованного управления. Расскажите, что сейчас больше всего напрягает в работе с учётом или кассой?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 3.29,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Нужна автоматизация. Какой тариф подойдёт?",
+          "bot": "Для четырёх точек косметики подходит тариф Pro за 500 000 ₸/год, так как он поддерживает до пяти складов и включает расширенную аналитику. Тариф Standard (220 000 ₸/год) поддерживает до трёх складов. Выбор зависит от количества складов и глубины аналитики.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "need_expressed",
+          "template_key": "?",
+          "elapsed_s": 48.82,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 3,
+          "user": "Pro за 500 тысяч — подходит. Давайте оформим",
+          "bot": "Отлично, тариф Pro полностью закроет потребности вашей сети. Оставьте, пожалуйста, телефон или email для оформления.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "intent": "agreement",
+          "template_key": "?",
+          "elapsed_s": 12.74,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "Телефон: 87771234567. Кстати, а Pro — это с обновлениями?",
+          "bot": "Да, обновления бесплатны для всех тарифов, включая Pro. Как к вам обращаться?",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 2.15,
+          "is_final": true,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [],
+      "organic_turns": 0,
+      "passed": true,
+      "total_time_s": 67.0,
+      "num_turns": 4,
+      "final_state": "video_call_scheduled"
+    },
+    {
+      "id": "S10",
+      "group": "C",
+      "name": "Повторный вопрос: disambiguator уже спросил, клиент ответил → спрашивает снова",
+      "desc": "Клиент ответил на уточнение (сказал 'тариф'). Через пару ходов спрашивает ещё раз про Pro. Disambiguator может спросить СНОВА. Повторное уточнение = FAIL.",
+      "expect_rigid": false,
+      "expect_clarification": false,
+      "transitions": [
+        "T1: greeting → autonomous_discovery",
+        "T5: autonomous_discovery → autonomous_closing",
+        "T6: autonomous_closing → video_call_scheduled"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Привет, у меня бутик одежды",
+          "bot": "Бутик одежды — отличный выбор, в Wipon удобно следить за размерами и цветами. А что сейчас в учёте вызывает больше всего сложностей?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 10.52,
+          "is_final": false,
+          "chk": {
+            "turn": 1,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 2,
+          "user": "Расскажите про Pro",
+          "bot": "Уточните, пожалуйста, что вы имеете в виду под «Pro»:\n1) Комплект Pro\n2) Тариф Pro\nОтветьте номером 1-3 или напишите вариант словами.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "question_features",
+          "template_key": "?",
+          "elapsed_s": 9.82,
+          "is_final": false,
+          "chk": {
+            "turn": 2,
+            "is_rigid_format": true,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "FAIL",
+            "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+          }
+        },
+        {
+          "turn": 3,
+          "user": "Тариф",
+          "bot": "Тариф Pro стоит 500 000 тенге в год и включает до 5 торговых точек с полным функционалом и аналитикой. Обучение и поддержка уже включены в стоимость, доплачивать за них не нужно.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "info_provided",
+          "template_key": "?",
+          "elapsed_s": 16.34,
+          "is_final": false,
+          "chk": {
+            "turn": 3,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 4,
+          "user": "А Pro подключается сразу на все мои 3 точки?",
+          "bot": "Да, тариф Pro покрывает до пяти точек, данные будут синхронизированы централизованно. У вас сейчас три магазина работают в одной системе?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "intent": "situation_provided",
+          "template_key": "?",
+          "elapsed_s": 8.72,
+          "is_final": false,
+          "chk": {
+            "turn": 4,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 5,
+          "user": "Отлично. Сколько в год? Оформляйте",
+          "bot": "Первая точка: 220 000 ₸/год Каждая следующая точка: 80 000 ₸/год",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "intent": "agreement",
+          "template_key": "?",
+          "elapsed_s": 21.38,
+          "is_final": false,
+          "chk": {
+            "turn": 5,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": true,
+            "verdict": "OK",
+            "issue": null
+          }
+        },
+        {
+          "turn": 6,
+          "user": "87015556677",
+          "bot": "Вижу номер, но он отличается от того, что был раньше. Как к вам обращаться? И когда вам удобнее созвониться для оформления?",
+          "state": "video_call_scheduled",
+          "action": "autonomous_respond",
+          "intent": "contact_provided",
+          "template_key": "?",
+          "elapsed_s": 2.27,
+          "is_final": true,
+          "chk": {
+            "turn": 6,
+            "is_rigid_format": false,
+            "has_organic_clarification": false,
+            "has_tariff": false,
+            "verdict": "OK",
+            "issue": null
+          }
+        }
+      ],
+      "checks": [
+        {
+          "turn": 1,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 2,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        },
+        {
+          "turn": 3,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 4,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 5,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "OK",
+          "issue": null
+        },
+        {
+          "turn": 6,
+          "is_rigid_format": false,
+          "has_organic_clarification": false,
+          "has_tariff": false,
+          "verdict": "OK",
+          "issue": null
+        }
+      ],
+      "fail_checks": [
+        {
+          "turn": 2,
+          "is_rigid_format": true,
+          "has_organic_clarification": false,
+          "has_tariff": true,
+          "verdict": "FAIL",
+          "issue": "T2: жёсткий disambiguation формат в ответе (контекст был ясен)"
+        }
+      ],
+      "organic_turns": 0,
+      "passed": false,
+      "total_time_s": 69.05,
+      "num_turns": 6,
+      "final_state": "video_call_scheduled"
+    }
+  ]
+}

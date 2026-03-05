@@ -1,0 +1,62 @@
+{
+  "type": "ab_post",
+  "results": [
+    {
+      "scenario": "pain_kassa",
+      "message": "касса тормозит в час пик, клиенты ждут",
+      "pre": {
+        "pain_context_present": false,
+        "pain_context_len": 0,
+        "retrieved_facts_len": 0,
+        "retrieved_facts_sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "prompt_has_pain_header": false
+      },
+      "post": {
+        "pain_context_present": true,
+        "pain_context_len": 728,
+        "retrieved_facts_len": 0,
+        "retrieved_facts_sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "prompt_has_pain_header": true
+      },
+      "retrieved_facts_unchanged": true
+    },
+    {
+      "scenario": "pain_snr",
+      "message": "боюсь перехода на СНР 2026, как не ошибиться с учетом",
+      "pre": {
+        "pain_context_present": false,
+        "pain_context_len": 0,
+        "retrieved_facts_len": 2540,
+        "retrieved_facts_sha1": "fe5f6f5b972cc4e2a9f159b341872b6e78ff3e85",
+        "prompt_has_pain_header": false
+      },
+      "post": {
+        "pain_context_present": true,
+        "pain_context_len": 706,
+        "retrieved_facts_len": 2540,
+        "retrieved_facts_sha1": "fe5f6f5b972cc4e2a9f159b341872b6e78ff3e85",
+        "prompt_has_pain_header": true
+      },
+      "retrieved_facts_unchanged": true
+    },
+    {
+      "scenario": "neutral_mobile",
+      "message": "есть ли мобильное приложение?",
+      "pre": {
+        "pain_context_present": false,
+        "pain_context_len": 0,
+        "retrieved_facts_len": 2407,
+        "retrieved_facts_sha1": "1927a99d4cb54d10989eb929d8254d202dc5200f",
+        "prompt_has_pain_header": false
+      },
+      "post": {
+        "pain_context_present": false,
+        "pain_context_len": 0,
+        "retrieved_facts_len": 2407,
+        "retrieved_facts_sha1": "1927a99d4cb54d10989eb929d8254d202dc5200f",
+        "prompt_has_pain_header": false
+      },
+      "retrieved_facts_unchanged": true
+    }
+  ]
+}

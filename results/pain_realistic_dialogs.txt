@@ -1,0 +1,382 @@
+PAIN REALISTIC E2E — 10 диалогов, 4/10 PASS
+Дата: 20260305_113946
+
+======================================================================
+[D01] Касса тупит + цена в одном сообщении  [PASS]
+ISSUES: topic=equipment_slow_boot_1708 (ожидался kassa_freeze_peak_hours_601)
+======================================================================
+
+--- ход 1 ---
+intent=consultation_request  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: ПУСТО
+
+Клиент: салам, мне друг посоветовал вас глянуть
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Привет! Рада, что друг порекомендовал Wipon. Мы уже более 10 лет помогаем розничному бизнесу в Казахстане настраивать кассы и учёт. Чем именно вы занимаетесь?
+
+--- ход 2 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_equipment/equipment_different_config_branches_1903  score=0.0164  stage=lemma
+
+Клиент: у нас 2 магазина продуктов в караганде
+Бот: Отлично, два продуктовых магазина — это уже сеть. А что сейчас больше всего напрягает в учёте?
+
+--- ход 3 ---
+intent=price_question  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=669ch
+pain_search_top: pain_equipment/equipment_slow_boot_1708  score=0.032  stage=lemma
+
+Клиент: ну мне тут сказали посмотреть, у нас касса иногда тупит при наплыве людей, а сколько стоит вообще ваша система?
+Бот: Для двух магазинов на специальном налоговом режиме (СНР) стоимость системы ТИС составит 300 000 ₸ в год (220 000 ₸ за первую точку и 80 000 ₸ за вторую). Поскольку вы упомянули проблемы с наплывом людей, для ускорения работы кассира также доступен стационарный сканер WP7600L за 30 000 ₸ или готовый комплект PRO-оборудования за 360 000 ₸. Обратите внимание, что цены на оборудование указаны как единовременная покупка, а тариф ТИС — это ежегодная подписка.
+
+--- ход 4  <<<< PAIN TURN ---
+intent=rejection  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=669ch
+pain_search_top: pain_equipment/equipment_slow_boot_1708  score=0.0164  stage=semantic
+
+Клиент: ну если тормозить не будет то может и возьмем
+Бот: Wipon использует SSD для быстрой загрузки и оптимизированную кассу, которая не зависает даже при большом потоке покупателей. Хотите попробовать это на практике бесплатно?
+
+
+======================================================================
+[D02] Сканер + сколько точек + бюджет  [PASS]
+ISSUES: topic=ops_speed_slow_checkout_001 (ожидался equipment_scanner_not_first_try_1703); боль НЕ в ответе бота
+======================================================================
+
+--- ход 1 ---
+intent=question_features  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_snr/tis_no_limit_control_1102  score=0.0164  stage=lemma
+
+Клиент: здравствуйте хочу узнать про вашу систему
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Wipon — это облачная система для розницы и общепита с онлайн-кассой, учётом товаров и аналитикой в одном окне. Мы работаем по всему Казахстану и помогаем бизнесу вести учёт без лишних затрат. Чем именно вы занимаетесь?
+
+--- ход 2 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/analytics_no_branch_control_305  score=0.0164  stage=lemma
+
+Клиент: у нас аптека, 1 точка, примерно 3000 позиций
+Бот: Аптека с тремя тысячами позиций — это серьёзный объём, Wipon отлично справляется с учётом серий и сроков годности. Расскажите, что сейчас больше всего напрягает в работе вашей точки?
+
+--- ход 3  <<<< PAIN TURN ---
+intent=price_question  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=722ch
+pain_search_top: pain_products/ops_speed_slow_checkout_001  score=0.0164  stage=semantic
+
+Клиент: главная проблема — сканер по 5 раз проводишь пока считает, клиенты психуют, и еще вопрос у вас рассрочка есть?
+Бот: По поводу сканеров: у нас есть модели до 1650 сканов в секунду, которые считывают код с первого раза при простом наведении. Рассрочку от Kaspi мы оформляем на всё оборудование под 0-0-12, например стационарный сканер за 24 000 ₸ выйдет всего по 2 000 ₸ в месяц.
+
+--- ход 4 ---
+intent=question_features  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_equipment/equipment_no_datamatrix_support_2001  score=0.0325  stage=lemma
+
+Клиент: ладно а маркировку поддерживаете? у нас же лекарства
+Бот: Да, Wipon полностью поддерживает маркировку лекарств: приёмка, учёт серий и продажа проходят корректно в одной программе. Вам нужно настроить этот функционал под ваши текущие поставки?
+
+
+======================================================================
+[D03] Боль в возражении на цену  [FAIL]
+ISSUES: topic=control_unauthorized_discounts_105 (ожидался ops_speed_slow_new_product_add_002); gate=NO; pain_ctx=ПУСТО; боль НЕ в ответе бота
+======================================================================
+
+--- ход 1 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_kassa/kassa_no_accounting_integration_610  score=0.0317  stage=semantic
+
+Клиент: привет, мне нужна касса для магазина одежды
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Привет! Для магазина одежды Wipon идеально подойдёт с учётом размеров и цветов. А что сейчас больше всего напрягает в работе с остатками?
+
+--- ход 2 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/analytics_no_branch_control_305  score=0.0164  stage=lemma
+
+Клиент: а сколько стоит на 1 точку?
+Бот: Для одной точки у нас есть тариф Mini за 5 000 тенге в месяц с онлайн-кассой или годовой Lite за 150 000 тенге. Какой формат оплаты вам ближе?
+
+--- ход 3 ---
+intent=objection_price  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=680ch
+pain_search_top: pain_products/ops_speed_slow_new_product_add_002  score=0.0328  stage=lemma
+
+Клиент: дороговато если честно, я щас вручную в тетрадке все веду и товар добавляю по 2 часа каждую поставку, но все равно дорого
+Бот: Поняла, что цена кажется высокой на фоне ручной работы в тетрадке. Wipon решает проблему добавления товаров через массовый импорт и автозаполнение по штрихкоду. Хотите попробовать это бесплатно?
+
+--- ход 4  <<<< PAIN TURN ---
+intent=price_question  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/control_unauthorized_discounts_105  score=0.0164  stage=lemma
+
+Клиент: ну а если на год то скидка есть какая нибудь?
+Бот: Годовая оплата уже выгоднее помесячной, так как экономия заложена в тарифах. Для оплаты на 2 или 5 лет скидка рассчитывается индивидуально в зависимости от условий подключения.
+
+
+======================================================================
+[D04] СНР страх спрятан в общем вопросе  [PASS]
+ISSUES: topic=tis_reporting_fine_fear_1203 (ожидался tis_transition_fear_new_regime_1001)
+======================================================================
+
+--- ход 1 ---
+intent=info_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_consulting/consulting_ip_registration_difficulty_3201  score=0.0325  stage=lemma
+
+Клиент: добрый день, я ип, розничная торговля
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Рада знакомству! Для розницы Wipon идеально подходит, объединяет кассу и учёт в одном окне. Кстати, как к вам лучше обращаться?
+
+--- ход 2 ---
+intent=agreement  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=764ch
+pain_search_top: pain_snr/tis_transition_auto_general_tax_1006  score=0.0325  stage=semantic
+
+Клиент: слушайте а у вас есть что нибудь для учета налогов? мне бухгалтер сказала что с 2026 какие то изменения по снр и если не подготовимся то на общий режим переведут, я вообще в этом не разбираюсь
+Бот: Да, ТИС Wipon адаптирован под изменения СНР-2026. Система поддерживает обновленные формы отчетности (910, 913, 200, СНТ, ЭСФ) и усиленный контроль фискальных данных. Согласно новым правилам, лимит дохода составляет до 600 000 МРП (≈ 2,6 млрд ₸/год), ставка — от 2% до 6%, а ограничения по численности сотрудников отменяются. Важно: для сохранения спецрежима уведомление о переходе необходимо подать до 1 марта 2026 года. В случае пропуска этого срока бизнес автоматически переводится на общий режим.
+
+--- ход 3  <<<< PAIN TURN ---
+intent=question_automation  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=669ch
+pain_search_top: pain_snr/tis_reporting_fine_fear_1203  score=0.0328  stage=lemma
+
+Клиент: а это прям автоматически все считает? я боюсь что штраф выпишут
+Бот: Да, в Wipon налог при продаже рассчитывается автоматически по действующим ставкам режима. Система также обеспечивает автоматическое формирование отчетов.
+
+--- ход 4 ---
+intent=price_question  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/analytics_no_staff_analysis_304  score=0.0164  stage=lemma
+
+Клиент: ну и сколько это стоит тогда
+Бот: Для розничной торговли с учётом налоговых изменений подходит тариф за 220 000 тенге в год на первую точку. Это полностью готовое решение под СНР-2026, которое снимает риск штрафов и автоматизирует отчётность.
+
+
+======================================================================
+[D05] Кража кассира + недоверие  [PASS]
+ISSUES: topic=tis_growth_without_structure_1602 (ожидался control_cashier_theft_103)
+======================================================================
+
+--- ход 1 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_equipment/equipment_slow_program_start_1709  score=0.032  stage=lemma
+
+Клиент: здрасте я ищу программу для магазина
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Рада, что вы обратились за помощью с автоматизацией магазина. Подскажите, какая задача сейчас стоит на первом месте — упростить кассу?
+
+--- ход 2 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_equipment/equipment_hard_open_new_store_2201  score=0.0315  stage=lemma
+
+Клиент: продукты, 1 точка, алматы, 5 сотрудников
+Бот: Продуктовый магазин в Алматы — отличный формат для Wipon. Подскажите, что сейчас больше всего напрягает в работе с кассой или учётом?
+
+--- ход 3 ---
+intent=objection_timing  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=601ch
+pain_search_top: pain_products/control_cashier_theft_103  score=0.0297  stage=semantic
+
+Клиент: у нас тут проблема — подозреваю что кассирша ворует, удаляет позиции из чека а деньги себе, но доказать не могу потому что система ничего не логирует. вы это решаете?
+Бот: Да, Wipon фиксирует все действия кассира и позволяет отследить удаление позиций из чека. Вы сможете точно определить виновника ошибки по журналу операций с привязкой ко времени и сотруднику.
+
+--- ход 4  <<<< PAIN TURN ---
+intent=objection_security  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=626ch
+pain_search_top: pain_snr/tis_growth_without_structure_1602  score=0.0164  stage=lemma
+
+Клиент: а она не сможет как нибудь обойти вашу систему?
+Бот: К сожалению, в предоставленной информации нет данных о механизмах защиты от обхода системы или предотвращения манипуляций со стороны сотрудников. Я могу подтвердить только, что Wipon фиксирует все действия кассира и сохраняет логи операций для последующего анализа.
+
+
+======================================================================
+[D06] Ревизия + конкурент  [FAIL]
+ISSUES: topic=ofd_no_tax_transfer_801 (ожидался ops_speed_long_inventory_004); gate=NO; pain_ctx=ПУСТО
+======================================================================
+
+--- ход 1 ---
+intent=objection_competitor  state=autonomous_objection_handling  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_snr/tis_transition_fear_new_regime_1001  score=0.0164  stage=semantic
+
+Клиент: мы сейчас на 1с сидим но думаем переехать
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Поняла, переход с 1С на Wipon — это логичный шаг для упрощения учёта и работы с ОФД. У нас есть интеграция именно с 1С для плавного обмена данными между системами. Расскажите, какой функционал в текущей системе вам кажется самым сложным?
+
+--- ход 2 ---
+intent=question_integrations  state=autonomous_objection_handling  action=autonomous_respond
+pain_gate=YES  pain_ctx=649ch
+pain_search_top: pain_products/ops_speed_long_inventory_004  score=0.0328  stage=semantic
+
+Клиент: основная причина — ревизия у нас 2 дня занимает каждый месяц, все вручную считаем, это капец. 1с вообще не помогает. у вас быстрее?
+Бот: Да, в Wipon ревизия проходит быстро. Процесс максимально упрощен без бумажной волокиты и Excel. Программа автоматически формирует списки товаров, подсчитывает излишки и недостачи, исключая ручные сверки и ошибки при пересчете остатков.
+
+--- ход 3  <<<< PAIN TURN ---
+intent=question_integrations  state=autonomous_objection_handling  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_kassa/ofd_no_tax_transfer_801  score=0.0164  stage=lemma
+
+Клиент: а данные с 1с можно перенести к вам?
+Бот: Да, в Wipon есть интеграция с 1С для единого обмена данными между системами.
+
+--- ход 4 ---
+intent=situation_provided  state=autonomous_objection_handling  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/analytics_no_branch_control_305  score=0.0164  stage=lemma
+
+Клиент: ну и чо по цене на 3 точки
+Бот: Для трех точек идеально подойдет тариф Standard за 220 000 тенге в год. Он включает безлимитную номенклатуру и работу с оптовыми ценами для всех ваших магазинов.
+
+
+======================================================================
+[D07] Принтер сдох + уже злой  [FAIL]
+ISSUES: topic=analytics_no_category_analysis_303 (ожидался equipment_printer_break_peak_1801); gate=NO; pain_ctx=ПУСТО; боль НЕ в ответе бота
+======================================================================
+
+--- ход 1 ---
+intent=agreement  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_equipment/equipment_overheating_problem_1803  score=0.0323  stage=lemma
+
+Клиент: вы продаете кассовое оборудование?
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Да, мы предлагаем полный спектр оборудования: моноблоки, сканеры, принтеры и весы. Всё это совместимо с нашей системой и доступно в рассрочку.
+
+--- ход 2 ---
+intent=agreement  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=678ch
+pain_search_top: pain_equipment/equipment_printer_break_peak_1801  score=0.0328  stage=semantic
+
+Клиент: короче у нас принтер чеков сдох вчера прям в самый час пик, мы полдня не торговали из за этого, продавцы на телефон чеки скидывали, бред. нужен нормальный принтер который не сломается через месяц, и желательно побыстрее доставить
+Бот: Поняла вашу ситуацию, извините за сбой. Wipon комплектует кассы принтерами GP-C200I, которые рассчитаны на пиковые часы и не останавливают торговлю. Сейчас уточню сроки доставки надежного оборудования для вашей точки.
+
+--- ход 3  <<<< PAIN TURN ---
+intent=objection_trust  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/analytics_no_category_analysis_303  score=0.0164  stage=lemma
+
+Клиент: а гарантия на него какая?
+Бот: Могу отвечать только по подтвержденным фактам из базы. Сейчас в контексте недостаточно данных для точного ответа.
+
+
+======================================================================
+[D08] Бухгалтер ушел + 910 форма  [FAIL]
+ISSUES: topic=consulting_no_inhouse_accountant_3401 (ожидался consulting_dependency_on_one_accountant_3402); gate=NO; pain_ctx=ПУСТО; боль НЕ в ответе бота
+======================================================================
+
+--- ход 1 ---
+intent=greeting  state=greeting  action=greet_back
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/ops_speed_long_inventory_004  score=0.0164  stage=lemma
+
+Клиент: добрый день
+Бот: Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?
+
+--- ход 2 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_consulting/consulting_llp_registration_difficulty_3202  score=0.0325  stage=semantic
+
+Клиент: у меня тоо, оптовая торговля, 15 человек в штате
+Бот: Поняла, оптовая торговля с командой из 15 человек — это серьёзный масштаб для Wipon. Расскажите, какие процессы сейчас занимают больше всего времени?
+
+--- ход 3 ---
+intent=go_back  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=685ch
+pain_search_top: pain_products/reporting_data_for_accountant_401  score=0.0328  stage=semantic
+
+Клиент: короче у нас бухгалтер уволился месяц назад, 910 форму скоро сдавать а мы вообще не понимаем как, учет весь в голове у нее был. есть у вас какой то сервис бухгалтерский?
+Бот: В предоставленной информации описано только оборудование Wipon: умные весы, интегрирующиеся с кассой и учетной системой для автоматизации продажи весового товара. Данные об услугах бухгалтерского учета или сдаче отчетности в контексте отсутствуют.
+
+--- ход 4  <<<< PAIN TURN ---
+intent=price_question  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_consulting/consulting_no_inhouse_accountant_3401  score=0.0164  stage=semantic
+
+Клиент: а сколько стоит ваш аутсорсинг бухгалтерии?
+Бот: У нас есть услуга ежемесячного налогового сопровождения для ТОО с индивидуальным расчётом стоимости под ваш профиль. Цена зависит от наличия НДС, сотрудников и объёма операций, поэтому точную сумму назову после уточнения деталей.
+
+
+======================================================================
+[D09] Электронный чек — боль внутри разговора о фичах  [FAIL]
+ISSUES: topic=analytics_no_staff_analysis_304 (ожидался kassa_no_e_receipt_604); gate=NO; pain_ctx=ПУСТО
+======================================================================
+
+--- ход 1 ---
+intent=question_features  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_snr/tis_growth_without_structure_1602  score=0.0164  stage=lemma
+
+Клиент: привет, расскажите что умеет ваша система
+Бот: Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Wipon объединяет онлайн-кассу, учёт товаров и аналитику в одной системе с передачей данных в КГД. У нас нет ограничений по количеству позиций в номенклатуре, что удобно для роста ассортимента.
+
+--- ход 2 ---
+intent=info_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/control_warehouse_theft_102  score=0.0328  stage=lemma
+
+Клиент: нас интересует управление товарами и складом
+Бот: Управление товарами и складом — это наш профиль, от приёмки до продажи всё видно в реальном времени. Подскажите, сколько у вас сейчас точек продаж?
+
+--- ход 3 ---
+intent=question_features  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=647ch
+pain_search_top: pain_kassa/kassa_no_e_receipt_604  score=0.0328  stage=semantic
+
+Клиент: а еще вопрос — у нас клиенты постоянно просят чек на вотсап или на почту а мы не можем, только бумажный, это прям стыдно уже. это у вас есть?
+Бот: Да, Wipon позволяет отправлять электронные чеки клиентам напрямую по WhatsApp или email сразу после покупки. Это избавит вас от бумажных чеков и сделает сервис удобнее для покупателей.
+
+--- ход 4  <<<< PAIN TURN ---
+intent=price_question  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/analytics_no_staff_analysis_304  score=0.0164  stage=lemma
+
+Клиент: круто, а сколько стоит подключение?
+Бот: Стоимость подключения программы Wipon определяется выбранным тарифом (Lite, Standard или Pro). Если вы берёте только программу без оборудования, то подключение для вас будет бесплатным, оплачивается только сам тариф. Для точного расчёта стоимости требуется уточнение выбранного функционала и количества точек.
+
+
+======================================================================
+[D10] Негатив без явной боли → потом боль на 4 ходу  [FAIL]
+ISSUES: topic=analytics_no_branch_control_305 (ожидался tis_limit_fear_1101); gate=NO; pain_ctx=ПУСТО; боль НЕ в ответе бота
+======================================================================
+
+--- ход 1 ---
+intent=greeting  state=greeting  action=greet_back
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: ПУСТО
+
+Клиент: здравствуйте
+Бот: Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?
+
+--- ход 2 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=655ch
+pain_search_top: pain_products/integration_multiple_systems_503  score=0.0323  stage=semantic
+
+Клиент: мне нужна программа для автоматизации магазина стройматериалов
+Бот: Стройматериалы — отличный выбор, у нас есть готовое решение для учёта по партиям и разным единицам измерения. А что сейчас больше всего напрягает в вашей работе с товаром?
+
+--- ход 3 ---
+intent=situation_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_kassa/kassa_no_analytics_606  score=0.0164  stage=semantic
+
+Клиент: 3 точки, астана, каждый день по 200-300 чеков
+Бот: Три точки в Астане — это уже сеть, где важен единый контроль остатков и цен. Сейчас вы ведете учёт вручную?
+
+--- ход 4 ---
+intent=info_provided  state=autonomous_discovery  action=autonomous_respond
+pain_gate=YES  pain_ctx=647ch
+pain_search_top: pain_snr/tis_limit_fear_1101  score=0.0325  stage=lemma
+
+Клиент: а вот еще вопрос, мы скоро наверно лимит по мрп превысим, оборот растет быстро, я боюсь что автоматом на ндс переведут. ваша система как то предупреждает об этом?
+Бот: Могу отвечать только по подтвержденным фактам из базы. Сейчас в контексте недостаточно данных для точного ответа.
+
+--- ход 5  <<<< PAIN TURN ---
+intent=price_question  state=autonomous_discovery  action=autonomous_respond
+pain_gate=NO  pain_ctx=0ch
+pain_search_top: pain_products/analytics_no_branch_control_305  score=0.0164  stage=lemma
+
+Клиент: ну если предупреждает то хорошо, а сколько стоит на 3 точки?
+Бот: Для трех точек подходит тариф Standard за 220 000 тенге в год. Он включает все три точки без доплат и позволяет вести единый учёт сети.
+

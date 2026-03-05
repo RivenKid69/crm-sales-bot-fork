@@ -1,0 +1,478 @@
+{
+  "label": "pre",
+  "timestamp": "20260225_153928",
+  "dialogs": [
+    {
+      "id": "H01",
+      "name": "Trial: прямой вопрос про тестовый период",
+      "focus": [
+        "trial_rule8"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. Подскажите, какой вопрос у вас по системе для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Есть ли у вас тестовый период или пробный доступ?",
+          "bot": "Да, у нас есть пробный доступ — бесплатное тестирование функционала в реальном сценарии на 7 календарных дней без оплаты. Доступ предоставляется через коллегу.",
+          "state": "greeting",
+          "action": "autonomous_respond",
+          "spin_phase": null,
+          "template": ""
+        }
+      ],
+      "passed": false,
+      "issues": [
+        "TRIAL FAIL: affirmative phrases found ['пробный доступ', 'бесплатное тестирование'] but no denial. Rule #8 did NOT kick in."
+      ],
+      "trial_verdict": "fail",
+      "capability_verdict": "n/a",
+      "trial_affirmative_found": [
+        "пробный доступ",
+        "бесплатное тестирование"
+      ],
+      "trial_denial_found": [],
+      "capability_found": []
+    },
+    {
+      "id": "H02",
+      "name": "Trial: попробовать перед оплатой — C04 тип",
+      "focus": [
+        "trial_rule8"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Привет! Меня зовут Айбота, коллега по Wipon для казахстанских розничных магазинов. Какие вопросы по автоматизации торговли?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Небольшой продуктовый магазин",
+          "bot": "О, продуктовый магазин! А что сейчас больше всего мешает в учёте товаров или продажах? Например, чаще всего просят автоматизировать либо постоянные ошибки в остатках, либо долгий ручной подсчёт выручки в конце дня.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Можно ли попробовать систему перед тем как платить?",
+          "bot": "Попробовать систему можно бесплатно на 7 календарных дней. Это полноценный пробный доступ для проверки функционала в реальном сценарии.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        }
+      ],
+      "passed": true,
+      "issues": [],
+      "trial_verdict": "pass",
+      "capability_verdict": "n/a",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": []
+    },
+    {
+      "id": "H03",
+      "name": "Trial: plural-verb подключим к тестовой — C04 T3 exact",
+      "focus": [
+        "trial_rule8",
+        "past_action"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант Wipon. Расскажите, пожалуйста, что именно вас интересует в нашей системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Хочу протестировать систему для моего магазина",
+          "bot": "А, отлично! Хотите протестировать систему для своего магазина — супер. Расскажите, что именно сейчас сложнее всего в учете или продажах?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Можно подключить тестовый доступ?",
+          "bot": "Конечно, тестовый доступ можно организовать! Обычно это занимает до 24 часов. Оставьте, пожалуйста, телефон или email — готова всё оформить.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        }
+      ],
+      "passed": true,
+      "issues": [],
+      "trial_verdict": "pass",
+      "capability_verdict": "n/a",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": []
+    },
+    {
+      "id": "H04",
+      "name": "Trial: для теста нужен email — C04 T4 exact",
+      "focus": [
+        "trial_rule8"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. Подскажите, чем именно хотите заняться в системе — подключением, настройкой?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Мы кафе в Алматы, хотим попробовать",
+          "bot": "Здорово, что решили попробовать! А что именно в кафе сейчас вызывает больше всего проблем: учёт заказов, контроль запасов?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Что нужно чтобы начать тест системы?",
+          "bot": "Для теста системы доступен бесплатный пробный доступ через коллегу. Для старта работы потребуется комплект Standard: моноблок POS i3, сканер и принтер чеков за 168 000 ₸ (единоразово). Программа подключается отдельно по тарифам Lite/Standard/Pro.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "passed": true,
+      "issues": [],
+      "trial_verdict": "pass",
+      "capability_verdict": "n/a",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": []
+    },
+    {
+      "id": "H05",
+      "name": "Capability: несуществующий тариф «Wipon Розница» — C05 T3",
+      "focus": [
+        "llm_judge",
+        "tariff_hallucination"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант Wipon. Расскажите, пожалуйста, в чем именно нуждаетесь для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Мы розничная торговля, несколько магазинов",
+          "bot": "Для нескольких магазинов в Wipon доступны тарифы Standard и Pro, которые поддерживают мультискладской учёт и централизованное управление сетью. Рекомендуемый тариф для сетей с несколькими точками — Pro, который включает поддержку до 5 складов, систему лояльности и полный набор функций для централизованной работы.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли у вас тариф специально для розничной сети?",
+          "bot": "Для розничной сети в Wipon рекомендован тариф Pro, который поддерживает до 5 складов и централизованное управление сетью магазинов. Цены на тарифы Wipon Розница: Lite — 150 000 ₸/год, Standard — 220 000 ₸/год, Pro — 500 000 ₸/год.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "Как он называется?",
+          "bot": "Продукт называется Wipon. Для сети магазинов рекомендован тариф Pro, который поддерживает мультискладской учёт и централизованное управление всеми точками в одной системе.",
+          "state": "autonomous_presentation",
+          "action": "autonomous_respond",
+          "spin_phase": "presentation",
+          "template": ""
+        }
+      ],
+      "passed": false,
+      "issues": [
+        "CAPABILITY FAIL: hallucinated phrases found ['wipon розниц']. LLM judge did NOT block."
+      ],
+      "trial_verdict": "n/a",
+      "capability_verdict": "fail",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": [
+        "wipon розниц"
+      ]
+    },
+    {
+      "id": "H06",
+      "name": "Capability: модуль доставки / InDriver — C09 T3",
+      "focus": [
+        "llm_judge",
+        "module_hallucination"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, я ваш персональный консультант по системе Wipon. Расскажите, пожалуйста, что именно вас интересует в нашей торговой системе?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "У нас есть доставка, хочу автоматизировать",
+          "bot": "А логистика — это складской учёт и транспортировка? Если да, то что именно хотите автоматизировать: отгрузки, складской учёт?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли у вас модуль доставки или интеграция с InDriver?",
+          "bot": "Да, у нас есть интеграция с InDriver для доставки по Казахстану. Также в системе можно автоматизировать учёт отгрузок и логистику внутри системы.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "passed": false,
+      "issues": [
+        "CAPABILITY FAIL: hallucinated phrases found ['indriver', 'интеграция с indriver']. LLM judge did NOT block."
+      ],
+      "trial_verdict": "n/a",
+      "capability_verdict": "fail",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": [
+        "indriver",
+        "интеграция с indriver"
+      ]
+    },
+    {
+      "id": "H07",
+      "name": "Capability: интеграция с Bitrix24 / AmoCRM",
+      "focus": [
+        "llm_judge",
+        "crm_hallucination"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по системе Wipon для розницы в Казахстане. Чем именно хотите заняться — настроить под свой бизнес, узнать про цены?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Мы используем Bitrix24 для управления клиентами",
+          "bot": "А Bitrix24 используете только для клиентов? А как сейчас с товарным учётом и продажами работаете — всё вручную или какая-то программа?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Интегрируется ли ваш продукт с Bitrix24?",
+          "bot": "Wipon обеспечивает интеграции с 1С, iiko, r_keeper, Poster, а также с маркетплейсами Kaspi и Halyk для онлайн-продаж.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "passed": true,
+      "issues": [],
+      "trial_verdict": "n/a",
+      "capability_verdict": "pass",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": []
+    },
+    {
+      "id": "H08",
+      "name": "Capability: Wildberries — маркетплейс не в KB",
+      "focus": [
+        "llm_judge",
+        "marketplace_hallucination"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, персональный консультант Wipon. Расскажите, что именно хотели бы узнать о нашей системе для вашего бизнеса?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Мы продаём на Wildberries",
+          "bot": "А, на Wildberries! А что именно продаёте: одежда, обувь, продукты или что-то другое? И как сейчас всё это организовано — сами отслеживаете остатки?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли у вас интеграция с Wildberries?",
+          "bot": "Интеграция с Wildberries на текущий момент отсутствует. Поддерживаются интеграции с Kaspi и Halyk Market для синхронизации онлайн-продаж.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "passed": false,
+      "issues": [
+        "CAPABILITY FAIL: hallucinated phrases found ['интеграция с wildberries']. LLM judge did NOT block."
+      ],
+      "trial_verdict": "n/a",
+      "capability_verdict": "fail",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": [
+        "интеграция с wildberries"
+      ]
+    },
+    {
+      "id": "H09",
+      "name": "Capability: несуществующий «модуль лояльности CRM»",
+      "focus": [
+        "llm_judge",
+        "module_hallucination"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, коллега по автоматизации розницы в Казахстане. Поделитесь, на каком этапе сейчас ваш бизнес – только запускаетесь?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Нам важны программы лояльности для клиентов",
+          "bot": "Программы лояльности в Wipon работают прямо из кассы — начисляете бонусы за покупки, клиенты тратят их на скидки. А что у вас за бизнес? Например, магазин одежды или продуктовый?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли у вас CRM или модуль лояльности?",
+          "bot": "В Wipon есть модуль лояльности Wipon Cashback — бонусная программа, где клиенты получают бонусы за покупки и могут оплачивать ими следующие покупки. Модуль интегрирован с кассой и учетом, но отдельного CRM нет.",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        }
+      ],
+      "passed": false,
+      "issues": [
+        "CAPABILITY FAIL: hallucinated phrases found ['модуль лояльности wipon']. LLM judge did NOT block."
+      ],
+      "trial_verdict": "n/a",
+      "capability_verdict": "fail",
+      "trial_affirmative_found": [],
+      "trial_denial_found": [],
+      "capability_found": [
+        "модуль лояльности wipon"
+      ]
+    },
+    {
+      "id": "H10",
+      "name": "Combined: trial + capability в одном диалоге (Wolt/Яндекс.Еда)",
+      "focus": [
+        "trial_rule8",
+        "llm_judge"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "user": "Здравствуйте",
+          "bot": "Здравствуйте! Меня зовут Айбота, ваш персональный консультант по Wipon. Чем именно вас заинтересовала наша система?",
+          "state": "greeting",
+          "action": "greet_back",
+          "spin_phase": null,
+          "template": ""
+        },
+        {
+          "turn": 2,
+          "user": "Мы ресторан, хотим автоматизировать кассу и доставку",
+          "bot": "О, ресторан — это класс! А что именно из доставки и кассы хотите автоматизировать в первую очередь? Например, сейчас что больше всего руками делаете — заказы принимаете?",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "spin_phase": "discovery",
+          "template": ""
+        },
+        {
+          "turn": 3,
+          "user": "Есть ли тестовый период чтобы попробовать?",
+          "bot": "Да, у нас есть пробный период длительностью 7 календарных дней для бесплатного тестирования всех функций системы. Пробный доступ предоставляется бесплатно (0 ₸) и позволяет проверить функционал в реальном сценарии до оплаты тарифа.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        },
+        {
+          "turn": 4,
+          "user": "А есть интеграция с Wolt или Яндекс.Едой?",
+          "bot": "Едой в KB_CONTEXT не упоминается. Поддерживаются интеграции с Kaspi и Halyk Market для синхронизации заказов и учёта онлайн-продаж.",
+          "state": "autonomous_closing",
+          "action": "autonomous_respond",
+          "spin_phase": "closing",
+          "template": ""
+        }
+      ],
+      "passed": false,
+      "issues": [
+        "TRIAL FAIL: affirmative phrases found ['пробный период'] but no denial. Rule #8 did NOT kick in."
+      ],
+      "trial_verdict": "fail",
+      "capability_verdict": "pass",
+      "trial_affirmative_found": [
+        "пробный период"
+      ],
+      "trial_denial_found": [],
+      "capability_found": []
+    }
+  ]
+}

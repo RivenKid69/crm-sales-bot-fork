@@ -23,10 +23,11 @@ SSoT for layers: src/classifier/refinement_layers.py
 SSoT for config: src/yaml_config/constants.yaml (refinement_pipeline section)
 """
 import re
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 
 from src.logger import logger
 from src.feature_flags import flags
+from src.settings import settings
 
 
 class UnifiedClassifier:
@@ -59,6 +60,7 @@ class UnifiedClassifier:
         """Инициализация с lazy loading."""
         self._hybrid = None
         self._llm = None
+        self._semantic_frame_extractor = None
         self._refinement_layer = None
         self._composite_refinement_layer = None
         self._objection_refinement_layer = None
@@ -128,6 +130,15 @@ class UnifiedClassifier:
             self._refinement_pipeline = get_refinement_pipeline()
         return self._refinement_pipeline
 
+    @property
+    def semantic_frame_extractor(self):
+        """Lazy init SemanticFrameExtractor."""
+        if self._semantic_frame_extractor is None:
+            from src.classifier.semantic_frame import SemanticFrameExtractor
+            # Reuse the same LLM client instance used by LLMClassifier.
+            self._semantic_frame_extractor = SemanticFrameExtractor(self.llm.vllm)
+        return self._semantic_frame_extractor
+
     def classify(self, message: str, context: Dict = None) -> Dict:
         """
         Классифицировать сообщение.
@@ -184,12 +195,17 @@ class UnifiedClassifier:
                         intent=intent,
                         removed_fields=validation.removed_fields,
                     )
-                return {
-                    "intent": intent,
-                    "confidence": confidence,
-                    "extracted_data": extracted,
-                    "method": "priority_pattern",
-                }
+                result = self._attach_semantic_frame(
+                    message=message,
+                    result={
+                        "intent": intent,
+                        "confidence": confidence,
+                        "extracted_data": extracted,
+                        "method": "priority_pattern",
+                    },
+                    context=context,
+                )
+                return self._apply_semantic_intent_arbitration(result)
 
         # Step 1: Primary classification
         if flags.llm_classifier:
@@ -238,10 +254,220 @@ class UnifiedClassifier:
                     "style_separation_applied", False
                 )
 
-        # Step 3: Unified disambiguation analysis
+        # Step 3: Additive semantic frame + optional intent arbitration
+        result = self._attach_semantic_frame(
+            message=message,
+            result=result,
+            context=context,
+        )
+        result = self._apply_semantic_intent_arbitration(result)
+
+        # Step 4: Unified disambiguation analysis
         if flags.unified_disambiguation:
             result = self._apply_disambiguation(result, context)
 
+        return result
+
+    def _attach_semantic_frame(self, message: str, result: Dict, context: Dict) -> Dict:
+        """Attach additive semantic frame to classification result."""
+        if not flags.is_enabled("semantic_frame"):
+            return result
+
+        intent = str(result.get("intent", "") or "")
+        # Skip terminal/meta intents where semantic frame brings little value.
+        if intent in {"greeting", "farewell", "gratitude", "small_talk", "fallback_close"}:
+            return result
+
+        try:
+            candidate_intents = self._collect_intent_candidates(result)
+            frame = self.semantic_frame_extractor.extract(
+                message=message,
+                primary_intent=intent,
+                secondary_signals=result.get("secondary_signals", []) or [],
+                candidate_intents=candidate_intents,
+                context=context,
+            )
+            if frame:
+                result["semantic_frame"] = frame
+        except Exception as e:
+            logger.warning("Semantic frame attach failed", error=str(e))
+        return result
+
+    @staticmethod
+    def _collect_intent_candidates(result: Dict[str, Any]) -> List[str]:
+        """Collect candidate intents from current result for semantic arbitration."""
+        candidates: List[str] = []
+        seen = set()
+
+        def add(intent_value: Any) -> None:
+            intent_str = str(intent_value or "").strip()
+            if not intent_str or intent_str in seen:
+                return
+            seen.add(intent_str)
+            candidates.append(intent_str)
+
+        add(result.get("intent"))
+
+        alternatives = result.get("alternatives", [])
+        if isinstance(alternatives, list):
+            for alt in alternatives:
+                if isinstance(alt, dict):
+                    add(alt.get("intent"))
+
+        secondary = result.get("secondary_signals", [])
+        if isinstance(secondary, list):
+            for sig in secondary:
+                add(sig)
+
+        return candidates
+
+    def _apply_semantic_intent_arbitration(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply semantic-frame suggested intent override on top of existing intents."""
+        if not flags.is_enabled("semantic_intent_arbitration"):
+            return result
+
+        frame = result.get("semantic_frame")
+        if not isinstance(frame, dict) or not frame:
+            return result
+
+        current_intent = str(result.get("intent", "") or "").strip()
+        if not current_intent:
+            return result
+
+        # Preserve service/meta intents and explicit disambiguation flow.
+        skip_intents = {
+            "greeting",
+            "farewell",
+            "gratitude",
+            "small_talk",
+            "disambiguation_needed",
+            "fallback_close",
+        }
+        if current_intent in skip_intents:
+            return result
+
+        method = str(result.get("method", ""))
+        if method == "priority_pattern" and current_intent in {
+            "greeting",
+            "farewell",
+            "gratitude",
+            "small_talk",
+            "contact_provided",
+        }:
+            result["semantic_intent_arbitration"] = {
+                "applied": True,
+                "overridden": False,
+                "reason": "priority_pattern_terminal_protected",
+                "current_intent": current_intent,
+            }
+            return result
+
+        recommended_intent = str(frame.get("recommended_intent", "") or "").strip()
+        if not recommended_intent or recommended_intent == current_intent:
+            result["semantic_intent_arbitration"] = {
+                "applied": True,
+                "overridden": False,
+                "reason": "no_change",
+                "current_intent": current_intent,
+                "recommended_intent": recommended_intent or current_intent,
+            }
+            return result
+
+        should_override = bool(frame.get("override_intent"))
+        try:
+            recommended_conf = float(frame.get("recommended_confidence", 0.0) or 0.0)
+        except Exception:
+            recommended_conf = 0.0
+        recommended_conf = max(0.0, min(1.0, recommended_conf))
+
+        try:
+            current_conf = float(result.get("confidence", 0.0) or 0.0)
+        except Exception:
+            current_conf = 0.0
+
+        min_override_conf = float(
+            settings.get_nested(
+                "classifier.semantic_intent_arbitration.min_override_confidence",
+                0.72,
+            )
+        )
+        min_conf_gap = float(
+            settings.get_nested(
+                "classifier.semantic_intent_arbitration.min_confidence_gap",
+                0.05,
+            )
+        )
+        protected_conf = float(
+            settings.get_nested(
+                "classifier.semantic_intent_arbitration.protected_confidence_threshold",
+                0.95,
+            )
+        )
+        if method == "priority_pattern":
+            # For regex-selected intents, allow override only on strong semantic evidence.
+            min_override_conf = max(min_override_conf, 0.85)
+            protected_conf = max(protected_conf, 0.99)
+
+        has_conf_advantage = recommended_conf >= (current_conf + min_conf_gap)
+        can_override = (
+            should_override
+            and recommended_conf >= min_override_conf
+            and (current_conf < protected_conf or has_conf_advantage)
+        )
+
+        arbitration_meta = {
+            "applied": True,
+            "overridden": bool(can_override),
+            "current_intent": current_intent,
+            "recommended_intent": recommended_intent,
+            "current_confidence": current_conf,
+            "recommended_confidence": recommended_conf,
+            "should_override": should_override,
+            "min_override_confidence": min_override_conf,
+            "min_confidence_gap": min_conf_gap,
+        }
+
+        if not can_override:
+            arbitration_meta["reason"] = "guard_conditions_not_met"
+            result["semantic_intent_arbitration"] = arbitration_meta
+            return result
+
+        # Apply override while preserving traceability and alternatives.
+        result["semantic_intent_original_intent"] = current_intent
+        result["intent"] = recommended_intent
+        result["confidence"] = max(current_conf, recommended_conf)
+        result["refined"] = True
+        result["refinement_layer"] = "semantic_intent_arbitration"
+        result["refinement_reason"] = "semantic_frame_intent_override"
+
+        alternatives = result.get("alternatives", [])
+        if not isinstance(alternatives, list):
+            alternatives = []
+        has_original_alt = any(
+            isinstance(alt, dict) and str(alt.get("intent", "")) == current_intent
+            for alt in alternatives
+        )
+        if not has_original_alt:
+            alternatives.append({"intent": current_intent, "confidence": current_conf})
+        result["alternatives"] = alternatives
+
+        refinement_chain = result.get("refinement_chain", [])
+        if isinstance(refinement_chain, list):
+            if "semantic_intent_arbitration" not in refinement_chain:
+                refinement_chain.append("semantic_intent_arbitration")
+            result["refinement_chain"] = refinement_chain
+
+        arbitration_meta["reason"] = "semantic_frame_override_applied"
+        result["semantic_intent_arbitration"] = arbitration_meta
+
+        logger.info(
+            "Semantic intent arbitration override applied",
+            previous_intent=current_intent,
+            new_intent=recommended_intent,
+            previous_confidence=current_conf,
+            new_confidence=result.get("confidence"),
+            recommended_confidence=recommended_conf,
+        )
         return result
 
     @staticmethod

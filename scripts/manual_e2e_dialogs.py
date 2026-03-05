@@ -191,11 +191,12 @@ def main():
 
     # Import bot
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from src.bot import SalesBot
+    from src.bot import SalesBot, setup_autonomous_pipeline
     from src.llm import OllamaLLM
     from src.feature_flags import flags
 
     llm = OllamaLLM()
+    setup_autonomous_pipeline()
     bot = SalesBot(llm, flow_name="autonomous")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

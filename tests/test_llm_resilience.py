@@ -167,6 +167,22 @@ class TestRetryMechanism:
         assert llm._stats.total_retries == 0
 
     @patch.object(OllamaLLM, '_call_llm')
+    def test_factual_purpose_uses_lower_temperature(self, mock_call):
+        """Factual generation should run with lower temperature for stability."""
+        mock_call.return_value = "fact response"
+        llm = OllamaLLM(enable_circuit_breaker=False)
+
+        response = llm.generate(
+            "КРИТИЧЕСКОЕ ПРАВИЛО ПО ТАРИФАМ И ЦЕНАМ: перечисли тарифы.",
+            purpose="response_generation_factual",
+        )
+
+        assert response == "fact response"
+        kwargs = mock_call.call_args.kwargs
+        assert kwargs["temperature"] == 0.2
+        assert kwargs["num_predict"] == 384
+
+    @patch.object(OllamaLLM, '_call_llm')
     def test_retry_on_failure(self, mock_call):
         """Retries on transient failure"""
         mock_call.side_effect = [

@@ -56,6 +56,7 @@ class QuestionDedupConfig:
     data_fields: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     phase_questions: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     prompt_instructions: Dict[str, str] = field(default_factory=dict)
+    profile_collection: Dict[str, Any] = field(default_factory=dict)
     strategies: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     metrics: Dict[str, Any] = field(default_factory=dict)
 
@@ -266,6 +267,7 @@ class QuestionDeduplicationEngine:
                 data_fields=raw_config.get("data_fields", {}),
                 phase_questions=raw_config.get("phase_questions", {}),
                 prompt_instructions=raw_config.get("prompt_instructions", {}),
+                profile_collection=raw_config.get("profile_collection", {}),
                 strategies=raw_config.get("strategies", {}),
                 metrics=raw_config.get("metrics", {}),
             )
@@ -601,6 +603,159 @@ class QuestionDeduplicationEngine:
         ]
         return self._generate_do_not_ask_instruction(collected_fields, collected_data)
 
+    @staticmethod
+    def _has_field_value(collected_data: Dict[str, Any], field_name: str) -> bool:
+        """Check field presence with bool-friendly semantics."""
+        if field_name not in collected_data:
+            return False
+        value = collected_data.get(field_name)
+        if isinstance(value, bool):
+            return True
+        return value is not None and value != "" and value != 0
+
+    def _is_profile_slot_complete(
+        self,
+        slot_config: Dict[str, Any],
+        collected_data: Dict[str, Any],
+    ) -> bool:
+        """
+        Evaluate whether profile slot is complete using config-driven requirements.
+
+        Supported keys in slot_config:
+        - required_any: list[str]
+        - required_all: list[str]
+        - required_if_true: dict[str, list[str]]
+        """
+        required_any = slot_config.get("required_any", []) or []
+        required_all = slot_config.get("required_all", []) or []
+        required_if_true = slot_config.get("required_if_true", {}) or {}
+
+        has_any = True
+        if required_any:
+            has_any = any(self._has_field_value(collected_data, f) for f in required_any)
+
+        has_all = True
+        if required_all:
+            has_all = all(self._has_field_value(collected_data, f) for f in required_all)
+
+        if not (has_any and has_all):
+            return False
+
+        for trigger_field, required_fields in required_if_true.items():
+            if bool(collected_data.get(trigger_field)):
+                if not all(self._has_field_value(collected_data, f) for f in (required_fields or [])):
+                    return False
+
+        return True
+
+    @staticmethod
+    def _recent_profile_question_seen(
+        history: List[Dict[str, Any]],
+        markers: List[str],
+        window: int,
+    ) -> bool:
+        """Detect whether a similar profile question was asked recently."""
+        if not markers or not isinstance(history, list):
+            return False
+
+        bot_turns = [turn for turn in history if isinstance(turn, dict) and turn.get("bot")]
+        for turn in bot_turns[-max(1, int(window or 1)):]:
+            bot_text = str(turn.get("bot", "")).lower()
+            if "?" not in bot_text:
+                continue
+            if any(str(marker).lower() in bot_text for marker in markers):
+                return True
+        return False
+
+    def get_soft_profile_instruction(
+        self,
+        phase: str,
+        intent: str,
+        collected_data: Dict[str, Any],
+        history: Optional[List[Dict[str, Any]]] = None,
+        question_instruction: str = "",
+        frustration_level: int = 0,
+    ) -> str:
+        """
+        Build config-driven soft profile instruction.
+
+        This is intentionally non-blocking: it suggests one optional question
+        without changing state-machine transitions.
+        """
+        if not self._config:
+            return ""
+
+        cfg = self._config.profile_collection or {}
+        if not cfg.get("enabled", False):
+            return ""
+
+        blockers = cfg.get("blockers", {}) or {}
+        instruction_markers = [str(x).lower() for x in blockers.get("question_instruction_markers", [])]
+        if instruction_markers:
+            qi = str(question_instruction or "").lower()
+            if any(marker in qi for marker in instruction_markers):
+                return ""
+
+        try:
+            max_frustration = int(blockers.get("max_frustration", 2))
+        except Exception:
+            max_frustration = 2
+        if int(frustration_level or 0) > max_frustration:
+            return ""
+
+        intent_value = str(intent or "")
+        skip_intents = set(str(x) for x in blockers.get("skip_intents", []))
+        if intent_value in skip_intents:
+            return ""
+        skip_intent_prefixes = tuple(str(x) for x in blockers.get("skip_intent_prefixes", []))
+        if skip_intent_prefixes and any(intent_value.startswith(prefix) for prefix in skip_intent_prefixes):
+            return ""
+
+        allowed_phases = set(str(x).lower() for x in cfg.get("phases", []))
+        phase_value = str(phase or "").lower().strip()
+        if allowed_phases and phase_value and phase_value not in allowed_phases:
+            return ""
+
+        slots = cfg.get("slots", {}) or {}
+        slot_order = cfg.get("slot_order", list(slots.keys())) or []
+        if not slots or not slot_order:
+            return ""
+
+        try:
+            recent_window = int(blockers.get("recent_turn_window", 4))
+        except Exception:
+            recent_window = 4
+        history = history or []
+
+        chosen_question = ""
+        for slot_name in slot_order:
+            slot_cfg = slots.get(slot_name, {}) or {}
+            if not isinstance(slot_cfg, dict):
+                continue
+            if self._is_profile_slot_complete(slot_cfg, collected_data):
+                continue
+            markers = slot_cfg.get("markers", []) or []
+            if self._recent_profile_question_seen(history, markers, recent_window):
+                continue
+            chosen_question = str(slot_cfg.get("question", "") or "").strip()
+            if chosen_question:
+                break
+
+        if not chosen_question:
+            return ""
+
+        template = str(cfg.get("instruction_template", "") or "").strip()
+        if not template:
+            template = (
+                "Мягкий сбор профиля: если в этом сообщении уместен ОДИН встречный вопрос, "
+                "предпочти такой: \"{question}\"."
+            )
+
+        try:
+            return template.format(question=chosen_question)
+        except Exception:
+            return template
+
     def is_question_about_collected_field(
         self,
         question: str,
@@ -691,3 +846,22 @@ def get_prompt_context(
 def get_do_not_ask_instruction(collected_data: Dict[str, Any]) -> str:
     """Convenience function для получения инструкции 'не спрашивай'."""
     return question_dedup_engine.get_do_not_ask_instruction(collected_data)
+
+
+def get_soft_profile_instruction(
+    phase: str,
+    intent: str,
+    collected_data: Dict[str, Any],
+    history: Optional[List[Dict[str, Any]]] = None,
+    question_instruction: str = "",
+    frustration_level: int = 0,
+) -> str:
+    """Convenience function for non-blocking profile collection instruction."""
+    return question_dedup_engine.get_soft_profile_instruction(
+        phase=phase,
+        intent=intent,
+        collected_data=collected_data,
+        history=history,
+        question_instruction=question_instruction,
+        frustration_level=frustration_level,
+    )

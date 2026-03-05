@@ -248,6 +248,7 @@ class ContextEnvelope:
 
     # === Secondary Intents (from RefinementPipeline) ===
     secondary_intents: List[str] = field(default_factory=list)
+    semantic_frame: Dict[str, Any] = field(default_factory=dict)
 
     # === Current Intent (current turn, not previous) ===
     current_intent: Optional[str] = None
@@ -563,6 +564,7 @@ class ContextEnvelopeBuilder:
 
         # Заполняем secondary intents из classification_result
         self._fill_secondary_intents(envelope)
+        self._fill_semantic_frame(envelope)
 
         # Заполняем disambiguation fields из classification_result
         self._fill_disambiguation(envelope)
@@ -593,7 +595,8 @@ class ContextEnvelopeBuilder:
             "timeline", "contact_info", "budget_range",
             "current_tools", "business_type", "users_count",
             "pain_impact", "financial_impact", "desired_outcome",
-            "urgency", "client_name",
+            "urgency", "client_name", "contact_name",
+            "city", "automation_before", "automation_now",
         })
         extracted = self.classification_result.get("extracted_data", {})
         envelope.has_extracted_data = any(
@@ -883,6 +886,12 @@ class ContextEnvelopeBuilder:
         secondary = self.classification_result.get("secondary_signals", [])
         if secondary:
             envelope.secondary_intents = list(secondary)
+
+    def _fill_semantic_frame(self, envelope: ContextEnvelope) -> None:
+        """Fill additive semantic frame from classification_result."""
+        frame = self.classification_result.get("semantic_frame")
+        if isinstance(frame, dict) and frame:
+            envelope.semantic_frame = dict(frame)
 
     def _fill_disambiguation(self, envelope: ContextEnvelope) -> None:
         """Fill disambiguation fields from classification_result."""

@@ -1,0 +1,540 @@
+{
+  "timestamp": "20260303_161709",
+  "mode": "single_e2e_simulation",
+  "requirements": {
+    "flow": "autonomous",
+    "dialogs": 1,
+    "persona": "neutral/happy_path",
+    "min_kb_questions_requested": 3,
+    "complex_dialog_requested": true,
+    "same_model_client_and_bot": true
+  },
+  "llm": {
+    "model": "qwen3.5-27b",
+    "base_url": "http://localhost:8080",
+    "api_format": "openai"
+  },
+  "attempts": 3,
+  "selected_result": {
+    "persona": "happy_path",
+    "outcome": "success",
+    "turns": 5,
+    "duration_seconds": 87.25,
+    "flow_name": "autonomous",
+    "kb_questions_used": 0,
+    "kb_topics_covered": [],
+    "phases_reached": [
+      "discovery",
+      "presentation"
+    ],
+    "spin_coverage": 0.2857142857142857,
+    "final_lead_score": 72,
+    "final_lead_temperature": "very_hot",
+    "errors": [],
+    "dialogue": [
+      {
+        "turn": 1,
+        "client": "Добрый день! Хотела узнать подробнее о вашем оборудовании",
+        "bot": "У нас собственное производство оборудования в Казахстане, поэтому оно полностью совместимо с системой. Есть моноблоки, сканеры, весы и принтеры, всё можно взять в рассрочку. Подскажите, какой у вас формат торговли, чтобы я подобрала идеальный комплект?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "confidence": 0.85,
+        "visited_states": [
+          "greeting",
+          "autonomous_discovery"
+        ],
+        "initial_state": "greeting",
+        "is_final": false,
+        "decision_trace": {
+          "metadata": {
+            "turn_number": 1,
+            "timestamp": 1772536542.8626688,
+            "elapsed_ms": 14899.44,
+            "user_message": "Добрый день! Хотела узнать подробнее о вашем оборудовании"
+          },
+          "bot_response": "У нас собственное производство оборудования в Казахстане, поэтому оно полностью совместимо с системой. Есть моноблоки, сканеры, весы и принтеры, всё можно взять в рассрочку. Подскажите, какой у вас формат торговли, чтобы я подобрала идеальный комплект?",
+          "classification": {
+            "top_intent": "question_features",
+            "confidence": 0.85,
+            "all_scores": {
+              "question_features": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {},
+            "classification_time_ms": 1699.82
+          },
+          "tone_analysis": {
+            "detected_tone": "interested",
+            "frustration_level": 0,
+            "markers_found": [],
+            "style": "formal",
+            "should_apologize": false,
+            "should_offer_exit": false,
+            "analysis_time_ms": 290.7
+          },
+          "guard_check": {
+            "intervention_triggered": false,
+            "trigger_reason": null,
+            "can_continue": true,
+            "frustration_at_check": 0,
+            "check_time_ms": 0.0
+          },
+          "lead_score": {
+            "previous_score": 0,
+            "new_score": 5,
+            "score_change": 5,
+            "signals_applied": [],
+            "decay_applied": 0.0,
+            "temperature": "cold"
+          },
+          "state_machine": {
+            "prev_state": "greeting",
+            "next_state": "autonomous_discovery",
+            "prev_phase": null,
+            "next_phase": "discovery",
+            "action": "answer_with_facts",
+            "is_final": false,
+            "processing_time_ms": 0.6
+          },
+          "policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          },
+          "response": {
+            "template_key": "autonomous_respond",
+            "requested_action": "autonomous_respond",
+            "personalization_applied": {},
+            "cta_added": false,
+            "cta_type": null,
+            "response_length": 252,
+            "generation_time_ms": 12907.88
+          },
+          "timing": {
+            "tone_analysis_ms": 290.7,
+            "guard_check_ms": 0.0,
+            "classification_ms": 1699.82,
+            "classification_llm_ms": 0.0,
+            "state_machine_ms": 0.6,
+            "response_generation_ms": 12907.88,
+            "response_generation_llm_ms": 0.0,
+            "total_turn_ms": 14899.44,
+            "bottleneck": "response_generation"
+          }
+        }
+      },
+      {
+        "turn": 2,
+        "client": "у меня смешанный магазин в астане, одна точка. нужно что-то простое, чтобы не усложнять кассиру.",
+        "bot": "Поняла, для одной точки в Астане мы подберём простое решение без лишней сложности. А что сейчас больше всего напрягает в работе кассира?",
+        "state": "autonomous_discovery",
+        "intent": "situation_provided",
+        "action": "autonomous_respond",
+        "confidence": 0.85,
+        "visited_states": [
+          "autonomous_discovery"
+        ],
+        "initial_state": "autonomous_discovery",
+        "is_final": false,
+        "decision_trace": {
+          "metadata": {
+            "turn_number": 2,
+            "timestamp": 1772536558.4983952,
+            "elapsed_ms": 13669.37,
+            "user_message": "у меня смешанный магазин в астане, одна точка. нужно что-то простое, чтобы не усложнять кассиру."
+          },
+          "bot_response": "Поняла, для одной точки в Астане мы подберём простое решение без лишней сложности. А что сейчас больше всего напрягает в работе кассира?",
+          "classification": {
+            "top_intent": "situation_provided",
+            "confidence": 0.85,
+            "all_scores": {
+              "situation_provided": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "pain_point": "путаница",
+              "business_type": "розничная торговля",
+              "city": "Астана",
+              "pain_category": "manual_work"
+            },
+            "classification_time_ms": 2418.16
+          },
+          "tone_analysis": {
+            "detected_tone": "neutral",
+            "frustration_level": 0,
+            "markers_found": [],
+            "style": "formal",
+            "should_apologize": false,
+            "should_offer_exit": false,
+            "analysis_time_ms": 264.08
+          },
+          "guard_check": {
+            "intervention_triggered": false,
+            "trigger_reason": null,
+            "can_continue": true,
+            "frustration_at_check": 0,
+            "check_time_ms": 0.0
+          },
+          "lead_score": {
+            "previous_score": 4,
+            "new_score": 4,
+            "score_change": 0,
+            "signals_applied": [],
+            "decay_applied": 0.0,
+            "temperature": "cold"
+          },
+          "state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 3446.01
+          },
+          "policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          },
+          "response": {
+            "template_key": "autonomous_respond",
+            "requested_action": "autonomous_respond",
+            "personalization_applied": {},
+            "cta_added": false,
+            "cta_type": null,
+            "response_length": 136,
+            "generation_time_ms": 7540.65
+          },
+          "timing": {
+            "tone_analysis_ms": 264.08,
+            "guard_check_ms": 0.0,
+            "classification_ms": 2418.16,
+            "classification_llm_ms": 0.0,
+            "state_machine_ms": 3446.01,
+            "response_generation_ms": 7540.65,
+            "response_generation_llm_ms": 0.0,
+            "total_turn_ms": 13669.37,
+            "bottleneck": "response_generation"
+          }
+        }
+      },
+      {
+        "turn": 3,
+        "client": "главная проблема это кассирша долго считает кассу в конце смены, всё вручную. и вообще нет понимания сколько товара осталось на складе.",
+        "bot": "В Wipon смена закрывается автоматически с фиксацией всех сумм и операций кассира, а остатки обновляются в реальном времени при каждой продаже. Хотите, чтобы я показала, как это выглядит в интерфейсе?",
+        "state": "autonomous_discovery",
+        "intent": "question_features",
+        "action": "autonomous_respond",
+        "confidence": 0.9234,
+        "visited_states": [
+          "autonomous_discovery"
+        ],
+        "initial_state": "autonomous_discovery",
+        "is_final": false,
+        "decision_trace": {
+          "metadata": {
+            "turn_number": 3,
+            "timestamp": 1772536573.0861375,
+            "elapsed_ms": 26894.83,
+            "user_message": "главная проблема это кассирша долго считает кассу в конце смены, всё вручную. и вообще нет понимания сколько товара осталось на складе."
+          },
+          "bot_response": "В Wipon смена закрывается автоматически с фиксацией всех сумм и операций кассира, а остатки обновляются в реальном времени при каждой продаже. Хотите, чтобы я показала, как это выглядит в интерфейсе?",
+          "classification": {
+            "top_intent": "question_features",
+            "confidence": 0.9234,
+            "all_scores": {
+              "question_features": 0.9234
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "current_tools": "вручную",
+              "automation_now": false,
+              "pain_point": "кассирша долго считает кассу вручную, нет понимания остатков на складе",
+              "pain_category": "manual_work"
+            },
+            "classification_time_ms": 7202.05
+          },
+          "tone_analysis": {
+            "detected_tone": "frustrated",
+            "frustration_level": 3,
+            "markers_found": [],
+            "style": "formal",
+            "should_apologize": false,
+            "should_offer_exit": false,
+            "analysis_time_ms": 313.95
+          },
+          "guard_check": {
+            "intervention_triggered": false,
+            "trigger_reason": null,
+            "can_continue": true,
+            "frustration_at_check": 3,
+            "check_time_ms": 0.0
+          },
+          "lead_score": {
+            "previous_score": 4,
+            "new_score": 9,
+            "score_change": 5,
+            "signals_applied": [],
+            "decay_applied": 0.0,
+            "temperature": "cold"
+          },
+          "state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 10568.94
+          },
+          "policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          },
+          "response": {
+            "template_key": "autonomous_respond",
+            "requested_action": "autonomous_respond",
+            "personalization_applied": {},
+            "cta_added": false,
+            "cta_type": null,
+            "response_length": 199,
+            "generation_time_ms": 8809.13
+          },
+          "timing": {
+            "tone_analysis_ms": 313.95,
+            "guard_check_ms": 0.0,
+            "classification_ms": 7202.05,
+            "classification_llm_ms": 0.0,
+            "state_machine_ms": 10568.94,
+            "response_generation_ms": 8809.13,
+            "response_generation_llm_ms": 0.0,
+            "total_turn_ms": 26894.83,
+            "bottleneck": "state_machine"
+          }
+        }
+      },
+      {
+        "turn": 4,
+        "client": "да, покажите, если не сложно. интересно как именно это выглядит, чтобы кассир не путалась",
+        "bot": "Интерфейс прост: кассир видит только продажи, а отчёты и настройки доступны только администратору. Это исключает путаницу и лишние действия. Хотите попробовать систему в работе бесплатно?",
+        "state": "autonomous_presentation",
+        "intent": "demo_request",
+        "action": "autonomous_respond",
+        "confidence": 0.7751,
+        "visited_states": [
+          "autonomous_discovery",
+          "autonomous_presentation"
+        ],
+        "initial_state": "autonomous_discovery",
+        "is_final": false,
+        "decision_trace": {
+          "metadata": {
+            "turn_number": 4,
+            "timestamp": 1772536600.7176018,
+            "elapsed_ms": 19683.97,
+            "user_message": "да, покажите, если не сложно. интересно как именно это выглядит, чтобы кассир не путалась"
+          },
+          "bot_response": "Интерфейс прост: кассир видит только продажи, а отчёты и настройки доступны только администратору. Это исключает путаницу и лишние действия. Хотите попробовать систему в работе бесплатно?",
+          "classification": {
+            "top_intent": "demo_request",
+            "confidence": 0.7751,
+            "all_scores": {
+              "demo_request": 0.7751
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "pain_point": "кассирша долго считает кассу в конце смены, всё вручную. и вообще нет понимания сколько товара осталось на складе",
+              "pain_category": "manual_work",
+              "desired_outcome": "чтобы кассир не путалась",
+              "value_acknowledged": true
+            },
+            "classification_time_ms": 6436.95
+          },
+          "tone_analysis": {
+            "detected_tone": "confused",
+            "frustration_level": 4,
+            "markers_found": [],
+            "style": "formal",
+            "should_apologize": false,
+            "should_offer_exit": false,
+            "analysis_time_ms": 0.21
+          },
+          "guard_check": {
+            "intervention_triggered": false,
+            "trigger_reason": null,
+            "can_continue": true,
+            "frustration_at_check": 4,
+            "check_time_ms": 0.0
+          },
+          "lead_score": {
+            "previous_score": 9,
+            "new_score": 39,
+            "score_change": 30,
+            "signals_applied": [],
+            "decay_applied": 0.0,
+            "temperature": "warm"
+          },
+          "state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_presentation",
+            "prev_phase": "discovery",
+            "next_phase": "presentation",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 4176.45
+          },
+          "policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          },
+          "response": {
+            "template_key": "autonomous_respond",
+            "requested_action": "autonomous_respond",
+            "personalization_applied": {},
+            "cta_added": false,
+            "cta_type": null,
+            "response_length": 187,
+            "generation_time_ms": 9069.3
+          },
+          "timing": {
+            "tone_analysis_ms": 0.21,
+            "guard_check_ms": 0.0,
+            "classification_ms": 6436.95,
+            "classification_llm_ms": 0.0,
+            "state_machine_ms": 4176.45,
+            "response_generation_ms": 9069.3,
+            "response_generation_llm_ms": 0.0,
+            "total_turn_ms": 19683.97,
+            "bottleneck": "response_generation"
+          }
+        }
+      },
+      {
+        "turn": 5,
+        "client": "да хочу попробовать. давай оставлю телефон чтобы вы мне всё показали. +77001234567",
+        "bot": "Отлично, пробный доступ уже доступен для вашего телефона. Кстати, как к вам лучше обращаться?",
+        "state": "video_call_scheduled",
+        "intent": "contact_provided",
+        "action": "autonomous_respond",
+        "confidence": 0.9,
+        "visited_states": [
+          "autonomous_presentation",
+          "video_call_scheduled"
+        ],
+        "initial_state": "autonomous_presentation",
+        "is_final": true,
+        "decision_trace": {
+          "metadata": {
+            "turn_number": 5,
+            "timestamp": 1772536621.2223506,
+            "elapsed_ms": 8682.74,
+            "user_message": "да хочу попробовать. давай оставлю телефон чтобы вы мне всё показали. +77001234567"
+          },
+          "bot_response": "Отлично, пробный доступ уже доступен для вашего телефона. Кстати, как к вам лучше обращаться?",
+          "classification": {
+            "top_intent": "contact_provided",
+            "confidence": 0.9,
+            "all_scores": {
+              "contact_provided": 0.9
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "contact_info": "+77001234567",
+              "contact_type": "phone",
+              "kaspi_phone": "+77001234567",
+              "high_interest": true
+            },
+            "classification_time_ms": 1743.68
+          },
+          "tone_analysis": {
+            "detected_tone": "interested",
+            "frustration_level": 1,
+            "markers_found": [],
+            "style": "formal",
+            "should_apologize": false,
+            "should_offer_exit": false,
+            "analysis_time_ms": 296.3
+          },
+          "guard_check": {
+            "intervention_triggered": false,
+            "trigger_reason": null,
+            "can_continue": true,
+            "frustration_at_check": 1,
+            "check_time_ms": 0.0
+          },
+          "lead_score": {
+            "previous_score": 37,
+            "new_score": 72,
+            "score_change": 35,
+            "signals_applied": [],
+            "decay_applied": 0.0,
+            "temperature": "very_hot"
+          },
+          "state_machine": {
+            "prev_state": "autonomous_presentation",
+            "next_state": "video_call_scheduled",
+            "prev_phase": "presentation",
+            "next_phase": null,
+            "action": "autonomous_respond",
+            "is_final": true,
+            "processing_time_ms": 4024.37
+          },
+          "policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          },
+          "response": {
+            "template_key": "autonomous_respond",
+            "requested_action": "autonomous_respond",
+            "personalization_applied": {},
+            "cta_added": false,
+            "cta_type": null,
+            "response_length": 93,
+            "generation_time_ms": 2617.32
+          },
+          "timing": {
+            "tone_analysis_ms": 296.3,
+            "guard_check_ms": 0.0,
+            "classification_ms": 1743.68,
+            "classification_llm_ms": 0.0,
+            "state_machine_ms": 4024.37,
+            "response_generation_ms": 2617.32,
+            "response_generation_llm_ms": 0.0,
+            "total_turn_ms": 8682.74,
+            "bottleneck": "state_machine"
+          }
+        }
+      }
+    ]
+  }
+}

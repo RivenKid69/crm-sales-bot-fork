@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts import benchmark_retrieval_stages as retrieval_suite
 from scripts import kb_verify as kb_v1
 from scripts import kb_verify_wave2 as kb_v2
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 from src.config_loader import ConfigLoader
 from src.knowledge.autonomous_kb import load_facts_for_state
 from src.knowledge.category_router import CategoryRouter
@@ -609,6 +609,7 @@ def run_e2e_audit(
     flow_name: str,
     kb_text: str,
 ) -> Dict[str, Any]:
+    setup_autonomous_pipeline()
     bot = SalesBot(llm, flow_name=flow_name, enable_tracing=True)
     scenarios = _merge_scenarios()
 

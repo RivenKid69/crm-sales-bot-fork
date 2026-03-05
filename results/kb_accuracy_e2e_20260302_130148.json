@@ -1,0 +1,3621 @@
+{
+  "timestamp": "20260302_130148",
+  "total": 160,
+  "passed": 121,
+  "pass_rate": 75.6,
+  "deflections": 11,
+  "duration_s": 3632.8,
+  "llm_model": "qwen3.5-27b",
+  "categories": {
+    "analytics": {
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0
+    },
+    "competitors": {
+      "total": 10,
+      "passed": 6,
+      "pass_rate": 60.0
+    },
+    "delivery": {
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0
+    },
+    "employees": {
+      "total": 10,
+      "passed": 9,
+      "pass_rate": 90.0
+    },
+    "equipment": {
+      "total": 10,
+      "passed": 7,
+      "pass_rate": 70.0
+    },
+    "features": {
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0
+    },
+    "fiscal": {
+      "total": 10,
+      "passed": 7,
+      "pass_rate": 70.0
+    },
+    "integrations": {
+      "total": 10,
+      "passed": 7,
+      "pass_rate": 70.0
+    },
+    "inventory": {
+      "total": 10,
+      "passed": 7,
+      "pass_rate": 70.0
+    },
+    "mobile": {
+      "total": 10,
+      "passed": 9,
+      "pass_rate": 90.0
+    },
+    "pricing": {
+      "total": 10,
+      "passed": 9,
+      "pass_rate": 90.0
+    },
+    "products": {
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0
+    },
+    "promotions": {
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0
+    },
+    "stability": {
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0
+    },
+    "support": {
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0
+    },
+    "tis": {
+      "total": 10,
+      "passed": 4,
+      "pass_rate": 40.0
+    }
+  },
+  "results": [
+    {
+      "idx": 0,
+      "cat": "equipment",
+      "question": "Сколько стоит моноблок POS DUO?",
+      "response": "Моноблок POS DUO стоит 220 000 ₸ (единоразово). Доступна рассрочка Kaspi 0-0-12: 18 333 ₸ в месяц. Это двухэкранный моноблок с экраном для кассира и покупателя.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "15.6",
+        "i5"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "220 000",
+        "8"
+      ],
+      "elapsed_s": 36.67,
+      "state": "autonomous_discovery",
+      "intent": "question_pos_monoblock",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 1,
+      "cat": "equipment",
+      "question": "Что входит в комплект PRO оборудования и сколько он стоит?",
+      "response": "Комплект PRO стоит 360 000 ₸ (единоразово). В него входят: моноблок Wipon POS DUO с двумя экранами (кассир/клиент), стационарный сканер WP 7600 L, ручной сканер WP 930 Z с подставкой, чековый принтер X-printer E 200 L, принтер этикеток XP 420 B и металлический денежный ящик.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "360 000",
+        "POS DUO",
+        "сканер",
+        "принтер",
+        "ящик"
+      ],
+      "elapsed_s": 36.42,
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_bundle",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 2,
+      "cat": "equipment",
+      "question": "Сколько стоит комплект Standard оборудования?",
+      "response": "Комплект Standard стоит 168 000 ₸ (единоразово). В него входит сенсорный моноблок Wipon POS i3, ручной сканер штрих-кода с подставкой и чековый принтер. Доступна рассрочка через Kaspi — 14 000 ₸ в месяц на (0-0-12)",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "168 000",
+        "POS i3",
+        "сканер",
+        "принтер"
+      ],
+      "elapsed_s": 30.76,
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_bundle",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 3,
+      "cat": "equipment",
+      "question": "Чем отличаются сканеры WP930Z и WPB930?",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "WP930Z",
+        "проводн",
+        "10 000",
+        "WPB930",
+        "беспроводн",
+        "17 000"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 29.25,
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_specs",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 4,
+      "cat": "equipment",
+      "question": "Какие принтеры чеков у вас есть? Чем они отличаются?",
+      "response": "У нас есть GP-C58 за 15 000 ₸ для небольших точек и GP-C200I за 25 000 ₸ с автоотрезом для высокой нагрузки. Как к вам обращаться, чтобы я могла рассказать подробнее?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "58 мм",
+        "80 мм",
+        "принтер"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 29.89,
+      "state": "greeting",
+      "intent": "question_printer",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 5,
+      "cat": "equipment",
+      "question": "Сколько стоят весы Rongta RLS1100?",
+      "response": "Весы Rongta RLS1100 стоят 200 000 тенге, есть рассрочка по карте Kaspi. Подскажите, планируете подключать их к одной точке?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "30 кг"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "200 000"
+      ],
+      "elapsed_s": 23.39,
+      "state": "autonomous_discovery",
+      "intent": "question_scales",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 6,
+      "cat": "equipment",
+      "question": "Есть ли у вас умные весы? Сколько стоят?",
+      "response": "Да, у нас есть умные весы за 100 000 ₸. Они сразу передают вес в кассу без ручного ввода, что ускоряет работу. Планируете ли вы продавать развесной товар?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "30 кг"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "100 000"
+      ],
+      "elapsed_s": 23.6,
+      "state": "autonomous_discovery",
+      "intent": "question_scales",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 7,
+      "cat": "equipment",
+      "question": "Чем отличается Wipon Triple от Wipon Quadro?",
+      "response": "Triple стоит 330 000 тенге, а Quadro — 365 000 тенге. Главное отличие в том, что у Quadro есть дополнительный экран для покупателя.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Triple",
+        "330 000",
+        "Quadro",
+        "365 000"
+      ],
+      "elapsed_s": 26.9,
+      "state": "autonomous_discovery",
+      "intent": "question_product_comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 8,
+      "cat": "equipment",
+      "question": "Сколько стоит экран покупателя Wipon Screen?",
+      "response": "Экран покупателя Wipon стоит 60 000 тенге, а в рассрочку от Kaspi выходит 5 000 тенге в месяц. Он показывает товары и сумму в реальном времени, что повышает доверие клиентов.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "10.1"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "60 000"
+      ],
+      "elapsed_s": 26.26,
+      "state": "autonomous_discovery",
+      "intent": "question_second_screen",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 9,
+      "cat": "equipment",
+      "question": "Сколько стоит денежный ящик Wipon?",
+      "response": "У нас есть несколько моделей: WP-19 за 19 000 ₸, WP-405 за 21 000 ₸ или вертикальная WP-170 за 30 000 ₸. Все они открываются автоматически при продаже. Какая модель вам ближе по объёму купюр?",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [
+        "30 000"
+      ],
+      "found_keywords": [
+        "21 000",
+        "купюр"
+      ],
+      "elapsed_s": 22.49,
+      "state": "autonomous_discovery",
+      "intent": "question_cash_drawer",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 10,
+      "cat": "pricing",
+      "question": "Какие тарифы есть у Wipon и сколько они стоят?",
+      "response": "В Wipon доступны четыре тарифа: Mini: 5 000 ₸/месяц (1 торговая точка) Lite: 150 000 ₸/год (1 торговая точка) Standard: 220 000 ₸/год (до 3 торговых точек) Pro: 500 000 ₸/год (до 5 торговых точек) Для вашего бизнеса с тремя магазинами подходит тариф Standard, так как он включает до 3 точек.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Mini",
+        "5 000",
+        "Lite",
+        "150 000",
+        "Standard",
+        "220 000",
+        "Pro",
+        "500 000"
+      ],
+      "elapsed_s": 25.0,
+      "state": "autonomous_discovery",
+      "intent": "pricing_details",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 11,
+      "cat": "pricing",
+      "question": "Сколько стоит тариф Mini?",
+      "response": "Тариф Mini стоит 5 000 тенге в месяц. Это базовый вариант для одной точки с онлайн-кассой и учётом продаж. Стоит ли начать с него для вашего магазина электроники?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "1 точк"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "5 000",
+        "месяц"
+      ],
+      "elapsed_s": 21.52,
+      "state": "autonomous_discovery",
+      "intent": "question_tariff_mini",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 12,
+      "cat": "pricing",
+      "question": "Чем Standard отличается от Lite?",
+      "response": "Тариф Standard стоит 220 000 ₸ в год, поддерживает до 3 торговых точек и 1 прайс-лист. Тариф Lite стоит 150 000 ₸ в год, подходит для 1 торговой точки и не включает прайс-листы. Какой вариант вам ближе по количеству аптек?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Standard",
+        "220 000",
+        "Lite",
+        "150 000"
+      ],
+      "elapsed_s": 30.99,
+      "state": "autonomous_discovery",
+      "intent": "question_tariff_comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 13,
+      "cat": "pricing",
+      "question": "Что включает тариф Pro?",
+      "response": "Тариф Pro стоит 500 000 тенге в год и поддерживает до 5 точек с неограниченным числом товаров. В него включены три оптовые цены, план закупок, полный бухгалтерский и кадровый учёт, а также бесплатные ОФД и касса.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "склад"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "500 000",
+        "год"
+      ],
+      "elapsed_s": 65.81,
+      "state": "autonomous_discovery",
+      "intent": "question_tariff_pro",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 14,
+      "cat": "pricing",
+      "question": "Сколько стоит подключение ТИС?",
+      "response": "Для 2 точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую дополнительную, итого 300 000 ₸/год.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "220 000",
+        "год"
+      ],
+      "elapsed_s": 21.9,
+      "state": "autonomous_discovery",
+      "intent": "question_tis_price",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 15,
+      "cat": "pricing",
+      "question": "Есть ли рассрочка на оборудование?",
+      "response": "Да, на всё оборудование Wipon действует рассрочка. Доступны условия 0-0-12 и 0-0-24 без переплаты через Kaspi и Halyk. Условия могут уточняться индивидуально в зависимости от выбранного комплекта.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "рассрочк",
+        "12",
+        "Kaspi"
+      ],
+      "elapsed_s": 34.12,
+      "state": "autonomous_discovery",
+      "intent": "question_installment",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 16,
+      "cat": "pricing",
+      "question": "Можно ли взять оборудование в аренду?",
+      "response": "Аренда оборудования в Wipon не предусмотрена, но доступна покупка в рассрочку на 12 месяцев без переплаты через Kaspi. Расскажите, как сейчас в магазинах ведётся учёт товара?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "нет"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "рассрочк"
+      ],
+      "elapsed_s": 25.24,
+      "state": "autonomous_discovery",
+      "intent": "payment_terms",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 17,
+      "cat": "pricing",
+      "question": "Входит ли программа в стоимость оборудования?",
+      "response": "Программа приобретается отдельно от оборудования, так что тариф под ваши задачи. Это позволяет гибко собрать конфигурацию без лишних затрат.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "отдельно",
+        "програм",
+        "тариф"
+      ],
+      "elapsed_s": 20.29,
+      "state": "autonomous_discovery",
+      "intent": "pricing_details",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 18,
+      "cat": "pricing",
+      "question": "Что такое Wipon PRO УКМ и сколько стоит?",
+      "response": "Он необходим для корректной фискализации и передачи данных в ОФД.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "12 000",
+        "акциз",
+        "алкоголь",
+        "модуль"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 18.88,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 19,
+      "cat": "pricing",
+      "question": "Сколько стоит дополнительная торговая точка?",
+      "response": "Стоимость зависит от тарифа: на тариф дополнительная точка стоит 50 000 тенге в год, а в системе ТИС — 80 000 тенге за каждую следующую точку. Какой вариант для вас ближе по функционалу?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "50 000",
+        "год"
+      ],
+      "elapsed_s": 24.17,
+      "state": "autonomous_discovery",
+      "intent": "price_question",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 20,
+      "cat": "products",
+      "question": "Что такое Wipon Kassa?",
+      "response": "Она работает на телефоне, планшете или компьютере. Скажите, сколько у вас торговых точек?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "бесплатн",
+        "онлайн-касс",
+        "ОФД",
+        "фискализац"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 19.56,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 21,
+      "cat": "products",
+      "question": "Wipon подходит для кофейни с рецептами?",
+      "response": "Для кофейни с рецептами и калькуляцией ингредиентов Wipon не подходит, так как этот функционал мы не поддерживаем. Система отлично работает для кассы и учёта готовых позиций без расчёта себестоимости блюд.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "рецепт",
+        "калькуляц"
+      ],
+      "elapsed_s": 25.6,
+      "state": "autonomous_discovery",
+      "intent": "question_restaurant_cafe",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 22,
+      "cat": "products",
+      "question": "С какого года работает компания Wipon?",
+      "response": "Wipon работает с 2014 года, это более 10 лет на рынке Казахстана. У нас уже более 50 000 клиентов. А сейчас как у вас организован учёт в двух филиалах?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "2014",
+        "50 000"
+      ],
+      "elapsed_s": 20.06,
+      "state": "autonomous_discovery",
+      "intent": "company_info_question",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 23,
+      "cat": "products",
+      "question": "Что такое Wipon Desktop?",
+      "response": "Wipon — это программа для учёта товаров и продаж, которая устанавливается на компьютер с Windows. Она позволяет вести полный учёт остатков, принимать оплату и формировать отчёты. Скажите, вы сейчас используете какой-то другой софт для работы магазина?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Windows",
+        "учёт",
+        "товар"
+      ],
+      "elapsed_s": 18.6,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 24,
+      "cat": "products",
+      "question": "Подходит ли Wipon для аптеки?",
+      "response": "Wipon идеально подходит для аптеки: есть учёт сроков годности, маркировка лекарств и встроенная касса с ОФД. А у вас в аптеке сейчас используется какая-то система для учёта?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "маркировк",
+        "срок",
+        "годност"
+      ],
+      "elapsed_s": 21.39,
+      "state": "autonomous_discovery",
+      "intent": "question_pharmacy",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 25,
+      "cat": "products",
+      "question": "Что такое Wipon Duo?",
+      "response": "Wipon Duo — это кассовый моноблок с двумя экранами: один для кассира, второй для покупателя. Стоимость устройства — 220 000 ₸ (единоразово). Доступна рассрочка через Kaspi: 18 333 ₸ в месяц (условия 0-0-12).",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "два экран"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "кассир",
+        "покупател"
+      ],
+      "elapsed_s": 23.82,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 26,
+      "cat": "products",
+      "question": "У меня 5 магазинов. Какой тариф подойдёт?",
+      "response": "Для сети магазинов в Wipon обычно используют тариф Pro. Он поддерживает до 5 складов и централизованное управление. Стоимость тарифа Pro составляет 500 000 ₸ в год.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "точк"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Pro",
+        "500 000"
+      ],
+      "elapsed_s": 29.35,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 27,
+      "cat": "products",
+      "question": "Я торгую алкоголем. Подходит ли ваша система?",
+      "response": "Да, для торговли алкоголем в Wipon предусмотрен специальный программный модуль Wipon PRO УКМ. Он предназначен для работы с акцизной продукцией, проверки акцизных марок и передачи данных в ОФД. Стоимость модуля — 12 000 ₸/год (активация).",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "алкоголь"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "УКМ",
+        "акциз"
+      ],
+      "elapsed_s": 37.99,
+      "state": "autonomous_discovery",
+      "intent": "question_alcohol_tobacco",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 28,
+      "cat": "products",
+      "question": "Что входит в Wipon Розница?",
+      "response": "В Wipon есть учёт товаров и продаж, онлайн-касса с фискализацией, а также поддержка маркировки для аптек. Сейчас как у вас организована работа с кассой и остатками?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "склад"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "товар",
+        "учёт",
+        "касс",
+        "фискализац"
+      ],
+      "elapsed_s": 13.33,
+      "state": "autonomous_discovery",
+      "intent": "info_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 29,
+      "cat": "products",
+      "question": "Какие продукты есть в экосистеме Wipon?",
+      "response": "В экосистеме Wipon входят программа учёта, онлайн-касса с фискализацией и система лояльности Cashback. Все компоненты работают вместе для автоматизации бизнеса.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "Kassa",
+        "Desktop",
+        "ТИС"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 34.56,
+      "state": "autonomous_discovery",
+      "intent": "question_wipon_pro",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 30,
+      "cat": "tis",
+      "question": "Что такое ТИС и как расшифровывается?",
+      "response": "Для 2 точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую дополнительную, итого 300 000 ₸/год.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "рёхкомпонентн",
+        "интегрирован",
+        "систем"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 17.18,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 31,
+      "cat": "tis",
+      "question": "Кому подходит ТИС? Могу ли я подключить, если у меня ТОО?",
+      "response": "Айбота, ТИС подключается только ИП на упрощёнке, для ТОО этот формат недоступен. Для ТОО мы используем Wipon под режим розничного налога с полным учётом и отчётностью.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "ИП",
+        "упрощён"
+      ],
+      "elapsed_s": 20.79,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 32,
+      "cat": "tis",
+      "question": "Какие лимиты повышает ТИС для ИП?",
+      "response": "Для 2 точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую дополнительную, итого 300 000 ₸/год.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "НДС",
+        "567",
+        "78"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 25.27,
+      "state": "autonomous_discovery",
+      "intent": "question_tis_limits",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 33,
+      "cat": "tis",
+      "question": "Как быстро можно подключить ТИС?",
+      "response": "Wipon интегрируется с Kaspi, 1С, ОФД и другими сервисами через REST API. Расскажите, какой у вас бизнес — подберу подходящий вариант подключения.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "1-2 дн",
+        "ЭЦП",
+        "удалённо"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 20.86,
+      "state": "autonomous_discovery",
+      "intent": "question_tis_transition",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 34,
+      "cat": "tis",
+      "question": "Что видит налоговая при подключении ТИС?",
+      "response": "Для 3 точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую дополнительную, итого 380 000 ₸/год.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "доход"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "чек"
+      ],
+      "elapsed_s": 20.26,
+      "state": "autonomous_discovery",
+      "intent": "question_tis_general",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 35,
+      "cat": "tis",
+      "question": "С какого года ТИС Wipon официально признана?",
+      "response": "Wipon официально признана и внесена в государственный реестр с 2021 года. Все требования законодательства соблюдены, поэтому работать можно официально и спокойно. Расскажите, сколько торговых точек вы планируете открыть для начала?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "2021",
+        "реестр"
+      ],
+      "elapsed_s": 19.17,
+      "state": "autonomous_discovery",
+      "intent": "company_info_question",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 36,
+      "cat": "tis",
+      "question": "Что входит в функционал ТИС?",
+      "response": "В функционал ТИС входит учёт товаров, продажи, онлайн-касса с фискализацией, POS-терминал, кадровый учёт, расчёт зарплаты и автоматическая налоговая отчётность. Также поддерживается учёт маркированных товаров, складские операции и интеграция с банками.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "склад",
+        "касс",
+        "фискализац",
+        "отчётност"
+      ],
+      "elapsed_s": 29.74,
+      "state": "greeting",
+      "intent": "question_tis_components",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 37,
+      "cat": "tis",
+      "question": "Входят ли продажи через Wildberries и Ozon в лимиты ТИС?",
+      "response": "Для 4 точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую дополнительную, итого 460 000 ₸/год.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "не входят"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 23.96,
+      "state": "autonomous_discovery",
+      "intent": "question_tis_limits",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 38,
+      "cat": "tis",
+      "question": "Сколько стоит выезд специалиста для установки ТИС?",
+      "response": "Для 2 точек нужен тариф ТИС. Ориентир цены: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую дополнительную, итого 300 000 ₸/год.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "30 000"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 20.26,
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_install",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 39,
+      "cat": "tis",
+      "question": "Что предложить для ТОО вместо ТИС?",
+      "response": "Для ТОО вместо ТИС мы используем Wipon под режим розничного налога с полным учётом и отчётностью. Подскажите, сколько у вас сейчас точек продаж?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "Розниц"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 20.5,
+      "state": "autonomous_discovery",
+      "intent": "question_snr_comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 40,
+      "cat": "support",
+      "question": "Как быстро отвечает техподдержка Wipon?",
+      "response": "В среднем первичный ответ в чате занимает около 10-15 минут, срочные обращения мы приоритизируем. Поддержка работает ежедневно, в будни до полуночи, а в выходные до 21:00.",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [
+        "5 минут"
+      ],
+      "found_keywords": [
+        "10",
+        "15",
+        "минут"
+      ],
+      "elapsed_s": 20.79,
+      "state": "autonomous_discovery",
+      "intent": "question_support",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 41,
+      "cat": "support",
+      "question": "Работает ли техподдержка в выходные?",
+      "response": "Да, в выходные поддержка работает до 21:00, а в будни до полуночи. У вас бывают случаи, когда нужно срочно решить вопрос с кассой в нерабочее время?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "ежедневн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "выходн"
+      ],
+      "elapsed_s": 14.7,
+      "state": "autonomous_discovery",
+      "intent": "objection_no_time",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 42,
+      "cat": "support",
+      "question": "Как проходит настройка — приедет мастер или удалённо?",
+      "response": "В Караганде настройку проводим удалённо через AnyDesk, выезд мастера не предусмотрен. Оборудование доставим, а подключим онлайн.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "удалённо",
+        "AnyDesk"
+      ],
+      "elapsed_s": 19.2,
+      "state": "autonomous_discovery",
+      "intent": "question_implementation",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 43,
+      "cat": "support",
+      "question": "Можно ли перенести базу данных из другой программы?",
+      "response": "Да, перенос базы данных из другой системы в Wipon — бесплатная услуга. Мы загрузим товары, цены и остатки, обычно это занимает около часа. Из какой именно программы планируете переход?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "бесплатно"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "перенос"
+      ],
+      "elapsed_s": 20.75,
+      "state": "autonomous_discovery",
+      "intent": "question_data_migration",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 44,
+      "cat": "support",
+      "question": "Сколько времени занимает подключение Wipon?",
+      "response": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Расскажите, что вас интересует?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "час",
+        "дн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 18.12,
+      "state": "greeting",
+      "intent": "question_implementation",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 45,
+      "cat": "support",
+      "question": "Есть ли обучение после подключения? Платное?",
+      "response": "Обучение включено в запуск бесплатно для тарифов Lite, Standard и Pro. Для тарифа Mini обучение в матрице недоступно, но оформляется как отдельная сервисная услуга за 10 000 ₸ (разово).",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "бесплатно",
+        "обучени"
+      ],
+      "elapsed_s": 28.28,
+      "state": "autonomous_discovery",
+      "intent": "question_implementation",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 46,
+      "cat": "support",
+      "question": "Что такое Wipon Consulting?",
+      "response": "Wipon Consulting — консалтинговая компания по бухгалтерскому и налоговому учёту. Мы предоставляем полный спектр услуг для ИП и ТОО: ведение бухучёта, расчёт налогов, подготовку и сдачу отчётности, регистрацию и закрытие бизнеса, а также сопровождение проверок.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "бухгалтер",
+        "учёт",
+        "консалтинг"
+      ],
+      "elapsed_s": 15.25,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 47,
+      "cat": "support",
+      "question": "Можно ли работать без бухгалтера с Wipon Consulting?",
+      "response": "Да, в Wipon можно вести продажи, остатки и базовые налоги самостоятельно без бухгалтера, а при необходимости подключить консалтинг. Скажите, вы планируете сдавать отчетность сами?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "берём на себя"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "бухгалтер"
+      ],
+      "elapsed_s": 22.08,
+      "state": "autonomous_discovery",
+      "intent": "question_accounting_services",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 48,
+      "cat": "support",
+      "question": "Помогут ли зарегистрировать ТОО через Wipon Consulting?",
+      "response": "Да, Wipon регистрирует ТОО под ключ, включая БИН, ЭЦП, открытие счёта и первичную отчётность. Это полноценное сопровождение от запуска до учёта.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "регистрац"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "ТОО",
+        "БИН"
+      ],
+      "elapsed_s": 23.18,
+      "state": "autonomous_discovery",
+      "intent": "question_accounting_services",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 49,
+      "cat": "support",
+      "question": "До скольки работают менеджеры Wipon?",
+      "response": "коллеги работают по времени Астаны с 09:00 до 18:00, а техподдержка принимает обращения в будни до полуночи, в выходные до 21:00. Сейчас расскажите, как вы сейчас ведете учет в магазине?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "18:00"
+      ],
+      "elapsed_s": 19.28,
+      "state": "autonomous_discovery",
+      "intent": "question_support",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 50,
+      "cat": "delivery",
+      "question": "В какие города Казахстана доставляете оборудование?",
+      "response": "Доставляем во все крупные города Казахстана, включая Караганду, через InDriver. Срок доставки в среднем от одного до пяти рабочих дней.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "Алматы",
+        "Астан"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Казахстан"
+      ],
+      "elapsed_s": 20.44,
+      "state": "autonomous_discovery",
+      "intent": "question_delivery",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 51,
+      "cat": "delivery",
+      "question": "Бесплатная ли доставка по Астане?",
+      "response": "В Астане доставка обычно бесплатная при заказе на сумму от 140 000 тенге. Бесплатная доставка: от 140 000 ₸.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "бесплатно"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "40 000"
+      ],
+      "elapsed_s": 24.92,
+      "state": "autonomous_discovery",
+      "intent": "question_delivery",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 52,
+      "cat": "delivery",
+      "question": "За сколько дней доставите оборудование в Алматы?",
+      "response": "В Алматы доставка оборудования обычно занимает 1–2 рабочих дня. А как к вам обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "1-2"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "рабоч"
+      ],
+      "elapsed_s": 18.26,
+      "state": "greeting",
+      "intent": "question_delivery_time",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 53,
+      "cat": "delivery",
+      "question": "Сколько дней занимает доставка в Актау?",
+      "response": "В Актау доставка занимает 3–5 рабочих дней, отправляем через InDriver. После получения сразу подключим систему онлайн.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "3-5"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "рабоч"
+      ],
+      "elapsed_s": 24.12,
+      "state": "autonomous_discovery",
+      "intent": "question_delivery_time",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 54,
+      "cat": "delivery",
+      "question": "Где находятся офисы Wipon?",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "Астан",
+        "Алматы",
+        "Шымкент"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 18.53,
+      "state": "autonomous_discovery",
+      "intent": "question_office_location",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 55,
+      "cat": "delivery",
+      "question": "Можно ли забрать оборудование самовывозом?",
+      "response": "Самовывоз доступен в Алматы, Астане и Шымкенте. В Павлодар доставка занимает 2–4 рабочих дня.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "самовывоз"
+      ],
+      "elapsed_s": 25.17,
+      "state": "autonomous_discovery",
+      "intent": "question_pickup_office",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 56,
+      "cat": "delivery",
+      "question": "В каких городах доступен выезд специалиста?",
+      "response": "Выездные специалисты работают в Астане, Алматы и Шымкенте. В остальных городах подключаем удалённо через AnyDesk.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Алматы",
+        "Астан",
+        "Шымкент"
+      ],
+      "elapsed_s": 19.65,
+      "state": "autonomous_discovery",
+      "intent": "question_office_location",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 57,
+      "cat": "delivery",
+      "question": "Сколько дней доставка в Караганду?",
+      "response": "В Караганду доставка занимает 2–3 рабочих дня. После получения мы настроим всё удалённо. А в вашем магазине сколько кассовых аппаратов сейчас используется?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "2-3"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "рабоч"
+      ],
+      "elapsed_s": 14.7,
+      "state": "autonomous_discovery",
+      "intent": "question_delivery_time",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 58,
+      "cat": "delivery",
+      "question": "Доставляете ли в сёла и отдалённые населённые пункты?",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "да",
+        "Казахстан"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 20.53,
+      "state": "autonomous_discovery",
+      "intent": "question_delivery",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 59,
+      "cat": "delivery",
+      "question": "Где находится головной офис Wipon?",
+      "response": "Головной офис находится в Астане, но у нас есть и филиал в Шымкенте на микрорайоне Нурсат. Там можно посмотреть оборудование и получить консультацию.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Астан"
+      ],
+      "elapsed_s": 20.0,
+      "state": "autonomous_discovery",
+      "intent": "question_office_location",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 60,
+      "cat": "inventory",
+      "question": "Как Wipon помогает контролировать остатки, чтобы товар не закончился?",
+      "response": "Wipon автоматически считает остатки после каждой продажи и закупки, сразу показывая актуальное количество в карточке товара. Система сама предупредит, если запас подойдет к минимальному уровню, чтобы вы успели заказать партию. Как к вам лучше обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "уведомлени",
+        "вовремя"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "остатк"
+      ],
+      "elapsed_s": 22.1,
+      "state": "greeting",
+      "intent": "question_inventory",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 61,
+      "cat": "inventory",
+      "question": "Можно ли проводить ревизию, не закрывая магазин?",
+      "response": "Да, в Wipon можно проводить ревизию без остановки продаж. Касса продолжает работать, а данные обновляются автоматически. Хотите узнать, как это упростит работу в ваших четырёх точках?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "без остановки",
+        "продаж"
+      ],
+      "elapsed_s": 17.38,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 62,
+      "cat": "inventory",
+      "question": "Если не успел закончить ревизию — данные потеряются?",
+      "response": "Нет, данные не потеряются, система автоматически сохраняет прогресс, даже если вы прервете работу. Вы сможете вернуться к ревизии позже и продолжить с того же места.",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [
+        "сохранен"
+      ],
+      "forbidden_found": [
+        "теряются"
+      ],
+      "found_keywords": [
+        "продолж"
+      ],
+      "elapsed_s": 26.04,
+      "state": "autonomous_discovery",
+      "intent": "question_data_migration",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 63,
+      "cat": "inventory",
+      "question": "У меня несколько магазинов. Как синхронизировать остатки?",
+      "response": "В Wipon остатки синхронизируются между всеми точками в реальном времени. Вы видите актуальные данные по каждому магазину в одном окне. Сколько у вас сейчас точек?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "синхронизац",
+        "автоматическ"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 21.61,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 64,
+      "cat": "inventory",
+      "question": "Мы работаем со штучным и весовым товаром. Нужны две программы?",
+      "response": "Нет, две программы не нужны — в Wipon штучный и весовой товар учитываются в одной системе без путаницы в остатках. У вас уже есть весы?",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [
+        "один"
+      ],
+      "forbidden_found": [
+        "две программы"
+      ],
+      "found_keywords": [
+        "штучн",
+        "весов"
+      ],
+      "elapsed_s": 21.2,
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_general",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 65,
+      "cat": "inventory",
+      "question": "Можно ли хранить контакты поставщиков в системе?",
+      "response": "Да, в Wipon есть база поставщиков с контактами и историей всех закупок и оплат. Сейчас вы ведёте учёт контрагентов в Excel?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "карточк"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "контрагент",
+        "поставщик"
+      ],
+      "elapsed_s": 20.59,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 66,
+      "cat": "inventory",
+      "question": "Есть ли аналитика по складу — отчёты, недостачи?",
+      "response": "Да, в Wipon есть полная аналитика по складу: отчёты по остаткам, движениям, недостачам и списаниям. Данные синхронизируются с кассой в реальном времени.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "отчёт",
+        "остатк",
+        "движени"
+      ],
+      "elapsed_s": 20.75,
+      "state": "autonomous_discovery",
+      "intent": "question_analytics_sales",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 67,
+      "cat": "inventory",
+      "question": "Как оформить закупку товара в Wipon?",
+      "response": "Закупка оформляется через интерфейс прихода: выбираете поставщика, указываете товары и цены, а система сама обновит остатки. Чтобы я помогла с настройкой, оставьте, пожалуйста, ваш телефон для связи.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "приходн",
+        "накладн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "поставщик"
+      ],
+      "elapsed_s": 18.63,
+      "state": "autonomous_closing",
+      "intent": "agreement",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 68,
+      "cat": "inventory",
+      "question": "Обновятся ли остатки автоматически после оприходования?",
+      "response": "Да, в Wipon остатки обновляются автоматически сразу после оприходования. Как к вам обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "автоматическ",
+        "сразу"
+      ],
+      "elapsed_s": 18.68,
+      "state": "greeting",
+      "intent": "question_inventory",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 69,
+      "cat": "inventory",
+      "question": "Можно ли проводить частичную ревизию — по отдельным категориям?",
+      "response": "Да, частичная ревизия по категориям или отдельным товарам доступна в Wipon. Продажи при этом не останавливаются, а данные обновляются автоматически.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "выборочн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "частичн",
+        "категори"
+      ],
+      "elapsed_s": 23.46,
+      "state": "autonomous_discovery",
+      "intent": "question_revision",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 70,
+      "cat": "features",
+      "question": "Какие способы оплаты поддерживает касса Wipon?",
+      "response": "Способы оплаты на кассе Wipon — поддержка различных видов оплаты при продаже. Способы оплаты Wipon — несколько каналов безналичного расчёта.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "карт",
+        "долг",
+        "смешанн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "наличн"
+      ],
+      "elapsed_s": 16.52,
+      "state": "autonomous_discovery",
+      "intent": "pricing_details",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 71,
+      "cat": "features",
+      "question": "Касса работает без интернета?",
+      "response": "Да, касса работает без интернета и пробивает чеки офлайн, а потом всё синхронизируется автоматически. Вам нужно, чтобы система работала стабильно даже при плохом сигнале в Павлодаре?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "автономн",
+        "синхронизац"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "офлайн"
+      ],
+      "elapsed_s": 17.7,
+      "state": "autonomous_discovery",
+      "intent": "question_offline",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 72,
+      "cat": "features",
+      "question": "Есть ли ограничение по количеству товаров в системе?",
+      "response": "В Wipon нет ограничений по количеству товаров на тарифах Lite, Standard и Pro — можно добавлять сколько нужно. Система рассчитана на работу с большими базами. Сейчас как у вас организована работа с остатками?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "без ограничен"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 21.22,
+      "state": "autonomous_discovery",
+      "intent": "question_scalability",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 73,
+      "cat": "features",
+      "question": "Можно ли отправить чек клиенту на WhatsApp?",
+      "response": "Да, в Wipon чек отправляется клиенту прямо из кассы через WhatsApp или email. Это удобно для подтверждения покупки и связи с покупателем.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "электронн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "WhatsApp"
+      ],
+      "elapsed_s": 18.77,
+      "state": "autonomous_discovery",
+      "intent": "question_whatsapp_business",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 74,
+      "cat": "features",
+      "question": "Как искать товары при продаже на кассе?",
+      "response": "В Wipon искать товары можно по названию, штрихкоду или артикулу — поиск работает быстро даже при большом ассортименте. Если товара нет в базе, кассир может создать его прямо в момент продажи.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "назван",
+        "штрихкод",
+        "артикул"
+      ],
+      "elapsed_s": 19.29,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 75,
+      "cat": "features",
+      "question": "Можно ли оформить отложенную продажу?",
+      "response": "Да, отложенная продажа в Wipon есть. Можно сохранить чек, если клиент не готова оплатить, и завершить его позже. Вам важно, чтобы касса работала без интернета?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "отложи"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "чек",
+        "позже"
+      ],
+      "elapsed_s": 22.59,
+      "state": "autonomous_discovery",
+      "intent": "question_sales_mgmt",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 76,
+      "cat": "features",
+      "question": "Нужно ли вручную вводить сумму на POS-терминале?",
+      "response": "Нет, в Wipon сумма передаётся на POS-терминал автоматически, вручную вводить её не нужно. Это исключает ошибки и ускоряет обслуживание. А как сейчас у вас организована оплата картой?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "не требуется"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "автоматическ"
+      ],
+      "elapsed_s": 22.24,
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_general",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 77,
+      "cat": "features",
+      "question": "Можно ли работать с алкогольной продукцией и акцизными марками?",
+      "response": "Да, Wipon поддерживает работу с алкогольной продукцией и акцизными марками. Для этого требуется программный модуль Wipon Pro (стоимость 12 000 ₸/год). Фискализация и передача чеков в ОФД осуществляются через встроенную онлайн-кассу в составе системы.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "алкогол",
+        "акциз",
+        "поддерж"
+      ],
+      "elapsed_s": 32.7,
+      "state": "autonomous_discovery",
+      "intent": "question_alcohol_tobacco",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 78,
+      "cat": "features",
+      "question": "Есть ли веб-версия Wipon?",
+      "response": "Да, у нас есть полноценная веб-версия, через неё можно работать с любого устройства без установки программ. Это удобно для контроля бизнеса из дома или офиса. Подскажите, вы сейчас используете какие-то другие системы для учёта?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "браузер"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "веб-верси"
+      ],
+      "elapsed_s": 20.98,
+      "state": "autonomous_discovery",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 79,
+      "cat": "features",
+      "question": "Сколько прайслистов доступно на тарифах Standard и Pro?",
+      "response": "На тарифе Standard доступен один прайслист, а на тарифе Pro — до трёх. Это позволяет удобно управлять розничными и оптовыми ценами в одной системе.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "1",
+        "3"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Standard",
+        "Pro"
+      ],
+      "elapsed_s": 16.16,
+      "state": "autonomous_discovery",
+      "intent": "pricing_details",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 80,
+      "cat": "integrations",
+      "question": "С какими маркетплейсами работает Wipon?",
+      "response": "Wipon работает с Kaspi Магазин и Halyk Market, заказы и чеки попадают в учёт автоматически. Для двух точек вам подойдёт тариф Standard с мультискладским учётом.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Kaspi",
+        "Halyk"
+      ],
+      "elapsed_s": 22.87,
+      "state": "autonomous_discovery",
+      "intent": "question_integrations",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 81,
+      "cat": "integrations",
+      "question": "Есть ли интеграция с Ozon или Wildberries?",
+      "response": "Тип СУБД и внутренняя архитектура — коммерческая тайна. Для интеграции доступен REST API с документацией. Что ещё интересует по техчасти?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "нет"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 14.72,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 82,
+      "cat": "integrations",
+      "question": "С какими банками работают POS-терминалы?",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "Forte",
+        "Halyk",
+        "Kaspi"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 19.84,
+      "state": "autonomous_discovery",
+      "intent": "question_bank_terminal",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 83,
+      "cat": "integrations",
+      "question": "Через какую систему работает маркировка в Казахстане?",
+      "response": "Система маркировки работает через государственную платформу ISMET. Wipon автоматически сканирует коды и списывает их при продаже. Вам уже нужно подключать маркировку для электроники?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "ISMET",
+        "маркировк"
+      ],
+      "elapsed_s": 20.39,
+      "state": "autonomous_discovery",
+      "intent": "question_marking_ismet",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 84,
+      "cat": "integrations",
+      "question": "С какими учётными системами интегрируется Wipon ТИС?",
+      "response": "Wipon интегрируется с 1С, iiko, r_keeper и Poster, а также с Kaspi магазином. Все данные между системами обмениваются в едином формате. А какая система сейчас используется в вашей аптеке?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "1С",
+        "iiko"
+      ],
+      "elapsed_s": 20.65,
+      "state": "autonomous_discovery",
+      "intent": "question_integrations",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 85,
+      "cat": "integrations",
+      "question": "Поддерживает ли Wipon бесконтактную оплату NFC?",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "NFC",
+        "поддерж"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 23.57,
+      "state": "autonomous_discovery",
+      "intent": "question_technical",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 86,
+      "cat": "integrations",
+      "question": "Можно ли формировать и отправлять ЭСФ через Wipon?",
+      "response": "Да, в Wipon можно формировать и отправлять ЭСФ и СНТ прямо из системы. Это полностью автоматизирует документооборот и исключает ошибки. А как вы сейчас справляетесь с этими документами?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "формирован"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "ЭСФ"
+      ],
+      "elapsed_s": 20.84,
+      "state": "autonomous_discovery",
+      "intent": "question_esf_snt",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 87,
+      "cat": "integrations",
+      "question": "Можно ли подключить несколько POS-терминалов к одной кассе?",
+      "response": "Да, в Wipon можно подключить сразу несколько банковских POS-терминалов к одной кассе, и все оплаты будут корректно фиксироваться в системе. Это удобно для работы с разными банками одновременно.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "поддерж"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "несколько"
+      ],
+      "elapsed_s": 19.81,
+      "state": "autonomous_discovery",
+      "intent": "question_equipment_general",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 88,
+      "cat": "integrations",
+      "question": "Какие модули Wipon работают вместе?",
+      "response": "В Wipon склад, финансы, закупки и касса работают как единое целое с автоматическим обновлением данных. Это дает полную картину бизнеса в реальном времени. Как сейчас у вас организована связь между точками при учете товара?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "склад",
+        "финанс",
+        "касс"
+      ],
+      "elapsed_s": 19.4,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 89,
+      "cat": "integrations",
+      "question": "Нужно ли кассиру вручную вводить сумму на терминале?",
+      "response": "Нет, кассиру не нужно вводить сумму вручную. В Wipon она передаётся на терминал автоматически сразу после формирования чека. Это исключает ошибки и ускоряет оплату.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "автоматическ",
+        "не нужно"
+      ],
+      "elapsed_s": 19.95,
+      "state": "autonomous_discovery",
+      "intent": "question_technical",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 90,
+      "cat": "fiscal",
+      "question": "Сколько стоит ОФД в месяц?",
+      "response": "Стоимость ОФД составляет 1 120 ₸ в месяц. Однако на тарифе Pro (500 000 ₸ в год) услуга ОФД предоставляется бесплатно. Также ОФД включен в тариф Lite (150 000 ₸ в год).",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [
+        "тенге"
+      ],
+      "forbidden_found": [
+        "бесплатно"
+      ],
+      "found_keywords": [
+        "1 120"
+      ],
+      "elapsed_s": 35.67,
+      "state": "autonomous_discovery",
+      "intent": "question_ofd_payment",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 91,
+      "cat": "fiscal",
+      "question": "ОФД входит в тариф Wipon или оплачивается отдельно?",
+      "response": "В тарифе Wipon Pro (500 000 ₸/год) ОФД включён бесплатно. В тарифе Wipon Lite (150 000 ₸/год) также указан Wipon ОФД. Для тарифа Mini (5 000 ₸/месяц) в составе уже включена онлайн-касса и фискализация чеков.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "отдельно"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 31.94,
+      "state": "autonomous_discovery",
+      "intent": "pricing_details",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 92,
+      "cat": "fiscal",
+      "question": "Как понять, ушёл ли чек в ОФД?",
+      "response": "У каждого чека есть статус: если он синий — значит фискализирован и успешно отправлен в ОФД. А как к вам обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "серый"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "статус",
+        "синий"
+      ],
+      "elapsed_s": 21.44,
+      "state": "greeting",
+      "intent": "question_fiscal_receipt",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 93,
+      "cat": "fiscal",
+      "question": "Какие налоговые формы формирует Wipon?",
+      "response": "Wipon автоматически формирует формы 910, 913, 200, СНТ и ЭСФ. Данные собираются сами, вручную ничего делать не нужно. Нужно ли вам, чтобы система ещё и сама отправляла эти формы в КГД через кабинет?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "910",
+        "913"
+      ],
+      "elapsed_s": 27.21,
+      "state": "autonomous_discovery",
+      "intent": "question_accounting_services",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 94,
+      "cat": "fiscal",
+      "question": "Можно ли работать только с POS-терминалом без онлайн-кассы?",
+      "response": "Нет, для корректного учёта и фискализации чеков в ОФД обязательно нужна онлайн-касса Wipon. Терминал только принимает карты, а касса формирует и отправляет документы. А как вы сейчас пробиваете чеки в магазинах?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "онлайн-касс",
+        "обязательн",
+        "фискализац"
+      ],
+      "elapsed_s": 20.78,
+      "state": "autonomous_discovery",
+      "intent": "question_fiscal_general",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 95,
+      "cat": "fiscal",
+      "question": "Передаются ли все мои данные о продажах в налоговую?",
+      "response": "Нет, налоговая видит только фискальные чеки. Склад, остатки и внутренняя аналитика остаются только у вас. Что еще вызывает опасения по части безопасности данных?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "только",
+        "чек"
+      ],
+      "elapsed_s": 57.49,
+      "state": "autonomous_discovery",
+      "intent": "question_security",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 96,
+      "cat": "fiscal",
+      "question": "Можно ли подключить только ОФД без программы Wipon?",
+      "response": "ОФД в Wipon работает только вместе с онлайн-кассой Wipon, отдельно подключить его нельзя. Онлайн-касса бесплатна, оплачивается только программа учёта по выбранному тарифу.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "не подключается"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "только вместе"
+      ],
+      "elapsed_s": 25.94,
+      "state": "autonomous_discovery",
+      "intent": "question_fiscal_ofd_wipon",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 97,
+      "cat": "fiscal",
+      "question": "Нужна ли ЭЦП для подключения онлайн-кассы?",
+      "response": "Wipon интегрируется с Kaspi, 1С, ОФД и другими сервисами через REST API. Расскажите, какой у вас бизнес — подберу подходящий вариант подключения.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "нужна",
+        "ЭЦП"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 20.38,
+      "state": "autonomous_discovery",
+      "intent": "question_fiscal_general",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 98,
+      "cat": "fiscal",
+      "question": "Как оформить возврат товара через Wipon?",
+      "response": "Возврат делается просто: в разделе Продажи находите чек и нажимаете кнопку Возврат, сумма пересчитается автоматически. У вас есть конкретная ситуация с возвратом, которую нужно разобрать?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "ОФД"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "возврат",
+        "чек"
+      ],
+      "elapsed_s": 10.9,
+      "state": "autonomous_discovery",
+      "intent": "agreement",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 99,
+      "cat": "fiscal",
+      "question": "Можно ли отправить чек клиенту онлайн?",
+      "response": "Да, чек можно отправить клиенту через WhatsApp или email прямо из кассы. Это удобно для сохранения чека без бумаги. Вам важна скорость отправки?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "WhatsApp",
+        "email"
+      ],
+      "elapsed_s": 32.17,
+      "state": "autonomous_discovery",
+      "intent": "price_question",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 100,
+      "cat": "analytics",
+      "question": "Какая аналитика по продажам есть в Wipon?",
+      "response": "В Wipon есть отчёты по продажам, выручке, прибыли и ABC-анализу, а также сравнение периодов. Как к вам обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "продаж",
+        "выручк",
+        "прибыл"
+      ],
+      "elapsed_s": 23.75,
+      "state": "greeting",
+      "intent": "question_analytics_sales",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 101,
+      "cat": "analytics",
+      "question": "Можно ли смотреть аналитику в реальном времени?",
+      "response": "Расскажите подробнее о вашем бизнесе — подберу подходящий вариант Wipon.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "реальн",
+        "врем"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 23.2,
+      "state": "autonomous_discovery",
+      "intent": "question_analytics_realtime",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 102,
+      "cat": "analytics",
+      "question": "Можно ли выгрузить отчёты в Excel?",
+      "response": "Да, любой отчёт в Wipon выгружается в Excel одной кнопкой для удобного анализа. А сейчас как именно вы формируете сводные данные по двум филиалам?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Excel"
+      ],
+      "elapsed_s": 18.49,
+      "state": "autonomous_discovery",
+      "intent": "question_analytics_export",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 103,
+      "cat": "analytics",
+      "question": "Есть ли отчёт по маржинальности товаров?",
+      "response": "Да, в Wipon есть отдельный отчёт по маржинальности товаров. Он сразу показывает, какие позиции приносят больше прибыли. А как вы сейчас отслеживаете прибыльность?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "маржинальност",
+        "прибыл"
+      ],
+      "elapsed_s": 14.38,
+      "state": "autonomous_discovery",
+      "intent": "question_features",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 104,
+      "cat": "analytics",
+      "question": "Как посмотреть прибыль за месяц?",
+      "response": "В разделе «Отчёты» выберите нужный период, и система покажет выручку и прибыль за месяц. Отчёт формируется автоматически в пару кликов.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "прибыл",
+        "период"
+      ],
+      "elapsed_s": 19.1,
+      "state": "autonomous_discovery",
+      "intent": "question_analytics_profit",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 105,
+      "cat": "analytics",
+      "question": "Где видно, кто из клиентов мне должен?",
+      "response": "В разделе Долговая книга видно, кто именно должен и какая сумма висит. Это поможет вам держать контроль над задолженностями.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "задолженност",
+        "должен",
+        "долг"
+      ],
+      "elapsed_s": 20.05,
+      "state": "autonomous_discovery",
+      "intent": "question_reports",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 106,
+      "cat": "analytics",
+      "question": "Можно ли вести учёт расходов магазина?",
+      "response": "Да, в Wipon можно вести учёт расходов, все затраты фиксируются и видны в отчётах по прибыли. А какие именно статьи расходов вы планируете отслеживать в первую очередь?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "расход",
+        "учёт"
+      ],
+      "elapsed_s": 17.57,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 107,
+      "cat": "analytics",
+      "question": "Нужно ли вручную собирать отчёты по нескольким точкам?",
+      "response": "Нет, вручную ничего собирать не нужно. Все точки синхронизируются автоматически, и недельный отчёт формируется сразу по всей сети. Сколько у вас сейчас точек в Шымкенте?",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [
+        "синхронизац"
+      ],
+      "forbidden_found": [
+        "вручную"
+      ],
+      "found_keywords": [
+        "автоматическ"
+      ],
+      "elapsed_s": 18.35,
+      "state": "autonomous_discovery",
+      "intent": "question_multi_location",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 108,
+      "cat": "analytics",
+      "question": "Можно ли увидеть продажи по часам и дням недели?",
+      "response": "Да, в Wipon есть почасовые отчёты и статистика по дням недели, чтобы видеть пиковые часы и загруженность. Кстати, как к вам обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "час",
+        "дн"
+      ],
+      "elapsed_s": 22.65,
+      "state": "greeting",
+      "intent": "question_analytics_sales",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 109,
+      "cat": "analytics",
+      "question": "Можно ли сравнить продажи за разные периоды?",
+      "response": "Да, в Wipon можно сравнивать продажи за любые периоды, например праздники с обычными днями. Это удобно для анализа динамики и сезонности. Вам важно видеть разницу в выручке?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "сравнен"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "период"
+      ],
+      "elapsed_s": 26.91,
+      "state": "autonomous_discovery",
+      "intent": "question_analytics_comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 110,
+      "cat": "employees",
+      "question": "Какие роли и уровни доступа есть для сотрудников?",
+      "response": "У нас есть роли владельца, администратора и кассира с гибкой настройкой прав для каждого. Кассиры видят только кассу, а отчёты доступны руководству. Подскажите, как сейчас распределяете полномочия между продавцами?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "владелец"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "администратор",
+        "кассир"
+      ],
+      "elapsed_s": 21.53,
+      "state": "autonomous_discovery",
+      "intent": "question_employees_permissions",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 111,
+      "cat": "employees",
+      "question": "Можно ли скрыть от кассира закупочные цены и отчёты?",
+      "response": "Да, в Wipon можно скрыть закупочные цены и отчёты от кассира. Это настраивается через индивидуальные права доступа сотрудника: кассиру предоставляется доступ только к кассе, а отчёты и аналитика доступны администратору или владельцу.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "настройк"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "скрыть",
+        "закуп"
+      ],
+      "elapsed_s": 28.08,
+      "state": "autonomous_discovery",
+      "intent": "question_employees_permissions",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 112,
+      "cat": "employees",
+      "question": "Сколько сотрудников можно добавить в систему?",
+      "response": "В Wipon нет ограничений по количеству сотрудников на тарифах Lite, Standard и Pro. Вы можете добавлять столько кассиров и администраторов, сколько нужно для работы ваших двух точек.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "без ограничен"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 19.55,
+      "state": "autonomous_discovery",
+      "intent": "question_scalability",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 113,
+      "cat": "employees",
+      "question": "Можно ли запретить кассиру делать скидки?",
+      "response": "Да, в Wipon можно настроить права так, чтобы кассир не мог делать скидки или отмены. Это помогает избежать лишних потерь и упрощает контроль. Какую ещё функцию сейчас ищете для магазина?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "запретить"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "скидк"
+      ],
+      "elapsed_s": 19.5,
+      "state": "autonomous_discovery",
+      "intent": "question_employee_control",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 114,
+      "cat": "employees",
+      "question": "Как контролировать действия кассиров?",
+      "response": "В Wipon у каждого кассира свой логин, все операции фиксируются в журнале по времени и сотруднику. Вы можете видеть продажи, возвраты и отмены каждого человека отдельно. Хотите узнать, как это выглядит в отчётах?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "журнал",
+        "операц",
+        "кассир"
+      ],
+      "elapsed_s": 20.11,
+      "state": "autonomous_discovery",
+      "intent": "question_employee_control",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 115,
+      "cat": "employees",
+      "question": "Есть ли кадровый учёт — зарплата, рабочее время?",
+      "response": "Да, в Wipon есть кадровый учёт: база сотрудников, расчёт зарплаты и учёт рабочего времени. Функционал доступен в тарифах Standard и Pro.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "кадров",
+        "зарплат",
+        "рабоч"
+      ],
+      "elapsed_s": 26.65,
+      "state": "autonomous_discovery",
+      "intent": "question_employees_salary",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 116,
+      "cat": "employees",
+      "question": "У каждого кассира свой логин?",
+      "response": "Да, у каждого кассира в Wipon свой личный логин, чтобы все операции были зафиксированы за конкретным сотрудником. А как к вам лучше обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "отдельн",
+        "персональн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "логин"
+      ],
+      "elapsed_s": 20.19,
+      "state": "greeting",
+      "intent": "question_employee_control",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 117,
+      "cat": "employees",
+      "question": "Как узнать, кто пробил ошибочный чек?",
+      "response": "Каждый чек в Wipon привязан к конкретному кассиру и смене. В отчёте сразу видно, кто и когда пробил ошибочный документ.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "чек",
+        "привязан",
+        "кассир"
+      ],
+      "elapsed_s": 22.49,
+      "state": "autonomous_discovery",
+      "intent": "question_employee_control",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 118,
+      "cat": "employees",
+      "question": "Как заблокировать уволенного сотрудника в системе?",
+      "response": "В разделе Сотрудники нажмите на профиль и отключите доступ или удалите его полностью. Это сразу заблокирует вход для уволенного сотрудника. Как сейчас ведете учёт кассы в двух филиалах?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "удалени"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "отключ",
+        "доступ"
+      ],
+      "elapsed_s": 16.13,
+      "state": "autonomous_discovery",
+      "intent": "question_employees_permissions",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 119,
+      "cat": "employees",
+      "question": "Можно ли подключить внешнего бухгалтера с ограниченным доступом?",
+      "response": "Да, в Wipon можно создать отдельный аккаунт для бухгалтера с ограниченными правами. Он получит доступ только к необходимым отчётам, а остальные разделы останутся закрытыми. Как вы сейчас передаёте данные в бухгалтерию?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "внешн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "бухгалтер",
+        "ограниченн"
+      ],
+      "elapsed_s": 19.79,
+      "state": "autonomous_discovery",
+      "intent": "question_employees_permissions",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 120,
+      "cat": "stability",
+      "question": "Работает ли Wipon без интернета?",
+      "response": "Да, Wipon работает без интернета — продажи идут офлайн, а данные синхронизируются при появлении связи. А как у вас сейчас с интернетом в точках, стабильно?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "синхронизац"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "офлайн"
+      ],
+      "elapsed_s": 27.47,
+      "state": "autonomous_discovery",
+      "intent": "question_offline",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 121,
+      "cat": "stability",
+      "question": "Что будет с чеками, если интернет отключится?",
+      "response": "При отключении интернета касса продолжает работать в офлайн-режиме. Чеки сохраняются локально и автоматически отправляются в ОФД после восстановления связи.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "сохран",
+        "локальн",
+        "ОФД",
+        "восстановлен"
+      ],
+      "elapsed_s": 26.44,
+      "state": "autonomous_discovery",
+      "intent": "question_offline",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 122,
+      "cat": "stability",
+      "question": "У меня магазин в ауле, связь слабая. Подойдёт ли Wipon?",
+      "response": "Да, в ауле система работает отлично, есть офлайн-режим для продаж при плохой связи. А какой именно товар у вас в продаже, чтобы я понимала, какие функции будут нужны?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "сельск"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "офлайн"
+      ],
+      "elapsed_s": 10.43,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 123,
+      "cat": "stability",
+      "question": "Можно ли работать через мобильный интернет?",
+      "response": "Да, работать можно через мобильный интернет или раздать Wi-Fi с телефона, проводная сеть не обязательна. Для стабильной работы достаточно базового устойчивого соединения.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "мобильн",
+        "интернет",
+        "Wi-Fi"
+      ],
+      "elapsed_s": 20.74,
+      "state": "autonomous_discovery",
+      "intent": "question_offline",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 124,
+      "cat": "stability",
+      "question": "Если отключат свет — данные потеряются?",
+      "response": "Нет, данные не потеряются: они сохраняются локально и восстановятся после включения света. Кстати, как к вам обращаться?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "автосохранен",
+        "восстановлен",
+        "не теряются"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 21.77,
+      "state": "greeting",
+      "intent": "question_offline",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 125,
+      "cat": "stability",
+      "question": "Как часто обновляется программа?",
+      "response": "Обновления выходят примерно раз в месяц и устанавливаются автоматически в фоне, продажи не прерываются. Вам важно, чтобы касса работала без простоев во время апдейтов?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "автоматическ",
+        "обновлен"
+      ],
+      "elapsed_s": 21.07,
+      "state": "autonomous_discovery",
+      "intent": "question_updates",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 126,
+      "cat": "stability",
+      "question": "Обновления не мешают продажам?",
+      "response": "Обновления устанавливаются в фоне, касса не останавливается, продажи идут без задержек. Вы уже используете какую-то систему для учёта?",
+      "passed": false,
+      "must_contain_pass": true,
+      "must_not_contain_pass": false,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [
+        "останавливается"
+      ],
+      "found_keywords": [
+        "фон",
+        "не останавлива"
+      ],
+      "elapsed_s": 17.39,
+      "state": "autonomous_discovery",
+      "intent": "question_updates",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 127,
+      "cat": "stability",
+      "question": "Если поменяю компьютер — данные сохранятся?",
+      "response": "Да, данные хранятся в облаке, поэтому при смене компьютера они останутся в целости. Просто войдите под своим логином на новом устройстве.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "сохран"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "облак"
+      ],
+      "elapsed_s": 19.32,
+      "state": "autonomous_discovery",
+      "intent": "question_backup_restore",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 128,
+      "cat": "stability",
+      "question": "Какие требования к компьютеру для Wipon?",
+      "response": "Для работы достаточно Windows 10, 4 ГБ оперативной памяти и 2 ГБ места на диске. Программа лёгкая и запустится на стандартном компьютере. У вас сейчас есть подходящее устройство под рукой?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Windows"
+      ],
+      "elapsed_s": 19.25,
+      "state": "autonomous_discovery",
+      "intent": "question_system_requirements",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 129,
+      "cat": "stability",
+      "question": "Офлайн-режим доступен на всех тарифах?",
+      "response": "Да, офлайн-режим доступен во всех тарифах, продажи идут даже без интернета с последующей синхронизацией. Сейчас у вас стабильно работает интернет в магазине?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "все тариф"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "офлайн"
+      ],
+      "elapsed_s": 13.8,
+      "state": "autonomous_discovery",
+      "intent": "question_offline",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 130,
+      "cat": "mobile",
+      "question": "Есть ли у Wipon мобильное приложение?",
+      "response": "Да, у Wipon есть бесплатное мобильное приложение для iOS и Android, где вы сможете контролировать продажи и остатки в реальном времени. Сейчас вам удобнее работать с телефона?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "да",
+        "мобильн",
+        "приложени"
+      ],
+      "elapsed_s": 19.96,
+      "state": "autonomous_discovery",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 131,
+      "cat": "mobile",
+      "question": "Что можно делать в мобильном приложении?",
+      "response": "В мобильном приложении можно проводить продажи, делать ревизии, принимать товары и смотреть остатки в реальном времени. Приложение доступно бесплатно на iPhone и Android. А как вы планируете принимать оплату в магазине?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "учёт",
+        "аналитик"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "продаж"
+      ],
+      "elapsed_s": 21.6,
+      "state": "autonomous_discovery",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 132,
+      "cat": "mobile",
+      "question": "На каких платформах работает мобильное приложение?",
+      "response": "Приложение доступно на iOS и Android, работает на телефонах и планшетах. Кстати, как к вам обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Android",
+        "iOS"
+      ],
+      "elapsed_s": 18.66,
+      "state": "greeting",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 133,
+      "cat": "mobile",
+      "question": "Можно ли использовать Wipon на планшете?",
+      "response": "Да, Wipon отлично работает на планшетах под Android и iOS. Это полноценная касса и учёт, доступный с любого устройства. А для четырёх точек вам важна единая база данных или отдельные?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "планшет",
+        "да"
+      ],
+      "elapsed_s": 20.68,
+      "state": "autonomous_discovery",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 134,
+      "cat": "mobile",
+      "question": "Можно ли вести складской учёт с телефона?",
+      "response": "Да, в Wipon можно полностью управлять складом с телефона: делать приёмки, ревизии и контролировать остатки. Это удобно, если нужно оперативно решать вопросы вне офиса.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "мобильн"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "да",
+        "склад"
+      ],
+      "elapsed_s": 22.54,
+      "state": "autonomous_discovery",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 135,
+      "cat": "mobile",
+      "question": "Можно ли контролировать магазин удалённо?",
+      "response": "Да, конечно! В Wipon есть мобильное приложение для удалённого контроля. Вы сможете видеть продажи, остатки и выручку в реальном времени прямо со смартфона.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "контроль"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "удалённ",
+        "мобильн"
+      ],
+      "elapsed_s": 15.23,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 136,
+      "cat": "mobile",
+      "question": "Смогу ли я следить за бизнесом из-за границы?",
+      "response": "Да, вы сможете контролировать продажи и остатки из любой точки мира через мобильное приложение или веб-версию. Это очень удобно для удалённого управления. Какую именно информацию вам чаще всего нужно видеть в отчётах?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "из любой точки",
+        "мобильн"
+      ],
+      "elapsed_s": 20.48,
+      "state": "autonomous_discovery",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 137,
+      "cat": "mobile",
+      "question": "У меня несколько магазинов — можно контролировать с телефона?",
+      "response": "Да, это возможно. В Wipon есть мобильное приложение для удалённого контроля, где в реальном времени видны продажи, остатки и выручка по всем точкам.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "все точки",
+        "переключен"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 15.82,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 138,
+      "cat": "mobile",
+      "question": "Обязательно ли нужен компьютер или можно работать только с телефона?",
+      "response": "Работать можно без компьютера, используя только мобильное приложение для Android и iOS. В нём доступны ключевые функции: продажи, учёт остатков и отчёты. Также доступна веб-версия для управления бизнесом.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "мобильн",
+        "веб-верси"
+      ],
+      "elapsed_s": 26.35,
+      "state": "autonomous_discovery",
+      "intent": "question_mobile",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 139,
+      "cat": "mobile",
+      "question": "Можно ли в приложении делать приёмку и ревизию?",
+      "response": "Да, в мобильном приложении можно делать и приёмку, и ревизию, включая выборочную проверку товаров. Данные сохраняются автоматически, даже если прервать процесс.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "приёмк",
+        "ревизи",
+        "мобильн"
+      ],
+      "elapsed_s": 20.56,
+      "state": "autonomous_discovery",
+      "intent": "question_inventory",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 140,
+      "cat": "promotions",
+      "question": "Можно ли настроить акцию на автозапуск по расписанию?",
+      "response": "Да, в Wipon акции настраиваются на автозапуск по расписанию без участия сотрудников. Как к вам обращаться?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "автоматическ"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "расписани"
+      ],
+      "elapsed_s": 15.54,
+      "state": "greeting",
+      "intent": "question_customization",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 141,
+      "cat": "promotions",
+      "question": "Как ограничить акцию по датам?",
+      "response": "В Wipon акция завершается автоматически по заданным датам (дата начала и дата окончания). Ручное отключение не требуется.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "дата начала",
+        "дата окончания",
+        "автоматическ"
+      ],
+      "elapsed_s": 24.57,
+      "state": "autonomous_discovery",
+      "intent": "question_promo_discounts",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 142,
+      "cat": "promotions",
+      "question": "Можно ли запустить акцию только в одном магазине?",
+      "response": "Да, в Wipon можно запустить акцию только на выбранных филиалах, не затрагивая остальные магазины. Расскажите, какие именно товары планируете продвигать в этом филиале?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "точк"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "да",
+        "выбранн"
+      ],
+      "elapsed_s": 15.92,
+      "state": "autonomous_discovery",
+      "intent": "situation_provided",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 143,
+      "cat": "promotions",
+      "question": "Есть ли программа лояльности или кэшбэк?",
+      "response": "Возможности: бонусная программа и кэшбэк для клиентов. Wipon Cashback — программа лояльности с бонусной системой для начисления и списания бонусов.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "Cashback",
+        "бонус",
+        "лояльност"
+      ],
+      "elapsed_s": 19.8,
+      "state": "autonomous_discovery",
+      "intent": "question_loyalty_program",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 144,
+      "cat": "promotions",
+      "question": "Можно ли настроить разные уровни лояльности?",
+      "response": "Да, в Wipon можно настроить разные уровни начисления бонусов для групп клиентов. Это работает автоматически при каждой покупке. Как сейчас ведете учёт постоянных покупателей?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "процент"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "уровн",
+        "групп"
+      ],
+      "elapsed_s": 13.7,
+      "state": "autonomous_discovery",
+      "intent": "question_customization",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 145,
+      "cat": "promotions",
+      "question": "Касса сама применит скидку при продаже?",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "автоматическ",
+        "касс",
+        "акци"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 16.48,
+      "state": "autonomous_discovery",
+      "intent": "question_promo_discounts",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 146,
+      "cat": "promotions",
+      "question": "Можно ли сделать скидку только по определённым дням недели?",
+      "response": "Да, такая функция есть в Wipon. Вы можете настроить акцию так, чтобы скидка применялась только в выбранные дни недели. Как вы планируете использовать это для своих магазинов?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "да",
+        "дн",
+        "недел"
+      ],
+      "elapsed_s": 17.41,
+      "state": "autonomous_discovery",
+      "intent": "question_promo_discounts",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 147,
+      "cat": "promotions",
+      "question": "Есть ли накопительная скидка для клиентов?",
+      "response": "Да, в Wipon есть накопительная скидка, которая зависит от накоплений клиента. Функционал реализован в модуле Wipon Cashback. Также доступна многоуровневая скидка для разных групп клиентов.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "накопительн",
+        "Cashback"
+      ],
+      "elapsed_s": 31.84,
+      "state": "autonomous_discovery",
+      "intent": "question_loyalty_program",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 148,
+      "cat": "promotions",
+      "question": "Бывают ли у Wipon сезонные акции или скидки на подключение?",
+      "response": "Да, у нас бывают сезонные акции и спецпредложения. Точные условия и сроки сейчас . А вам удобнее платить за год сразу, чтобы зафиксировать цену?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "скидк"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "акци"
+      ],
+      "elapsed_s": 13.0,
+      "state": "autonomous_objection_handling",
+      "intent": "objection_no_time",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 149,
+      "cat": "promotions",
+      "question": "Слышал, что в Шымкенте есть скидка. Это правда?",
+      "response": "Это предложение ограничено по времени, поэтому стоит успеть его использовать. Скажите, а вы уже пробовали Wipon в работе?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "30%",
+        "Шымкент",
+        "Lite",
+        "Standard"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 29.58,
+      "state": "autonomous_discovery",
+      "intent": "discount_request",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 150,
+      "cat": "competitors",
+      "question": "Чем Wipon лучше конкурентов?",
+      "response": "Расскажите подробнее о вашем бизнесе — это поможет подобрать оптимальное решение.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": true,
+      "missing_keywords": [
+        "облачн",
+        "ТИС",
+        "Kaspi"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 22.9,
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 151,
+      "cat": "competitors",
+      "question": "Зачем мне Wipon, если есть 1С?",
+      "response": "1С требует программиста для настройки, а Wipon запускается без доработок прямо из браузера. К тому же онлайн-касса включена в тариф бесплатно. Хотите попробовать систему в действии?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "без программист",
+        "Kaspi"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "браузер"
+      ],
+      "elapsed_s": 30.36,
+      "state": "autonomous_objection_handling",
+      "intent": "objection_competitor",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 152,
+      "cat": "competitors",
+      "question": "Чем Wipon отличается от iiko?",
+      "response": "Главное отличие Wipon от iiko — это облачная архитектура без необходимости в отдельном сервере. Также настройка Wipon не требует привлечения программиста.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "проще",
+        "дешевл"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 25.83,
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 153,
+      "cat": "competitors",
+      "question": "В чём разница между Wipon и Poster?",
+      "response": "Wipon — это полноценная система со складом и интеграциями, а Poster чаще используется в сфере общепита. У нас есть бесплатный перенос данных, если вы решите перейти. Какая программа сейчас у вас используется?",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "складск",
+        "учёт"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 25.56,
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 154,
+      "cat": "competitors",
+      "question": "Чем вы лучше UMAG?",
+      "response": "Wipon — это облачная система с бесплатным переносом данных и встроенной онлайн-кассой, в отличие от UMAG. Кроме того, мы не работаем с франшизами, как они, и поддерживаем ТИС. Что для вас важнее при выборе: скорость внедрения?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [],
+      "forbidden_found": [],
+      "found_keywords": [
+        "облачн",
+        "ТИС"
+      ],
+      "elapsed_s": 24.9,
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 155,
+      "cat": "competitors",
+      "question": "Я сейчас на UMAG, хочу перейти — это сложно?",
+      "response": "Переход с Umag на Wipon — это бесплатно, мы сами перенесём базу и остатки без потерь. Обычно процесс занимает около часа, и вы сразу сможете продавать. Сейчас у вас есть готовая касса?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "перенос"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "бесплатн"
+      ],
+      "elapsed_s": 27.16,
+      "state": "autonomous_discovery",
+      "intent": "question_implementation",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 156,
+      "cat": "competitors",
+      "question": "Чем Wipon отличается от Beksar?",
+      "response": "При переходе мы бесплатно загружаем товары, остатки и цены. Обратите внимание: историю продаж из Бексара перенести нельзя, но вы сможете сразу продолжить работу с новыми данными.",
+      "passed": false,
+      "must_contain_pass": false,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "облачн",
+        "ТИС",
+        "Kaspi"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [],
+      "elapsed_s": 35.27,
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 157,
+      "cat": "competitors",
+      "question": "Что скажете про Paloma — в чём ваше преимущество?",
+      "response": "Wipon — это облачная система без привязки к оборудованию, а миграция данных к нам бесплатная. Поддержка работает семь дней в неделю. Сейчас у вас на что-то из этого есть ограничения?",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "ТИС"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "облачн"
+      ],
+      "elapsed_s": 24.85,
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 158,
+      "cat": "competitors",
+      "question": "Если перейду с другой системы — можно перенести данные?",
+      "response": "Да, перенос базы данных из другой системы в Wipon бесплатный, мы загрузим товары, цены и остатки. Обычно это занимает около часа, данные сохраняются полностью без потерь.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "Excel"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "бесплатн",
+        "перенос"
+      ],
+      "elapsed_s": 16.87,
+      "state": "autonomous_discovery",
+      "intent": "question_data_migration",
+      "action": "autonomous_respond",
+      "error": null
+    },
+    {
+      "idx": 159,
+      "cat": "competitors",
+      "question": "Почему стоит выбрать именно Wipon?",
+      "response": "Wipon — это облачная система, где учёт и касса уже включены, не нужен отдельный сервер. Мы официально работаем в Казахстане с 2014 года и поддерживаем маркировку товаров. Онлайн-касса бесплатная и включена в тариф.",
+      "passed": true,
+      "must_contain_pass": true,
+      "must_not_contain_pass": true,
+      "deflection": false,
+      "missing_keywords": [
+        "Kaspi"
+      ],
+      "forbidden_found": [],
+      "found_keywords": [
+        "облачн",
+        "учёт",
+        "касс"
+      ],
+      "elapsed_s": 34.92,
+      "state": "autonomous_discovery",
+      "intent": "comparison",
+      "action": "autonomous_respond",
+      "error": null
+    }
+  ]
+}

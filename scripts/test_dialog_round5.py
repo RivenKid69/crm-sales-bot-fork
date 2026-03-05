@@ -2,7 +2,7 @@
 """Раунд 5: Реалистичные сложные диалоги (35-39)."""
 import sys, time, re
 sys.path.insert(0, '/home/corta/crm-sales-bot-fork')
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 from src.llm import OllamaClient
 
 _llm = OllamaClient()
@@ -48,6 +48,7 @@ for name, msgs in SCENARIOS.items():
     print(f"\n{'='*60}")
     print(f"  {name}")
     print(f"{'='*60}")
+    setup_autonomous_pipeline()
     bot = SalesBot(llm=_llm, flow_name='autonomous')
     for i, msg in enumerate(msgs, 1):
         t0 = time.time()

@@ -13,7 +13,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.llm import OllamaClient
-from src.bot import SalesBot
+from src.bot import SalesBot, setup_autonomous_pipeline
 
 
 def run_scenario(bot: SalesBot, name: str, messages: list) -> dict:
@@ -290,6 +290,7 @@ def main():
     print("=" * 60)
 
     llm = OllamaClient()
+    setup_autonomous_pipeline()
     bot = SalesBot(llm, flow_name="autonomous")
 
     results = []

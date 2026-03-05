@@ -54,6 +54,7 @@ class CategoryRouter:
     CATEGORIES = [
         "analytics",     # Аналитика и отчёты
         "competitors",   # Сравнение с конкурентами
+        "delivery",      # Доставка и регионы
         "employees",     # Сотрудники и кадры
         "equipment",     # Оборудование и периферия
         "faq",           # Общие частые вопросы
@@ -65,7 +66,6 @@ class CategoryRouter:
         "pricing",       # Цены и тарифы
         "products",      # Продукты Wipon
         "promotions",    # Акции и скидки
-        "regions",       # Регионы и доставка
         "stability",     # Надёжность и стабильность
         "support",       # Техподдержка и обучение
         "tis",           # Трёхкомпонентная система для ИП

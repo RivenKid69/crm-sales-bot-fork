@@ -696,10 +696,12 @@ def main(parallel: int = 1) -> None:
     print("  Ollama:     OK")
 
     # Инициализация
+    from src.bot import setup_autonomous_pipeline
     from src.llm import OllamaClient
     from src.simulator.runner import SimulationRunner
     from src.simulator.kb_questions import load_kb_question_pool
 
+    setup_autonomous_pipeline()
     llm     = OllamaClient()
     kb_pool = load_kb_question_pool()
     runner  = SimulationRunner(

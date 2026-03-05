@@ -423,6 +423,8 @@ class ContextSnapshot:
     # (independent of context_envelope which may be None if feature flags off)
     user_message: str = ""
     frustration_level: int = 0
+    # Dialog history for decision LLM (last N turns: [{user: str, bot: str}])
+    dialog_history: tuple = field(default_factory=tuple)
 
     # Computed properties for convenience
     @property

@@ -53,10 +53,20 @@ class Reranker:
 
         try:
             from sentence_transformers import CrossEncoder
-            print(f"[Reranker] Loading model: {self.model_name}")
-            self.model = CrossEncoder(self.model_name)
+            print(f"[Reranker] Loading model: {self.model_name} (cuda)")
+            try:
+                self.model = CrossEncoder(self.model_name, device="cuda")
+                print("[Reranker] Model loaded successfully (cuda)")
+            except Exception as e:
+                if "out of memory" in str(e).lower() or "CUDA" in str(e):
+                    print(f"[Reranker] CUDA OOM, falling back to CPU: {e}")
+                    import torch
+                    torch.cuda.empty_cache()
+                    self.model = CrossEncoder(self.model_name, device="cpu")
+                    print("[Reranker] Model loaded successfully (cpu fallback)")
+                else:
+                    raise
             self._initialized = True
-            print("[Reranker] Model loaded successfully")
         except ImportError:
             print("[Reranker] sentence-transformers not installed")
             self._initialized = True  # Не пытаемся снова

@@ -182,6 +182,7 @@ class DialogueBlackboard:
         context_envelope: Optional[ContextEnvelope] = None,
         user_message: str = "",
         frustration_level: int = 0,
+        dialog_history: list = None,
     ) -> None:
         """
         Begin a new dialogue turn.
@@ -321,6 +322,8 @@ class DialogueBlackboard:
             # Guard-class sources (ConversationGuardSource)
             user_message=user_message,
             frustration_level=frustration_level,
+            # Dialog history for decision LLM
+            dialog_history=tuple(dialog_history or []),
         )
 
         # Clear proposal layer

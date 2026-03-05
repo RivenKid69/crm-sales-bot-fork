@@ -84,7 +84,8 @@ _MESSAGE_SPECIFIC_PATTERNS: Dict[str, re.Pattern] = {
 # Implicit pricing signals: ценовой язык → tariff
 _PRICING_SIGNAL_RE = re.compile(
     r"(?:цен[аы]|стоимост\w*|сколько\s+стоит|сколько\s+платить|оплат\w+"
-    r"|подписк\w*|в\s+год|за\s+год|₸\s*/\s*год|тариф\w*|лицензи\w*"
+    r"|подписк\w*|[вн]а?\s+год|за\s+год|₸\s*/\s*год|[вн]а?\s+месяц|за\s+месяц"
+    r"|тариф\w*|лицензи\w*"
     r"|дешевл\w*|дорог\w*|бюджет\w*|рассрочк\w*)",
     re.IGNORECASE,
 )
