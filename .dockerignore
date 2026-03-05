@@ -1,0 +1,41 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+.env
+.env.*
+.venv
+venv
+.pytest_cache
+.coverage
+htmlcov
+.mypy_cache
+.ruff_cache
+
+# Test/dev files
+tests/
+scripts/
+results/
+reports/
+logs/
+docs/
+
+# Data directories (not needed in image)
+28 client/
+voice_bot/
+wipon_pro_api_main/
+wipon_pro_main/
+knowledge_extractor/
+seo_rewriter/
+codebase_analyzer/
+
+# Misc
+*.egg-info
+build/
+dist/
+*.md
+*.txt
+!requirements.txt
+*.compressed
+*.deb
