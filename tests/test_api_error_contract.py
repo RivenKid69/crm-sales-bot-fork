@@ -17,6 +17,18 @@ def _valid_payload() -> dict:
     }
 
 
+def _valid_sula_payload() -> list[dict]:
+    return [
+        {
+            "id": "evt_01kkbny52vw60ydk3bqygtycpp",
+            "timestamp": 1773139858523,
+            "session": "BOT_6921_test",
+            "client_text": "Здравствуйте, я из Астаны.",
+            "cleint_phone": "77710107606",
+        }
+    ]
+
+
 @pytest.fixture(autouse=True)
 def _disable_startup_warmup(monkeypatch):
     import src.api as api_mod
@@ -166,3 +178,74 @@ def test_ready_returns_200_when_dependencies_and_warmup_are_ready(monkeypatch, t
     assert payload["status"] == "ready"
     assert payload["dependencies"]["llm"] is True
     assert payload["warmup"]["status"] == "ready"
+
+
+def test_process_accepts_sula_payload_and_returns_ai_text(monkeypatch, tmp_path: Path):
+    import src.api as api_mod
+
+    captured = {}
+
+    def fake_process(req):
+        captured["session_id"] = req.session_id
+        captured["user_id"] = req.user_id
+        captured["text"] = req.message.text
+        return {
+            "answer": "Здравствуйте! Чем могу помочь?",
+            "meta": {"model": "test-model", "processing_ms": 123, "kb_used": False},
+        }
+
+    monkeypatch.setattr(api_mod, "API_KEY", "test-key")
+    monkeypatch.setattr(api_mod, "DB_PATH", str(tmp_path / "test_sula.db"))
+    monkeypatch.setattr(api_mod, "_process_message_request", fake_process)
+
+    with TestClient(api_mod.app) as client:
+        resp = client.post(
+            "/api/v1/process",
+            headers={"Authorization": "Bearer test-key"},
+            json=_valid_sula_payload(),
+        )
+
+    assert resp.status_code == 200
+    assert resp.json() == [
+        {
+            "id": "evt_01kkbny52vw60ydk3bqygtycpp",
+            "timestamp": 1773139858523,
+            "session": "BOT_6921_test",
+            "client_text": "Здравствуйте, я из Астаны.",
+            "cleint_phone": "77710107606",
+            "ai_text": "Здравствуйте! Чем могу помочь?",
+        }
+    ]
+    assert captured == {
+        "session_id": "BOT_6921_test",
+        "user_id": "77710107606",
+        "text": "Здравствуйте, я из Астаны.",
+    }
+
+
+def test_process_sula_endpoint_accepts_single_object(monkeypatch, tmp_path: Path):
+    import src.api as api_mod
+
+    monkeypatch.setattr(api_mod, "API_KEY", "test-key")
+    monkeypatch.setattr(api_mod, "DB_PATH", str(tmp_path / "test_sula_single.db"))
+    monkeypatch.setattr(
+        api_mod,
+        "_process_message_request",
+        lambda _req: {
+            "answer": "Ответ от бота",
+            "meta": {"model": "test-model", "processing_ms": 1, "kb_used": False},
+        },
+    )
+
+    payload = _valid_sula_payload()[0]
+
+    with TestClient(api_mod.app) as client:
+        resp = client.post(
+            "/api/v1/process/sula",
+            headers={"Authorization": "Bearer test-key"},
+            json=payload,
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["ai_text"] == "Ответ от бота"
+    assert resp.json()["session"] == payload["session"]

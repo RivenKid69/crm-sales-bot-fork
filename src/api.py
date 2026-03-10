@@ -20,10 +20,11 @@ import uuid
 from contextlib import asynccontextmanager
 
 import requests
+from fastapi.concurrency import run_in_threadpool
 from fastapi import Depends, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from src.bot import SalesBot
 from src.feature_flags import flags
@@ -462,6 +463,128 @@ class ProcessRequest(BaseModel):
     context: ContextPayload = Field(default_factory=ContextPayload)
 
 
+def _build_sula_request(payload: dict) -> tuple[ProcessRequest, dict]:
+    if not isinstance(payload, dict):
+        raise APIError(400, "BAD_REQUEST", "Sula payload item must be an object")
+
+    phone = payload.get("cleint_phone")
+    if phone is None:
+        phone = payload.get("client_phone")
+
+    if phone is None:
+        raise APIError(400, "BAD_REQUEST", "Sula payload must contain cleint_phone")
+
+    timestamp = payload.get("timestamp", 0)
+    try:
+        timestamp_ms = int(timestamp)
+    except (TypeError, ValueError) as err:
+        raise APIError(400, "BAD_REQUEST", "Sula timestamp must be an integer") from err
+
+    normalized = {
+        "id": str(payload.get("id") or str(uuid.uuid4())),
+        "timestamp": timestamp_ms,
+        "session": str(payload.get("session") or ""),
+        "client_text": str(payload.get("client_text") or ""),
+        "cleint_phone": str(phone),
+    }
+
+    return (
+        ProcessRequest(
+            channel="sula",
+            session_id=normalized["session"],
+            user_id=normalized["cleint_phone"],
+            message=MessagePayload(
+                text=normalized["client_text"],
+                timestamp_ms=normalized["timestamp"],
+            ),
+        ),
+        normalized,
+    )
+
+
+def _parse_process_payload(payload: object) -> tuple[str, ProcessRequest, dict | None]:
+    if isinstance(payload, list):
+        if not payload:
+            raise APIError(400, "BAD_REQUEST", "Sula payload list must not be empty")
+        request_payload, normalized = _build_sula_request(payload[-1])
+        return "sula_list", request_payload, normalized
+
+    if isinstance(payload, dict):
+        if {"session_id", "user_id", "message"} <= set(payload.keys()):
+            try:
+                return "default", ProcessRequest.model_validate(payload), None
+            except ValidationError as err:
+                first_error = err.errors()[0].get("msg") if err.errors() else "Invalid request payload"
+                raise APIError(400, "BAD_REQUEST", first_error) from err
+
+        if {"session", "client_text"} <= set(payload.keys()) and (
+            "cleint_phone" in payload or "client_phone" in payload
+        ):
+            request_payload, normalized = _build_sula_request(payload)
+            return "sula_object", request_payload, normalized
+
+    raise APIError(400, "BAD_REQUEST", "Unsupported request payload")
+
+
+def _render_sula_response(response: dict, normalized: dict, wrap_in_list: bool) -> dict | list[dict]:
+    payload = {
+        "id": normalized["id"],
+        "timestamp": normalized["timestamp"],
+        "session": normalized["session"],
+        "client_text": normalized["client_text"],
+        "cleint_phone": normalized["cleint_phone"],
+        "ai_text": response["answer"],
+    }
+    return [payload] if wrap_in_list else payload
+
+
+def _process_message_request(req: ProcessRequest) -> dict:
+    if not req.message.text.strip():
+        raise APIError(400, "BAD_REQUEST", "message.text must not be empty")
+
+    snapshot = _load_snapshot(req.session_id, req.user_id)
+
+    start = time.time()
+    if snapshot:
+        history_tail = [
+            {"user": t["user_message"], "bot": t["bot_response"]}
+            for t in snapshot.get("context_window", [])
+            if "user_message" in t and "bot_response" in t
+        ]
+        bot = SalesBot.from_snapshot(
+            snapshot, llm=_llm, history_tail=history_tail,
+            enable_tracing=True,
+        )
+    else:
+        bot = SalesBot(
+            _llm, flow_name="autonomous", config_name="default",
+            enable_tracing=True,
+        )
+
+    result = bot.process(req.message.text)
+    processing_ms = int((time.time() - start) * 1000)
+
+    # Persist snapshot + structured user profile
+    _save_snapshot(req.session_id, req.user_id, bot.to_snapshot())
+    _save_user_profile(req.session_id, req.user_id, bot)
+
+    # kb_used: check KB results in traces
+    trace = result.get("decision_trace") or {}
+    kb_used = any(
+        t.get("purpose") in ("knowledge_search", "knowledge_retrieval")
+        for t in trace.get("llm_traces", [])
+    )
+
+    return {
+        "answer": result["response"],
+        "meta": {
+            "model": settings.llm.model,
+            "processing_ms": processing_ms,
+            "kb_used": kb_used,
+        },
+    }
+
+
 # ── Endpoints ─────────────────────────────────────────
 
 @app.get("/health")
@@ -489,7 +612,8 @@ def ready():
 
 
 @app.post("/api/v1/process", dependencies=[Depends(verify_api_key)])
-def process_message(req: ProcessRequest):
+@app.post("/api/v1/process/sula", dependencies=[Depends(verify_api_key)])
+async def process_message(request: Request):
     """
     Обработка одного хода диалога (autonomous flow).
 
@@ -503,50 +627,22 @@ def process_message(req: ProcessRequest):
     FastAPI автоматически запустит в threadpool.
     """
     try:
-        if not req.message.text.strip():
-            raise APIError(400, "BAD_REQUEST", "message.text must not be empty")
+        try:
+            raw_payload = await request.json()
+        except json.JSONDecodeError as err:
+            raise APIError(400, "BAD_REQUEST", "Invalid JSON body") from err
 
-        snapshot = _load_snapshot(req.session_id, req.user_id)
+        payload_kind, req, normalized_sula = _parse_process_payload(raw_payload)
+        response = await run_in_threadpool(_process_message_request, req)
 
-        start = time.time()
-        if snapshot:
-            history_tail = [
-                {"user": t["user_message"], "bot": t["bot_response"]}
-                for t in snapshot.get("context_window", [])
-                if "user_message" in t and "bot_response" in t
-            ]
-            bot = SalesBot.from_snapshot(
-                snapshot, llm=_llm, history_tail=history_tail,
-                enable_tracing=True,
-            )
-        else:
-            bot = SalesBot(
-                _llm, flow_name="autonomous", config_name="default",
-                enable_tracing=True,
-            )
+        if payload_kind == "default":
+            return response
 
-        result = bot.process(req.message.text)
-        processing_ms = int((time.time() - start) * 1000)
-
-        # Persist snapshot + structured user profile
-        _save_snapshot(req.session_id, req.user_id, bot.to_snapshot())
-        _save_user_profile(req.session_id, req.user_id, bot)
-
-        # kb_used: check KB results in traces
-        trace = result.get("decision_trace") or {}
-        kb_used = any(
-            t.get("purpose") in ("knowledge_search", "knowledge_retrieval")
-            for t in trace.get("llm_traces", [])
+        return _render_sula_response(
+            response,
+            normalized_sula,
+            wrap_in_list=payload_kind == "sula_list",
         )
-
-        return {
-            "answer": result["response"],
-            "meta": {
-                "model": settings.llm.model,
-                "processing_ms": processing_ms,
-                "kb_used": kb_used,
-            },
-        }
     except APIError:
         raise
     except Exception as err:
