@@ -27,8 +27,7 @@ DEFAULTS = {
     },
     "retriever": {
         "use_embeddings": True,
-        "embedder_model": "ai-forever/FRIDA",
-        "embedder_device": "cpu",
+        "embedder_url": "http://tei-embed:80",
         "thresholds": {
             "semantic": 0.25,
             "exact": 1.0,

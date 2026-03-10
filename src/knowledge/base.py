@@ -52,3 +52,14 @@ class KnowledgeBase:
             if s.topic == topic:
                 return s
         return None
+
+
+def section_embed_text(section: KnowledgeSection) -> str:
+    """Build enriched text for embedding: metadata + facts.
+
+    Used by both CascadeRetriever._init_embeddings() and
+    generate_embedding_cache.py so that cache hash matches runtime.
+    """
+    kw = ", ".join(section.keywords[:5]) if section.keywords else ""
+    prefix = f"[{section.category}/{section.topic}] {kw}. " if kw else f"[{section.category}/{section.topic}] "
+    return prefix + section.facts

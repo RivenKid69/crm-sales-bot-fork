@@ -1,0 +1,18 @@
+FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1
+ENV HF_HOME=/root/.cache/huggingface
+ENV TRANSFORMERS_CACHE=/root/.cache/huggingface
+
+RUN pip install --no-cache-dir \
+    "transformers>=5.0.0" \
+    "accelerate>=1.10.0" \
+    "sentencepiece>=0.2.0" \
+    "safetensors>=0.5.0"
+
+COPY scripts/local_tei_server.py /app/scripts/local_tei_server.py
+COPY scripts/preload_tei_models.py /app/scripts/preload_tei_models.py
+
+ENTRYPOINT ["python", "/app/scripts/local_tei_server.py"]

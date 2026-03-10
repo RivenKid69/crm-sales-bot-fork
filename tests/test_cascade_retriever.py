@@ -118,28 +118,21 @@ class TestSemanticMatch:
         r._retriever = None
         return CascadeRetriever(use_embeddings=True)
 
-    @pytest.mark.skipif(
-        not CascadeRetriever(use_embeddings=True).embedder,
-        reason="sentence-transformers not installed"
-    )
     def test_semantic_search_works(self, retriever):
         """Семантический поиск работает."""
-        if retriever.embedder:
-            results = retriever._semantic_search(
-                "деньги стоимость оплата",
-                retriever.kb.sections,
-                top_k=3
-            )
-            # Может найти что-то про цены
-            assert isinstance(results, list)
+        if not retriever._embeddings_ready:
+            pytest.skip("TEI not available")
+        results = retriever._semantic_search(
+            "деньги стоимость оплата",
+            retriever.kb.sections,
+            top_k=3
+        )
+        assert isinstance(results, list)
 
-    @pytest.mark.skipif(
-        not CascadeRetriever(use_embeddings=True).embedder,
-        reason="sentence-transformers not installed"
-    )
     def test_semantic_stage_marked(self, retriever):
         """Результат помечен как SEMANTIC."""
-        if retriever.embedder:
+        if not retriever._embeddings_ready:
+            pytest.skip("TEI not available")
             results = retriever._semantic_search(
                 "денежные расходы бизнеса",
                 retriever.kb.sections,

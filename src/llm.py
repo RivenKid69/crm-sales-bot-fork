@@ -234,7 +234,11 @@ class OllamaClient:
         # Получаем JSON schema из Pydantic модели
         json_schema = schema.model_json_schema()
 
+        # Temperature escalation: on retries, bump temperature to get different output
+        _TEMP_ESCALATION = (0.0, 0.15, 0.35)  # additive bumps per attempt
+
         for attempt in range(max_attempts):
+            attempt_temp = min(temperature + _TEMP_ESCALATION[min(attempt, len(_TEMP_ESCALATION) - 1)], 1.0)
             try:
                 base_url_normalized = self.base_url.rstrip("/")
 
@@ -243,7 +247,7 @@ class OllamaClient:
                     request_body = {
                         "model": self.model,
                         "messages": [{"role": "user", "content": prompt}],
-                        "temperature": temperature,
+                        "temperature": attempt_temp,
                         "max_tokens": num_predict,
                         "response_format": {
                             "type": "json_schema",
@@ -266,7 +270,7 @@ class OllamaClient:
                             "think": False,
                             "format": json_schema,  # Ollama: schema напрямую в format
                             "options": {
-                                "temperature": temperature,
+                                "temperature": attempt_temp,
                                 "num_predict": num_predict,
                                 "num_ctx": 8192,
                             }
@@ -278,13 +282,17 @@ class OllamaClient:
                 data = response.json()
                 content = self._extract_content(data)
 
-                # Валидируем через Pydantic
+                # Clean LLM artefacts before validation
+                content = self._clean_structured_output(content)
+
+                # Validate first — only count as success if schema parses
+                result = schema.model_validate_json(content)
+
                 elapsed_ms = (time.time() - start_time) * 1000
                 self._stats.successful_requests += 1
                 self._stats.total_response_time_ms += elapsed_ms
                 self._reset_failures()
 
-                # Обновляем trace
                 trace.latency_ms = elapsed_ms
                 trace.raw_response = content
                 trace.retry_count = attempt
@@ -292,7 +300,6 @@ class OllamaClient:
                 trace.tokens_input = self._estimate_tokens(prompt)
                 trace.tokens_output = self._estimate_tokens(content)
 
-                result = schema.model_validate_json(content)
                 return (result, trace) if return_trace else result
 
             except requests.exceptions.Timeout as e:
@@ -307,9 +314,6 @@ class OllamaClient:
             except Exception as e:
                 last_error = e
                 logger.error(f"Ollama structured unexpected error (attempt {attempt + 1}/{max_attempts}): {str(e)[:100]}")
-                # Ошибка валидации Pydantic — retry бесполезен, LLM вернёт то же самое
-                if "validation error" in str(e).lower():
-                    break
 
             # Retry с backoff
             if attempt < max_attempts - 1:
@@ -562,6 +566,43 @@ class OllamaClient:
         """Strip ```json...``` markdown wrapper if present."""
         m = re.match(r'^\s*```(?:json)?\s*\n?(.*?)\n?\s*```\s*$', text, re.DOTALL)
         return m.group(1).strip() if m else text
+
+    _RE_THINK_TAGS = re.compile(r'<think>.*?</think>\s*', re.DOTALL)
+    _RE_TRAILING_COMMA = re.compile(r',\s*([}\]])')
+
+    @classmethod
+    def _clean_structured_output(cls, text: str) -> str:
+        """Clean LLM output before Pydantic validation.
+
+        Handles common Qwen structured-output artefacts:
+        1. <think>...</think> reasoning prefix
+        2. JSON object buried in surrounding prose
+        3. Trailing commas before } or ]
+        """
+        if not text:
+            return text
+
+        # 1. Strip <think> blocks
+        cleaned = cls._RE_THINK_TAGS.sub('', text).strip()
+
+        # 2. Extract JSON object if surrounded by prose (prefix and/or suffix)
+        brace_start = cleaned.find('{')
+        if brace_start >= 0:
+            # Find matching closing brace
+            depth = 0
+            for i in range(brace_start, len(cleaned)):
+                if cleaned[i] == '{':
+                    depth += 1
+                elif cleaned[i] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        cleaned = cleaned[brace_start:i + 1]
+                        break
+
+        # 3. Fix trailing commas: ,} → } and ,] → ]
+        cleaned = cls._RE_TRAILING_COMMA.sub(r'\1', cleaned)
+
+        return cleaned
 
     def _extract_content(self, data: dict) -> str:
         """Извлечь content из ответа (Ollama или OpenAI формат)."""

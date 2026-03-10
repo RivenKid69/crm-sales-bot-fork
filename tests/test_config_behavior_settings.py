@@ -193,21 +193,21 @@ class TestRetrieverDefaultTopK:
         assert settings.retriever.default_top_k > 0
 
 class TestRetrieverEmbedderModel:
-    """Tests for retriever.embedder_model parameter."""
+    """Tests for retriever.embedder_url parameter."""
 
-    def test_embedder_model_is_string(self):
-        """Embedder model is a string."""
+    def test_embedder_url_is_string(self):
+        """Embedder URL is a string."""
         from src.settings import get_settings
 
         settings = get_settings()
-        assert isinstance(settings.retriever.embedder_model, str)
+        assert isinstance(settings.retriever.embedder_url, str)
 
-    def test_default_embedder_is_frida(self):
-        """Default embedder is FRIDA."""
+    def test_default_embedder_url_is_tei(self):
+        """Default embedder URL points to TEI."""
         from src.settings import get_settings
 
         settings = get_settings()
-        assert "FRIDA" in settings.retriever.embedder_model
+        assert "tei-embed" in settings.retriever.embedder_url
 
 # =============================================================================
 # RERANKER CONFIGURATION TESTS

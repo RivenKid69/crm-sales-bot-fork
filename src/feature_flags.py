@@ -60,7 +60,7 @@ class FeatureFlags:
         "unified_disambiguation": True,   # Унифицированный disambiguation для LLM и Hybrid классификаторов
 
         # Фаза 4.5: Cascade Classifier (семантический fallback)
-        "cascade_classifier": False,      # ОТКЛЮЧЕН: Qwen 3.5 справляется, FRIDA не нужна как fallback
+        "cascade_classifier": False,      # ОТКЛЮЧЕН: Qwen 3.5 справляется, semantic fallback не нужен
 
         # Фаза 4.6: Semantic Objection Detection
         "semantic_objection_detection": False,  # ОТКЛЮЧЕН: Qwen 3.5 обрабатывает возражения напрямую
@@ -85,7 +85,7 @@ class FeatureFlags:
 
         # === Cascade Tone Analyzer (Phase 5) ===
         "cascade_tone_analyzer": True,     # Master switch для каскадного анализатора
-        "tone_semantic_tier2": True,       # FRIDA semantic (Tier 2)
+        "tone_semantic_tier2": True,       # TEI semantic (Tier 2)
         "tone_llm_tier3": True,            # LLM fallback (Tier 3)
 
         # === LLM Classifier (Phase LLM) ===
@@ -601,7 +601,7 @@ class FeatureFlags:
 
     @property
     def tone_semantic_tier2(self) -> bool:
-        """Включён ли Tier 2 (FRIDA semantic) для анализа тона"""
+        """Включён ли Tier 2 (TEI semantic) для анализа тона"""
         return self.is_enabled("tone_semantic_tier2")
 
     @property

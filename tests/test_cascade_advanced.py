@@ -189,8 +189,8 @@ class TestSemanticMatchAdvanced:
         return _create_embeddings_retriever_safe()
 
     @pytest.mark.skipif(
-        not _create_embeddings_retriever_safe().embedder,
-        reason="sentence-transformers not installed or CUDA OOM"
+        not _create_embeddings_retriever_safe()._embeddings_ready,
+        reason="TEI not available"
     )
     @pytest.mark.parametrize("query,expected_topic_hint", [
         # Синонимы и перефразировки
@@ -206,7 +206,7 @@ class TestSemanticMatchAdvanced:
     ])
     def test_semantic_synonyms(self, retriever, query, expected_topic_hint):
         """Семантически близкие запросы находят релевантные секции."""
-        if not retriever.embedder:
+        if not retriever._embeddings_ready:
             pytest.skip("Embedder not available")
 
         results = retriever._semantic_search(query, retriever.kb.sections, top_k=3)
@@ -224,12 +224,12 @@ class TestSemanticMatchAdvanced:
                 print(f"Warning: '{expected_topic_hint}' not in results for '{query}'")
 
     @pytest.mark.skipif(
-        not _create_embeddings_retriever_safe().embedder,
-        reason="sentence-transformers not installed or CUDA OOM"
+        not _create_embeddings_retriever_safe()._embeddings_ready,
+        reason="TEI not available"
     )
     def test_semantic_threshold(self, retriever):
         """Семантический порог 0.5 работает."""
-        if not retriever.embedder:
+        if not retriever._embeddings_ready:
             pytest.skip("Embedder not available")
 
         # Совсем нерелевантный запрос
@@ -278,12 +278,12 @@ class TestCascadeLogic:
             assert stats["exact_time_ms"] > 0, "Exact should always run"
 
     @pytest.mark.skipif(
-        not _create_embeddings_retriever_safe().embedder,
-        reason="sentence-transformers not installed or CUDA OOM"
+        not _create_embeddings_retriever_safe()._embeddings_ready,
+        reason="TEI not available"
     )
     def test_semantic_after_both_fail(self, retriever):
         """Semantic запускается если exact и lemma не нашли."""
-        if not retriever.embedder:
+        if not retriever._embeddings_ready:
             pytest.skip("Embedder not available")
 
         # Запрос который не найдётся exact/lemma, но найдётся семантически

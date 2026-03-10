@@ -19,7 +19,7 @@ llm:
   model: "qwen3.5:27b"
 
   # URL Ollama сервера
-  base_url: "http://localhost:8080"
+  base_url: "http://ollama:11434"
 
   # Формат API: "ollama" или "openai" (llama-server, vLLM, etc.)
   api_format: "ollama"
@@ -34,19 +34,15 @@ llm:
 # RETRIEVER (Поиск по базе знаний)
 # -----------------------------------------------------------------------------
 retriever:
-  # Использовать семантический поиск (требует sentence-transformers)
+  # Использовать семантический поиск через TEI (text-embeddings-inference)
   use_embeddings: true
 
-  # Модель для эмбеддингов (FRIDA - лучшая модель для русского языка, ruMTEB avg ~71)
-  embedder_model: "ai-forever/FRIDA"
-
-  # Устройство для эмбеддингов: "cpu" или "cuda"
-  embedder_device: "cuda"
+  # TEI endpoint для эмбеддингов (Qwen3-Embedding-4B)
+  embedder_url: "http://tei-embed:80"
 
   # Пороги для каждого этапа каскада
   thresholds:
-    # Semantic match (этап 1) - косинусное сходство эмбеддингов FRIDA
-    # Benchmark: 0.25 → 90.4% HR, 0.20 → 94.2% HR, 0.30 → 86.5% HR
+    # Semantic match (этап 1) - косинусное сходство эмбеддингов Qwen3-Embedding-4B
     semantic: 0.25
 
     # Exact match (этап 2) - точное совпадение keyword
@@ -59,14 +55,14 @@ retriever:
   default_top_k: 5
 
 # -----------------------------------------------------------------------------
-# RERANKER (Переоценка результатов при низком score)
+# RERANKER (Переоценка результатов — Qwen3-Reranker-4B через TEI)
 # -----------------------------------------------------------------------------
 reranker:
-  # Включить reranker fallback
+  # Включить reranker
   enabled: true
 
-  # Модель cross-encoder (BAAI/bge-reranker-v2-m3 - мультиязычный, высокое качество)
-  model: "BAAI/bge-reranker-v2-m3"
+  # TEI endpoint для reranking (Qwen3-Reranker-4B)
+  url: "http://tei-rerank:80"
 
   # Порог score ниже которого включается reranker
   threshold: 0.5

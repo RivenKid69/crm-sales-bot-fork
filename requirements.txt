@@ -2,8 +2,5 @@
 requests>=2.32.0
 pymorphy3>=2.0.6
 
-# Optional: embeddings for knowledge base (can work without it)
-sentence-transformers>=5.0.0
-
 # Testing
 pytest>=8.0.0

@@ -45,6 +45,7 @@ from typing import Dict, Any, Optional, List, Set, Tuple, Union
 from dataclasses import dataclass, field
 from enum import Enum
 
+from src.classifier.llm.schemas import VALID_PAIN_CATEGORIES
 # Import KZ prefix set from ContactValidator (SSoT).
 # Both the LLM-path validator (this module) and the rule-based path
 # (DataExtractor → ContactValidator.validate_phone) must accept the same prefixes.
@@ -210,9 +211,7 @@ class ExtractionValidator:
     # =========================================================================
     # PAIN CATEGORIES
     # =========================================================================
-    ALLOWED_PAIN_CATEGORIES: Set[str] = {
-        "losing_clients", "no_control", "manual_work", "manager_issues", "chaos",
-    }
+    ALLOWED_PAIN_CATEGORIES: Set[str] = set(VALID_PAIN_CATEGORIES)
 
     # Placeholder/sentinel values that must never leak into extracted_data.
     SENTINEL_STRING_VALUES: Set[str] = {

@@ -4,7 +4,11 @@ from typing import Dict, Optional, Any
 from src.logger import logger
 from src.llm import OllamaClient
 from src.settings import settings
-from src.classifier.llm.schemas import ClassificationResult
+from src.classifier.llm.schemas import (
+    ClassificationResult,
+    VALID_INTENTS,
+    normalize_intent_label,
+)
 from src.classifier.llm.prompts import build_classification_prompt
 from src.classifier.extractors.extraction_validator import validate_extracted_data
 
@@ -77,11 +81,21 @@ class LLMClassifier:
 
             # Формируем alternatives для ConfidenceRouter
             alternatives = []
+            dropped_alternatives = []
             for alt in result.alternatives:
+                intent = normalize_intent_label(alt.intent)
+                if intent not in VALID_INTENTS:
+                    dropped_alternatives.append(intent or "<empty>")
+                    continue
                 alternatives.append({
-                    "intent": alt.intent,
+                    "intent": intent,
                     "confidence": alt.confidence
                 })
+            if dropped_alternatives:
+                logger.info(
+                    "Dropped invalid classifier alternatives",
+                    extra={"alternatives": dropped_alternatives},
+                )
 
             # Получаем raw extracted_data от LLM
             raw_extracted = result.extracted_data.model_dump(exclude_none=True)

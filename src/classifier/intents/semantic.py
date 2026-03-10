@@ -1,11 +1,11 @@
 """
 Семантический классификатор интентов на основе эмбеддингов.
 
-Использует sentence-transformers для вычисления cosine similarity
+Использует TEI (Qwen3-Embedding-4B) для вычисления cosine similarity
 между сообщением пользователя и примерами интентов.
 
 Этапы работы:
-1. При инициализации: вычисляем эмбеддинги для всех примеров
+1. При инициализации: вычисляем эмбеддинги для всех примеров через TEI /embed
 2. При классификации: вычисляем эмбеддинг сообщения
 3. Считаем cosine similarity с каждым примером
 4. Группируем по интентам и выбираем лучший
@@ -42,13 +42,8 @@ class SemanticClassifier:
     """
     Семантический классификатор на основе эмбеддингов.
 
-    Использует предвычисленные эмбеддинги примеров для быстрой
+    Использует предвычисленные эмбеддинги примеров (через TEI) для быстрой
     классификации новых сообщений.
-
-    Attributes:
-        embedder: Модель sentence-transformers
-        intent_embeddings: Словарь {intent: List[embedding]}
-        thresholds: Пороги для разных уровней уверенности
     """
 
     # Пороги уверенности
@@ -63,22 +58,11 @@ class SemanticClassifier:
         examples: Dict[str, List[str]] = None,
         min_confidence: float = 0.5
     ):
-        """
-        Инициализация классификатора.
-
-        Args:
-            model_name: Название модели sentence-transformers
-                       (по умолчанию из settings)
-            examples: Словарь примеров {intent: [examples]}
-                     (по умолчанию INTENT_EXAMPLES)
-            min_confidence: Минимальный порог уверенности
-        """
         self.model_name = model_name
         self.examples = examples or INTENT_EXAMPLES
         self.min_confidence = min_confidence
 
         # Lazy initialization
-        self._embedder = None
         self._np = None
         self._intent_embeddings: Dict[str, Any] = {}
         self._example_to_intent: Dict[int, Tuple[str, str]] = {}
@@ -86,51 +70,19 @@ class SemanticClassifier:
         self._initialized = False
         self._init_lock = threading.Lock()
 
-    def _get_model_name(self) -> str:
-        """Получить имя модели из settings или default."""
-        if self.model_name:
-            return self.model_name
-
-        try:
-            from src.settings import settings
-            return getattr(
-                getattr(settings, 'retriever', None),
-                'embedder_model',
-                'ai-forever/FRIDA'
-            )
-        except ImportError:
-            return 'ai-forever/FRIDA'
-
     def _init_embeddings(self) -> bool:
-        """
-        Инициализировать эмбеддинги (thread-safe).
-
-        Returns:
-            True если инициализация успешна
-        """
+        """Инициализировать эмбеддинги через TEI (thread-safe)."""
         if self._initialized:
             return True
 
         with self._init_lock:
-            # Double-check после получения lock
             if self._initialized:
                 return True
 
             try:
-                from sentence_transformers import SentenceTransformer
                 import numpy as np
+                from src.knowledge.tei_client import embed_texts_cached
                 self._np = np
-
-                model_name = self._get_model_name()
-                try:
-                    self._embedder = SentenceTransformer(model_name)
-                except Exception as e:
-                    if "out of memory" in str(e).lower() or "CUDA" in str(e):
-                        import torch
-                        torch.cuda.empty_cache()
-                        self._embedder = SentenceTransformer(model_name, device="cpu")
-                    else:
-                        raise
 
                 # Собираем все примеры
                 all_examples = []
@@ -145,18 +97,22 @@ class SemanticClassifier:
                         example_index += 1
                     self._intent_embeddings[intent] = intent_example_indices
 
-                # Batch encode все примеры
-                self._all_embeddings = self._embedder.encode(
-                    all_examples,
-                    convert_to_numpy=True,
-                    normalize_embeddings=True
-                )
+                # Batch encode через TEI (с disk-кэшем)
+                arr = embed_texts_cached(all_examples, cache_name="intent_examples")
+                if arr is None:
+                    print("[SemanticClassifier] TEI embed failed, classifier unavailable")
+                    return False
+
+                self._all_embeddings = arr.copy()
+                # Нормализуем для dot-product = cosine
+                norms = np.linalg.norm(self._all_embeddings, axis=1, keepdims=True)
+                norms[norms == 0] = 1
+                self._all_embeddings = self._all_embeddings / norms
 
                 self._initialized = True
+                print(f"[SemanticClassifier] Indexed {len(all_examples)} examples via TEI")
                 return True
 
-            except ImportError:
-                return False
             except Exception as e:
                 print(f"[SemanticClassifier] Init error: {e}")
                 return False
@@ -166,6 +122,18 @@ class SemanticClassifier:
         """Проверить доступен ли классификатор."""
         return self._init_embeddings()
 
+    def _encode_message(self, message: str):
+        """Encode single message via TEI and normalize."""
+        from src.knowledge.tei_client import embed_single
+        raw = embed_single(message)
+        if raw is None:
+            return None
+        emb = self._np.array(raw)
+        norm = self._np.linalg.norm(emb)
+        if norm > 0:
+            emb = emb / norm
+        return emb
+
     def classify(
         self,
         message: str,
@@ -173,10 +141,6 @@ class SemanticClassifier:
     ) -> Tuple[str, float, Dict[str, float]]:
         """
         Классифицировать сообщение.
-
-        Args:
-            message: Текст сообщения
-            top_k: Количество примеров для усреднения по интенту
 
         Returns:
             Tuple[intent, confidence, all_scores]
@@ -187,15 +151,11 @@ class SemanticClassifier:
         if not message or not message.strip():
             return "unclear", 0.0, {}
 
-        # Encode сообщение
-        message_emb = self._embedder.encode(
-            message,
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
+        message_emb = self._encode_message(message)
+        if message_emb is None:
+            return "unclear", 0.0, {}
 
-        # Cosine similarity со всеми примерами
-        # (embeddings уже нормализованы, так что dot product = cosine)
+        # Cosine similarity со всеми примерами (embeddings нормализованы)
         similarities = self._np.dot(self._all_embeddings, message_emb)
 
         # Группируем scores по интентам
@@ -214,14 +174,12 @@ class SemanticClassifier:
             top_scores = sorted(scores, reverse=True)[:top_k]
             intent_avg_scores[intent] = sum(top_scores) / len(top_scores)
 
-        # Находим лучший интент
         if not intent_avg_scores:
             return "unclear", 0.0, {}
 
         best_intent = max(intent_avg_scores, key=intent_avg_scores.get)
         best_score = intent_avg_scores[best_intent]
 
-        # Нормализуем confidence (similarity может быть от -1 до 1)
         confidence = max(0.0, min(1.0, best_score))
 
         return best_intent, confidence, intent_avg_scores
@@ -233,10 +191,6 @@ class SemanticClassifier:
     ) -> SemanticResult:
         """
         Детальная классификация с информацией о совпадениях.
-
-        Args:
-            message: Текст сообщения
-            top_k: Количество top примеров
 
         Returns:
             SemanticResult с детальной информацией
@@ -255,14 +209,14 @@ class SemanticClassifier:
                 match_type=SemanticMatchType.NONE
             )
 
-        # Encode сообщение
-        message_emb = self._embedder.encode(
-            message,
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
+        message_emb = self._encode_message(message)
+        if message_emb is None:
+            return SemanticResult(
+                intent="unclear",
+                confidence=0.0,
+                match_type=SemanticMatchType.NONE
+            )
 
-        # Cosine similarity
         similarities = self._np.dot(self._all_embeddings, message_emb)
 
         # Собираем top похожие примеры
@@ -282,19 +236,16 @@ class SemanticClassifier:
                 intent_scores[intent] = []
             intent_scores[intent].append(float(sim))
 
-        # Усредняем top_k scores
         all_scores: Dict[str, float] = {}
 
         for intent, scores in intent_scores.items():
             top_scores = sorted(scores, reverse=True)[:top_k]
             all_scores[intent] = sum(top_scores) / len(top_scores)
 
-        # Лучший интент
         best_intent = max(all_scores, key=all_scores.get)
         best_score = all_scores[best_intent]
         confidence = max(0.0, min(1.0, best_score))
 
-        # Определяем тип совпадения
         if confidence >= self.THRESHOLD_EXACT:
             match_type = SemanticMatchType.EXACT
         elif confidence >= self.THRESHOLD_STRONG:
@@ -322,21 +273,15 @@ class SemanticClassifier:
         """
         Получить наиболее похожие примеры.
 
-        Args:
-            message: Текст сообщения
-            top_k: Количество примеров
-
         Returns:
             List[(example, intent, similarity)]
         """
         if not self._init_embeddings():
             return []
 
-        message_emb = self._embedder.encode(
-            message,
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
+        message_emb = self._encode_message(message)
+        if message_emb is None:
+            return []
 
         similarities = self._np.dot(self._all_embeddings, message_emb)
         top_indices = self._np.argsort(similarities)[-top_k:][::-1]
@@ -349,18 +294,9 @@ class SemanticClassifier:
         return results
 
     def explain(self, message: str) -> Dict:
-        """
-        Объяснить классификацию (для отладки).
-
-        Args:
-            message: Текст сообщения
-
-        Returns:
-            Словарь с объяснением
-        """
+        """Объяснить классификацию (для отладки)."""
         result = self.classify_detailed(message, top_k=5)
 
-        # Top 3 интента
         sorted_intents = sorted(
             result.all_scores.items(),
             key=lambda x: x[1],
@@ -392,11 +328,7 @@ _classifier_lock = threading.Lock()
 
 
 def get_semantic_classifier() -> SemanticClassifier:
-    """
-    Получить singleton экземпляр SemanticClassifier.
-
-    Thread-safe с Double-Checked Locking.
-    """
+    """Получить singleton экземпляр SemanticClassifier."""
     global _semantic_classifier
 
     if _semantic_classifier is not None:

@@ -375,7 +375,7 @@ FEW_SHOT_EXAMPLES = [
             "reasoning": "Клиент описывает конкретную боль — расхождение учёта",
             "extracted_data": {
                 "pain_point": "расхождения остатков",
-                "pain_category": "inventory_mismatch"
+                "pain_category": "no_control"
             },
             "alternatives": [
                 {"intent": "situation_provided", "confidence": 0.40},

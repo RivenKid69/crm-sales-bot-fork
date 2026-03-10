@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# System deps for pymorphy3 and sentence-transformers
+# System deps for pymorphy3
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential curl && \
     rm -rf /var/lib/apt/lists/*
@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir .
 # Copy source code and config
 COPY src/ src/
 COPY conftest.py ./
+COPY ["БД по болям/", "./БД по болям/"]
 
 # Data directory for SQLite (conversations.db)
 RUN mkdir -p /app/data

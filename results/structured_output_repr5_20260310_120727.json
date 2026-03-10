@@ -1,0 +1,1011 @@
+{
+  "generated_at": "2026-03-10T12:07:27.787115+00:00",
+  "scenarios": [
+    {
+      "id": "D01",
+      "name": "Касса тупит + цена в одном сообщении",
+      "pain_turn": 3,
+      "target_topic": "kassa_freeze_peak_hours_601",
+      "pain_turn_topic": "kassa_freeze_peak_hours_601",
+      "pain_turn_hit": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user_msg": "салам, мне друг посоветовал вас глянуть",
+          "intent": "greeting",
+          "state": "greeting",
+          "action": "greet_back",
+          "response": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+          "elapsed_ms": 105234.2,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_customer_no_visibility_1901",
+            "category": "pain_equipment",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "greeting",
+            "confidence": 0.7985,
+            "all_scores": {
+              "greeting": 0.7985
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {},
+            "classification_time_ms": 22687.53
+          },
+          "decision_state_machine": {
+            "prev_state": "greeting",
+            "next_state": "greeting",
+            "prev_phase": null,
+            "next_phase": null,
+            "action": "greet_back",
+            "is_final": false,
+            "processing_time_ms": 0.65
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 2,
+          "user_msg": "у нас 2 магазина продуктов в караганде",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Два продуктовых магазина — отличный формат для Wipon. Расскажите, что сейчас больше всего напрягает в учёте?",
+          "elapsed_ms": 59768.8,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_hard_open_new_store_2201",
+            "category": "pain_equipment",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "situation_provided",
+            "confidence": 0.85,
+            "all_scores": {
+              "situation_provided": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "company_size": 2,
+              "business_type": "розничная торговля",
+              "city": "Караганда"
+            },
+            "classification_time_ms": 34460.97
+          },
+          "decision_state_machine": {
+            "prev_state": "greeting",
+            "next_state": "autonomous_discovery",
+            "prev_phase": null,
+            "next_phase": "discovery",
+            "action": "continue_current_goal",
+            "is_final": false,
+            "processing_time_ms": 0.89
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 3,
+          "user_msg": "ну мне тут сказали посмотреть, у нас касса иногда тупит при наплыве людей, а сколько стоит вообще ваша система?",
+          "intent": "problem_revealed",
+          "state": "autonomous_presentation",
+          "action": "autonomous_respond",
+          "response": "Поняла про зависания. Wipon Kassa обеспечивает стабильную работу даже в пиковые часы благодаря оптимизированной производительности. По ценам: базовый тариф Mini стоит 5 000 тенге в месяц и включает кассу, чеки и продажи.",
+          "elapsed_ms": 216560.1,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_slow_boot_1708",
+            "category": "pain_equipment",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 669,
+          "decision_classification": {
+            "top_intent": "disambiguation_needed",
+            "confidence": 0.88,
+            "all_scores": {
+              "disambiguation_needed": 0.88
+            },
+            "method_used": "llm",
+            "disambiguation_options": [
+              {
+                "intent": "problem_revealed",
+                "label": "Обсудить проблемы",
+                "confidence": 0.88
+              },
+              {
+                "intent": "price_question",
+                "label": "Узнать стоимость",
+                "confidence": 0.8461970170645639
+              },
+              {
+                "intent": "other",
+                "label": "Другое",
+                "confidence": 0.0
+              }
+            ],
+            "disambiguation_triggered": true,
+            "extracted_data": {
+              "city": "Караганда",
+              "pain_point": "касса иногда тупит при наплыве людей",
+              "pain_category": "no_control"
+            },
+            "classification_time_ms": 58947.26
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_presentation",
+            "prev_phase": "discovery",
+            "next_phase": "presentation",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 16436.53
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 4,
+          "user_msg": "ну если тормозить не будет то может и возьмем",
+          "intent": "rejection",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "response": "Значит, главное для вас — чтобы касса не подвела в час пик, а Wipon как раз создан для такой стабильности. Давайте я расскажу про 7-дневный пробный период, чтобы вы сами убедились в скорости работы?",
+          "elapsed_ms": 78195.7,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "kassa_freeze_peak_hours_601",
+            "category": "pain_kassa",
+            "score": 0.0318,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 676,
+          "decision_classification": {
+            "top_intent": "rejection",
+            "confidence": 0.85,
+            "all_scores": {
+              "rejection": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "pain_point": "тормозит система",
+              "role": "it"
+            },
+            "classification_time_ms": 15817.55
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_presentation",
+            "next_state": "autonomous_objection_handling",
+            "prev_phase": "presentation",
+            "next_phase": "objection_handling",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 21075.81
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "D02",
+      "name": "Сканер + сколько точек + бюджет",
+      "pain_turn": 2,
+      "target_topic": "equipment_scanner_not_first_try_1703",
+      "pain_turn_topic": "equipment_scanner_not_first_try_1703",
+      "pain_turn_hit": true,
+      "turns": [
+        {
+          "turn": 1,
+          "user_msg": "здравствуйте хочу узнать про вашу систему",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Wipon — это облачная система для розницы и общепита с онлайн-кассой и учётом товаров в одном окне. Мы работаем в Казахстане уже более 10 лет, помогая бизнесу от продаж до анализа прибыли. Чем именно вы занимаетесь?",
+          "elapsed_ms": 67780.4,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "tis_growth_without_structure_1602",
+            "category": "pain_snr",
+            "score": 0.032,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "question_features",
+            "confidence": 0.85,
+            "all_scores": {
+              "question_features": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {},
+            "classification_time_ms": 10700.94
+          },
+          "decision_state_machine": {
+            "prev_state": "greeting",
+            "next_state": "autonomous_discovery",
+            "prev_phase": null,
+            "next_phase": "discovery",
+            "action": "answer_with_facts",
+            "is_final": false,
+            "processing_time_ms": 263.03
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 2,
+          "user_msg": "у нас аптека, 1 точка, примерно 3000 позиций",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Аптека с тремя тысячами позиций — это отличный масштаб для Wipon. У нас нет ограничений по количеству товаров, так что всё поместится. А что сейчас больше всего напрягает в учёте или кассе?",
+          "elapsed_ms": 159253.4,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "analytics_no_branch_control_305",
+            "category": "pain_products",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "situation_provided",
+            "confidence": 0.85,
+            "all_scores": {
+              "situation_provided": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {},
+            "classification_time_ms": 10301.26
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 32923.0
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 3,
+          "user_msg": "главная проблема — сканер по 5 раз проводишь пока считает, клиенты психуют, и еще вопрос у вас рассрочка есть?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Наши стационарные сканеры Wipon имеют высокую чувствительность и считывают даже поврежденные коды, что ускорит работу кассира. По оплате оборудования доступна рассрочка Kaspi 0-0-12. Например, для модели WP7600L платеж составит 2500 тенге в месяц.",
+          "elapsed_ms": 198607.1,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_scanner_not_first_try_1703",
+            "category": "pain_equipment",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 672,
+          "decision_classification": {
+            "top_intent": "price_question",
+            "confidence": 0.9,
+            "all_scores": {
+              "price_question": 0.9
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "role": "it"
+            },
+            "classification_time_ms": 10304.64
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 39072.68
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 4,
+          "user_msg": "ладно а маркировку поддерживаете? у нас же лекарства",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Да, Wipon полностью поддерживает маркировку лекарств: приёмка, продажа и списание работают корректно в одной программе. Онлайн-касса со встроенной передачей чеков через ОФД уже включена, сторонние решения не требуются.",
+          "elapsed_ms": 212035.3,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_no_datamatrix_support_2001",
+            "category": "pain_equipment",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "question_features",
+            "confidence": 0.9089,
+            "all_scores": {
+              "question_features": 0.9089
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "business_type": "другое"
+            },
+            "classification_time_ms": 86768.03
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 22402.75
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "D04",
+      "name": "СНР страх спрятан в общем вопросе",
+      "pain_turn": 2,
+      "target_topic": "tis_transition_fear_new_regime_1001",
+      "pain_turn_topic": "tis_backdated_fines_1306",
+      "pain_turn_hit": false,
+      "turns": [
+        {
+          "turn": 1,
+          "user_msg": "добрый день, я ип, розничная торговля",
+          "intent": "info_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Рада знакомству! Wipon отлично подходит для розничной торговли. Расскажите, какая у вас ниша и сколько точек планируете открывать?",
+          "elapsed_ms": 91497.3,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "consulting_ip_liquidation_problems_3203",
+            "category": "pain_consulting",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "info_provided",
+            "confidence": 0.75,
+            "all_scores": {
+              "info_provided": 0.75
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "business_type": "розничная торговля"
+            },
+            "classification_time_ms": 26602.44
+          },
+          "decision_state_machine": {
+            "prev_state": "greeting",
+            "next_state": "autonomous_discovery",
+            "prev_phase": null,
+            "next_phase": "discovery",
+            "action": "continue_current_goal",
+            "is_final": false,
+            "processing_time_ms": 293.76
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 2,
+          "user_msg": "слушайте а у вас есть что нибудь для учета налогов? мне бухгалтер сказала что с 2026 какие то изменения по снр и если не подготовимся то на общий режим переведут, я вообще в этом не разбираюсь",
+          "intent": "compliance_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Да, Wipon готовит вас к переходу на СНР-2026 и предотвращает автоматический перевод на общий режим при превышении лимита дохода. Система сама настроит новый режим и учтёт все изменения в законодательстве.",
+          "elapsed_ms": 183600.0,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "tis_transition_fear_new_regime_1001",
+            "category": "pain_snr",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 764,
+          "decision_classification": {
+            "top_intent": "compliance_question",
+            "confidence": 0.8984,
+            "all_scores": {
+              "compliance_question": 0.8984
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "business_type": "розничная торговля",
+              "pain_point": "не знаю про изменения СНР с 2026 года, риск перевода на общий режим",
+              "pain_category": "no_control"
+            },
+            "classification_time_ms": 43763.93
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "escalate_to_human",
+            "is_final": false,
+            "processing_time_ms": 16441.24
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 3,
+          "user_msg": "а это прям автоматически все считает? я боюсь что штраф выпишут",
+          "intent": "question_automation",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Да, налог при продаже считается автоматически по действующим ставкам, поэтому риск ошибки сведен к нулю. Система также проверяет данные перед отчетностью, чтобы вы не получили штраф.",
+          "elapsed_ms": 137427.0,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "tis_backdated_fines_1306",
+            "category": "pain_snr",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 634,
+          "decision_classification": {
+            "top_intent": "question_automation",
+            "confidence": 0.871,
+            "all_scores": {
+              "question_automation": 0.871
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "pain_point": "страх штрафов за неправильный учет",
+              "pain_category": "no_control"
+            },
+            "classification_time_ms": 45701.72
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 13767.2
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 4,
+          "user_msg": "ну и сколько это стоит тогда",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Стоимость зависит от выбранного тарифа: Mini стоит 5 000 тенге в месяц, а годовые варианты Lite, Standard и Pro — от 150 000 до 500 000 тенге. Для одной точки с базовым функционалом обычно выбирают Lite за 150 000 тенге в год.",
+          "elapsed_ms": 84689.3,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_overpayment_config_2103",
+            "category": "pain_equipment",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "price_question",
+            "confidence": 0.9466,
+            "all_scores": {
+              "price_question": 0.9466
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {},
+            "classification_time_ms": 29626.13
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 12549.68
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "D05",
+      "name": "Кража кассира + недоверие",
+      "pain_turn": 3,
+      "target_topic": "control_cashier_theft_103",
+      "pain_turn_topic": "tis_growth_without_structure_1602",
+      "pain_turn_hit": false,
+      "turns": [
+        {
+          "turn": 1,
+          "user_msg": "здрасте я ищу программу для магазина",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Рада слышать, что вы ищете решение для магазина. Подскажите, какой у вас формат торговли? Это поможет подобрать идеальные функции Wipon именно для вас.",
+          "elapsed_ms": 34752.0,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "integration_multiple_systems_503",
+            "category": "pain_products",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "situation_provided",
+            "confidence": 0.85,
+            "all_scores": {
+              "situation_provided": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "business_type": "розничная торговля"
+            },
+            "classification_time_ms": 9878.42
+          },
+          "decision_state_machine": {
+            "prev_state": "greeting",
+            "next_state": "autonomous_discovery",
+            "prev_phase": null,
+            "next_phase": "discovery",
+            "action": "continue_current_goal",
+            "is_final": false,
+            "processing_time_ms": 215.02
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 2,
+          "user_msg": "продукты, 1 точка, алматы, 5 сотрудников",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Отлично, продуктовый магазин в Алматы с командой из пяти человек — это классический формат для Wipon. Подскажите, что сейчас больше всего напрягает в учёте или кассе?",
+          "elapsed_ms": 35173.5,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "analytics_no_branch_control_305",
+            "category": "pain_products",
+            "score": 0.032,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "situation_provided",
+            "confidence": 0.85,
+            "all_scores": {
+              "situation_provided": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "company_size": 5,
+              "role": "employee"
+            },
+            "classification_time_ms": 8861.19
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 9560.66
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 3,
+          "user_msg": "у нас тут проблема — подозреваю что кассирша ворует, удаляет позиции из чека а деньги себе, но доказать не могу потому что система ничего не логирует. вы это решаете?",
+          "intent": "question_features",
+          "state": "autonomous_presentation",
+          "action": "autonomous_respond",
+          "response": "Да, Wipon фиксирует все действия кассира, включая удаление позиций из чека, чтобы вы могли доказать махинации. В системе есть подробные отчеты по сменам и аудит операций по пользователю и времени.",
+          "elapsed_ms": 112184.4,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "control_cashier_theft_103",
+            "category": "pain_products",
+            "score": 0.0297,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 597,
+          "decision_classification": {
+            "top_intent": "question_features",
+            "confidence": 0.9252,
+            "all_scores": {
+              "question_features": 0.9252
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "pain_point": "подозреваю что кассирша ворует, удаляет позиции из чека а деньги себе, но доказать не могу потому что система ничего не логирует",
+              "pain_category": "no_control"
+            },
+            "classification_time_ms": 38888.43
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_presentation",
+            "prev_phase": "discovery",
+            "next_phase": "presentation",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 12006.43
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 4,
+          "user_msg": "а она не сможет как нибудь обойти вашу систему?",
+          "intent": "question_security",
+          "state": "autonomous_presentation",
+          "action": "autonomous_respond",
+          "response": "В Wipon все действия кассира записываются в защищенный журнал, который нельзя удалить или изменить. Это снижает риск обхода системы и обеспечивает прозрачность операций.",
+          "elapsed_ms": 102624.9,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "tis_growth_without_structure_1602",
+            "category": "pain_snr",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 612,
+          "decision_classification": {
+            "top_intent": "question_security",
+            "confidence": 0.8876,
+            "all_scores": {
+              "question_security": 0.8876
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {},
+            "classification_time_ms": 33496.49
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_presentation",
+            "next_state": "autonomous_presentation",
+            "prev_phase": "presentation",
+            "next_phase": "presentation",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 10903.02
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "D07",
+      "name": "Принтер сдох + уже злой",
+      "pain_turn": 2,
+      "target_topic": "equipment_printer_break_peak_1801",
+      "pain_turn_topic": "equipment_overpayment_config_2103",
+      "pain_turn_hit": false,
+      "turns": [
+        {
+          "turn": 1,
+          "user_msg": "вы продаете кассовое оборудование?",
+          "intent": "agreement",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Да, мы продаем кассовое оборудование Wipon, включая моноблоки и готовые комплекты с рассрочкой. У нас есть решения для разных форматов магазинов и общепита. Какой тип точки вы планируете автоматизировать?",
+          "elapsed_ms": 126394.9,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_overheating_problem_1803",
+            "category": "pain_equipment",
+            "score": 0.0315,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "disambiguation_needed",
+            "confidence": 0.375,
+            "all_scores": {
+              "disambiguation_needed": 0.375
+            },
+            "method_used": "llm_fallback",
+            "disambiguation_options": [
+              {
+                "intent": "agreement",
+                "label": "Продолжить разговор",
+                "confidence": 0.375
+              },
+              {
+                "intent": "other",
+                "label": "Другое",
+                "confidence": 0.0
+              }
+            ],
+            "disambiguation_triggered": true,
+            "extracted_data": {},
+            "classification_time_ms": 82003.45
+          },
+          "decision_state_machine": {
+            "prev_state": "greeting",
+            "next_state": "autonomous_discovery",
+            "prev_phase": null,
+            "next_phase": "discovery",
+            "action": "acknowledge_and_continue",
+            "is_final": false,
+            "processing_time_ms": 0.65
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 2,
+          "user_msg": "короче у нас принтер чеков сдох вчера прям в самый час пик, мы полдня не торговали из за этого, продавцы на телефон чеки скидывали, бред. нужен нормальный принтер который не сломается через месяц, и желательно побыстрее доставить",
+          "intent": "problem_revealed",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "стресс, понимаю как это критично во время пика. У нас есть принтеры с автоотрезом, которые выдерживают высокую нагрузку и не подводят в часы очереди. Какой формат у вашей точки, чтобы я подобрала надежное решение?",
+          "elapsed_ms": 124000.0,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_printer_break_peak_1801",
+            "category": "pain_equipment",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 678,
+          "decision_classification": {
+            "top_intent": "problem_revealed",
+            "confidence": 0.9217,
+            "all_scores": {
+              "problem_revealed": 0.9217
+            },
+            "method_used": "llm",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {
+              "pain_point": "принтер сломался во время часа пика, остановка торговли, хаос с чеками на телефоне",
+              "pain_category": "chaos",
+              "desired_outcome": "надежный принтер, быстрая доставка"
+            },
+            "classification_time_ms": 42260.23
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 10781.45
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        },
+        {
+          "turn": 3,
+          "user_msg": "а гарантия на него какая?",
+          "intent": "objection_trust",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "response": "Базовый гарантийный период на оборудование Wipon составляет 12 месяцев. В этот срок включены бесплатный ремонт и настройка устройств. Для модели POS DUO при поломке предусмотрена замена.",
+          "elapsed_ms": 89992.2,
+          "fallback_used": false,
+          "pain_search_top": {
+            "topic": "equipment_overpayment_config_2103",
+            "category": "pain_equipment",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "decision_classification": {
+            "top_intent": "objection_trust",
+            "confidence": 0.85,
+            "all_scores": {
+              "objection_trust": 0.85
+            },
+            "method_used": "priority_pattern",
+            "disambiguation_options": [],
+            "disambiguation_triggered": false,
+            "extracted_data": {},
+            "classification_time_ms": 9684.26
+          },
+          "decision_state_machine": {
+            "prev_state": "autonomous_discovery",
+            "next_state": "autonomous_discovery",
+            "prev_phase": "discovery",
+            "next_phase": "discovery",
+            "action": "autonomous_respond",
+            "is_final": false,
+            "processing_time_ms": 9917.75
+          },
+          "decision_policy_override": {
+            "was_overridden": false,
+            "original_action": null,
+            "override_action": null,
+            "reason_codes": [],
+            "signals_used": [],
+            "decision": null
+          }
+        }
+      ]
+    }
+  ]
+}

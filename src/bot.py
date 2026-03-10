@@ -2571,8 +2571,8 @@ def _cleanup_gpu_before_start():
             pid, name, mem_mb = int(parts[0]), parts[1], int(parts[2])
             if pid == my_pid:
                 continue
-            # Kill old python3 (FRIDA, etc.) and ollama processes
-            if "python" in name.lower() or "ollama" in name.lower():
+            # Kill old python3 processes; ollama handled via systemctl below
+            if "python" in name.lower():
                 try:
                     os.kill(pid, 9)
                     killed.append(f"  PID {pid} ({name}, {mem_mb} MB)")
@@ -2580,6 +2580,8 @@ def _cleanup_gpu_before_start():
                     pass
                 except PermissionError:
                     killed.append(f"  PID {pid} ({name}) — нет прав, пропускаю")
+            elif "ollama" in name.lower():
+                killed.append(f"  PID {pid} ({name}, {mem_mb} MB) — перезапуск через systemd")
 
         if killed:
             print(f"[GPU Cleanup] Убил старые процессы:")

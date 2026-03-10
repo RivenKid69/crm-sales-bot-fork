@@ -8,9 +8,8 @@ from typing import Any, Optional
 
 from src.logger import logger
 
-from .base import KnowledgeBase
 from .pain_loader import load_pain_knowledge_base
-from .retriever import CascadeRetriever, get_retriever
+from .retriever import CascadeRetriever
 
 
 _pain_retriever: Optional[CascadeRetriever] = None
@@ -42,17 +41,9 @@ def get_pain_retriever() -> CascadeRetriever:
 
         pain_kb = load_pain_knowledge_base()
 
-        # Create without embeddings to avoid duplicate FRIDA load.
-        retriever = CascadeRetriever(knowledge_base=pain_kb, use_embeddings=False)
-
-        # Share embedder instance from the main retriever.
-        main = get_retriever()
-        if main.embedder is not None and main.np is not None:
-            retriever.embedder = main.embedder
-            retriever.np = main.np
-            retriever._use_prefixes = main._use_prefixes
-            retriever.use_embeddings = True
-            _encode_pain_sections(retriever, pain_kb)
+        # Create with embeddings — TEI handles all encoding server-side,
+        # no in-process model to worry about duplicating.
+        retriever = CascadeRetriever(knowledge_base=pain_kb, use_embeddings=True, cache_name="pain_sections")
 
         _pain_retriever = retriever
         return _pain_retriever
@@ -64,25 +55,6 @@ def reset_pain_retriever() -> None:
     with _pain_lock:
         _pain_retriever = None
 
-
-def _encode_pain_sections(retriever: CascadeRetriever, kb: KnowledgeBase) -> None:
-    """Вычислить embeddings для pain-секций через shared embedder."""
-    if retriever.embedder is None:
-        return
-
-    if retriever._use_prefixes:
-        texts = [
-            f"search_document: [{s.category}/{s.topic}] "
-            f"({', '.join(s.keywords[:5])}). {s.facts}"
-            for s in kb.sections
-        ]
-    else:
-        texts = [s.facts for s in kb.sections]
-
-    embeddings = retriever.embedder.encode(texts)
-    for idx, section in enumerate(kb.sections):
-        emb = embeddings[idx]
-        section.embedding = emb.tolist() if hasattr(emb, "tolist") else list(emb)
 
 
 def _llm_has_pain_signal(

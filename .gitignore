@@ -67,6 +67,9 @@ prototype_retriever/
 .ipynb_checkpoints/
 *.ipynb
 
+# Embedding cache (TEI disk cache)
+.cache/
+
 # Temporary files
 *.tmp
 *.temp

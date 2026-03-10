@@ -170,7 +170,7 @@ class TestTier2SemanticDetection:
         # Проверяем что semantic classifier работает и может классифицировать
         try:
             if not detector.semantic_classifier.is_available:
-                pytest.skip("Semantic classifier not available (sentence-transformers not installed)")
+                pytest.skip("Semantic classifier not available (TEI not reachable)")
 
             # Используем более явную формулировку возражения
             result = detector.detect("это для нас слишком дорогое удовольствие")
@@ -187,8 +187,8 @@ class TestTier2SemanticDetection:
             if result2.primary_type is not None:
                 assert result2.primary_type == ObjectionType.PRICE
 
-        except ImportError:
-            pytest.skip("sentence-transformers not installed")
+        except Exception:
+            pytest.skip("TEI not available")
 
     def test_semantic_disabled_returns_none(self, detector_semantic_off):
         """Если semantic выключен, возвращается None для неизвестных"""

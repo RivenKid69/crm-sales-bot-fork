@@ -162,7 +162,9 @@ def run_e2e():
     llm = OllamaLLM()
 
     pain_retriever = get_pain_retriever()
-    has_embeddings = pain_retriever.use_embeddings and pain_retriever.embedder is not None
+    has_embeddings = bool(
+        pain_retriever.use_embeddings and getattr(pain_retriever, "_embeddings_ready", False)
+    )
     print(f"Pain KB: {len(pain_retriever.kb.sections)} секций, Embeddings: {'ON' if has_embeddings else 'OFF'}")
     print()
 

@@ -14,8 +14,7 @@ dependencies = [
     # NLP
     "pymorphy3>=2.0.6",
 
-    # Embeddings & ML
-    "sentence-transformers>=5.0.0",
+    # Numerical (embeddings served via TEI)
     "numpy>=2.1.0",
 
     # Async

@@ -10,6 +10,7 @@ Part of Phase 6: Fallback Domain (ARCHITECTURE_UNIFIED_PLAN.md)
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, field
 
+from src.classifier.llm.schemas import VALID_PAIN_CATEGORIES
 
 # Fallback tiers in order of escalation
 FALLBACK_TIERS = [
@@ -25,11 +26,7 @@ DYNAMIC_CTA_STATES = {
 }
 
 # Pain categories for dynamic options
-PAIN_CATEGORIES = {
-    "losing_clients",
-    "no_control",
-    "manual_work",
-}
+PAIN_CATEGORIES = set(VALID_PAIN_CATEGORIES)
 
 # Company size thresholds
 SMALL_COMPANY_THRESHOLD = 5

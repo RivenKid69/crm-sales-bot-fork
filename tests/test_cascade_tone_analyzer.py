@@ -516,11 +516,6 @@ class TestCascadeTier2:
 
     def test_tier2_fallback_for_no_signals(self):
         """Tier 2 активируется при отсутствии сигналов."""
-        # Пропускаем если sentence-transformers недоступен
-        try:
-            import sentence_transformers
-        except ImportError:
-            pytest.skip("sentence-transformers not installed")
 
         analyzer = CascadeToneAnalyzer()
 
@@ -532,10 +527,6 @@ class TestCascadeTier2:
 
     def test_tier2_similar_examples(self):
         """Semantic analyzer возвращает похожие примеры."""
-        try:
-            import sentence_transformers
-        except ImportError:
-            pytest.skip("sentence-transformers not installed")
 
         from src.tone_analyzer import get_semantic_tone_analyzer
 
@@ -786,11 +777,10 @@ class TestSemanticToneAnalyzer:
         analyzer = SemanticToneAnalyzer()
         assert analyzer is not None
 
-    def test_is_available_without_transformers(self):
-        """is_available возвращает False без transformers."""
-        with patch.dict('sys.modules', {'sentence_transformers': None}):
+    def test_is_available_without_tei(self):
+        """is_available возвращает False без TEI."""
+        with patch('src.knowledge.tei_client.embed_texts', return_value=None):
             analyzer = SemanticToneAnalyzer()
-            # Проверяем что не падает
             assert analyzer is not None
 
 # =============================================================================

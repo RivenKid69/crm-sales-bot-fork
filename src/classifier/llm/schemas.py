@@ -1,6 +1,6 @@
 """Pydantic schemas для LLM классификатора."""
-from typing import Optional, Literal, List
-from pydantic import BaseModel, Field, field_validator
+from typing import Optional, Literal, List, get_args
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # 220 интентов для CRM Sales Bot Wipon
 IntentType = Literal[
@@ -385,11 +385,65 @@ IntentType = Literal[
     "question_courier_service",      # курьерская служба Wipon
 ]
 
-PainCategory = Literal["losing_clients", "no_control", "manual_work"]
+VALID_INTENTS = frozenset(get_args(IntentType))
+
+# Canonical aliases that the model tends to invent when prompt/schema drift appears.
+INTENT_ALIASES = {
+    "question_compliance": "compliance_question",
+    "question_tax": "question_retail_tax_general",
+    "question_taxes": "question_retail_tax_general",
+    "question_taxation": "question_retail_tax_general",
+    "objection_compliance": "compliance_question",
+    "objection_no_knowledge": "need_help",
+    "objection_no_expertise": "need_help",
+    "pain_point": "problem_revealed",
+    "objection_reliability": "objection_trust",
+    "delivery_request": "question_delivery",
+    "referral_mentioned": "info_provided",
+    "referral_source": "info_provided",
+    "skepticism": "skepticism_expression",
+}
+
+
+def normalize_intent_label(value: str) -> str:
+    """Normalize model-produced intent aliases to canonical schema labels."""
+    normalized = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if normalized.startswith("question_tax"):
+        return "question_retail_tax_general"
+    return INTENT_ALIASES.get(normalized, normalized)
+
+
+PainCategory = Literal[
+    "losing_clients",
+    "no_control",
+    "manual_work",
+    "manager_issues",
+    "chaos",
+]
+VALID_PAIN_CATEGORIES = frozenset(get_args(PainCategory))
+
+PAIN_CATEGORY_ALIASES = {
+    "inventory_mismatch": "no_control",
+    "team_chaos": "chaos",
+    "no_analytics": "no_control",
+    "manager_issue": "manager_issues",
+    "manual": "manual_work",
+    "manual_process": "manual_work",
+    "manual_processes": "manual_work",
+    "client_loss": "losing_clients",
+}
+
+
+def normalize_pain_category(value: str) -> str:
+    """Normalize model-produced pain categories to canonical schema labels."""
+    normalized = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    return PAIN_CATEGORY_ALIASES.get(normalized, normalized)
 
 
 class ExtractedData(BaseModel):
     """Извлечённые данные из сообщения."""
+    model_config = ConfigDict(extra="ignore")
+
     company_name: Optional[str] = Field(None, description="Название компании клиента")
     contact_name: Optional[str] = Field(None, description="Полное имя контактного лица")
     city: Optional[str] = Field(None, description="Город клиента")
@@ -409,15 +463,31 @@ class ExtractedData(BaseModel):
     desired_outcome: Optional[str] = Field(None, description="Желаемый результат")
     value_acknowledged: Optional[bool] = Field(None, description="Признана ли ценность")
 
+    @field_validator("pain_category", mode="before")
+    @classmethod
+    def _normalize_pain_category(cls, value):
+        if value is None:
+            return None
+        return normalize_pain_category(value)
+
 
 class IntentAlternative(BaseModel):
     """Альтернативный интент с confidence."""
-    intent: IntentType = Field(..., description="Интент")
+    model_config = ConfigDict(extra="ignore")
+
+    intent: str = Field(..., description="Интент")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Уверенность 0-1")
+
+    @field_validator("intent", mode="before")
+    @classmethod
+    def _normalize_intent(cls, value):
+        return normalize_intent_label(value)
 
 
 class ClassificationResult(BaseModel):
     """Результат классификации интента."""
+    model_config = ConfigDict(extra="ignore")
+
     intent: IntentType = Field(..., description="Определённый интент (top-1)")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Уверенность 0-1")
     reasoning: str = Field(..., description="Объяснение выбора интента")
@@ -427,6 +497,11 @@ class ClassificationResult(BaseModel):
         max_length=2,
         description="Альтернативные интенты (top-2, top-3)"
     )
+
+    @field_validator("intent", mode="before")
+    @classmethod
+    def _normalize_intent(cls, value):
+        return normalize_intent_label(value)
 
 
 # =============================================================================

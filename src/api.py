@@ -251,7 +251,7 @@ def _setup_production_flags():
     flags.set_override("lead_scoring", True)
     flags.set_override("personalization_session_memory", True)
     flags.set_override("tone_semantic_tier2", False)
-    # FRIDA embeddings теперь на CPU (embedder_device), OOM невозможен
+    # Embeddings served via TEI, no in-process model
 
 
 # ── App ───────────────────────────────────────────────
@@ -316,7 +316,7 @@ class ProcessRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "qwen-14b"}
+    return {"status": "ok", "model": settings.llm.model}
 
 
 @app.post("/api/v1/process", dependencies=[Depends(verify_api_key)])
@@ -373,7 +373,7 @@ def process_message(req: ProcessRequest):
         return {
             "answer": result["response"],
             "meta": {
-                "model": "qwen-14b",
+                "model": settings.llm.model,
                 "processing_ms": processing_ms,
                 "kb_used": kb_used,
             },

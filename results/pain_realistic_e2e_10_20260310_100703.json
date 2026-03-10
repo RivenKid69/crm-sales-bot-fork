@@ -1,0 +1,870 @@
+{
+  "timestamp": "20260310_100703",
+  "total": 10,
+  "passed": 4,
+  "results": [
+    {
+      "id": "D01",
+      "name": "Касса тупит + цена в одном сообщении",
+      "target_topic": "kassa_freeze_peak_hours_601",
+      "pain_turn": 4,
+      "total_turns": 4,
+      "verdict": "PASS",
+      "issues": [],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "салам, мне друг посоветовал вас глянуть",
+          "intent": "greeting",
+          "state": "greeting",
+          "action": "greet_back",
+          "pain_search_top": {
+            "topic": "equipment_customer_no_visibility_1901",
+            "category": "pain_equipment",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+          "elapsed_ms": 44700.5,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "у нас 2 магазина продуктов в караганде",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_hard_open_new_store_2201",
+            "category": "pain_equipment",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Отлично, два продуктовых магазина в Караганде — это уже серьезная задача для учета. Расскажите, что сейчас больше всего напрягает в работе с остатками или кассой?",
+          "elapsed_ms": 20322.7,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "ну мне тут сказали посмотреть, у нас касса иногда тупит при наплыве людей, а сколько стоит вообще ваша система?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_slow_boot_1708",
+            "category": "pain_equipment",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 669,
+          "bot_response": "Для решения проблемы с зависанием кассы при наплыве людей Wipon использует оптимизированную конфигурацию, обеспечивающую стабильную работу в пиковые часы. По стоимости: базовый тариф Mini стоит от 5 000 ₸/месяц за точку. Для предпринимателей на СНР доступна система ТИС: 220 000 ₸/год за первую точку и +80 000 ₸/год за каждую следующую.",
+          "elapsed_ms": 170485.7,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 4,
+          "user_msg": "ну если тормозить не будет то может и возьмем",
+          "intent": "rejection",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "kassa_freeze_peak_hours_601",
+            "category": "pain_kassa",
+            "score": 0.0318,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 676,
+          "bot_response": "Система Wipon специально оптимизирована для пиковых нагрузок, чтобы чеки формировались мгновенно без зависаний. Хотите попробовать это в деле на нашей бесплатной семидневке?",
+          "elapsed_ms": 47652.1,
+          "is_pain_turn": true
+        }
+      ]
+    },
+    {
+      "id": "D02",
+      "name": "Сканер + сколько точек + бюджет",
+      "target_topic": "equipment_scanner_not_first_try_1703",
+      "pain_turn": 3,
+      "total_turns": 4,
+      "verdict": "PASS",
+      "issues": [],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "здравствуйте хочу узнать про вашу систему",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "tis_growth_without_structure_1602",
+            "category": "pain_snr",
+            "score": 0.032,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Опыт компании Wipon — более 10 лет автоматизации бизнеса в Казахстане. Экран 1: для кассира",
+          "elapsed_ms": 40996.6,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "у нас аптека, 1 точка, примерно 3000 позиций",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "analytics_no_branch_control_305",
+            "category": "pain_products",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Аптека с тремя тысячами позиций — это серьёзный объём для одной точки. Wipon отлично справляется с таким количеством товаров без ограничений. А что сейчас больше всего напрягает в учёте или кассе?",
+          "elapsed_ms": 43654.6,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "главная проблема — сканер по 5 раз проводишь пока считает, клиенты психуют, и еще вопрос у вас рассрочка есть?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_scanner_not_first_try_1703",
+            "category": "pain_equipment",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 672,
+          "bot_response": "Для решения проблемы медленного сканирования мы предлагаем стационарные модели Wipon (например, WP7600L), которые считывают до 1650 штрихкодов в секунду при простом наведении и распознают даже поврежденные коды. Да, на все наши устройства действует рассрочка Kaspi по схеме 0-0-12: например, стационарный сканер можно купить за 2 000–2 500 ₸ в месяц, а проводной — от 833 ₸. Стоимость оборудования варьируется от 10 000 до 45 000 ₸ в зависимости от типа устройства (проводное, беспроводное или стационарное).",
+          "elapsed_ms": 195410.5,
+          "is_pain_turn": true
+        },
+        {
+          "turn": 4,
+          "user_msg": "ладно а маркировку поддерживаете? у нас же лекарства",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_no_datamatrix_support_2001",
+            "category": "pain_equipment",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Да, Wipon полностью поддерживает маркировку лекарств: приёмка, продажа и списание проходят корректно без сбоев. Всё это работает в одной программе вместе с онлайн-кассой через ОФД.",
+          "elapsed_ms": 96908.3,
+          "is_pain_turn": false
+        }
+      ]
+    },
+    {
+      "id": "D03",
+      "name": "Боль в возражении на цену",
+      "target_topic": "ops_speed_slow_new_product_add_002",
+      "pain_turn": 4,
+      "total_turns": 4,
+      "verdict": "FAIL",
+      "issues": [
+        "topic=control_unauthorized_discounts_105 (ожидался ops_speed_slow_new_product_add_002)",
+        "gate=NO",
+        "pain_ctx=ПУСТО",
+        "боль НЕ в ответе бота"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "привет, мне нужна касса для магазина одежды",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_hard_open_new_store_2201",
+            "category": "pain_equipment",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Айбота на связи, магазин одежды — отличное решение для Wipon, мы учитываем размеры и цвета. А что сейчас больше всего напрягает в работе с остатками?",
+          "elapsed_ms": 20896.2,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "а сколько стоит на 1 точку?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_downtime_loss_2101",
+            "category": "pain_equipment",
+            "score": 0.0315,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Для одной точки подходит тариф Lite за 150 000 тенге в год с онлайн-кассой и учётом остатков. Хотите сразу начать бесплатный тестовый период на семь дней?",
+          "elapsed_ms": 65578.4,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "дороговато если честно, я щас вручную в тетрадке все веду и товар добавляю по 2 часа каждую поставку, но все равно дорого",
+          "intent": "objection_price",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "ops_speed_slow_new_product_add_002",
+            "category": "pain_products",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 703,
+          "bot_response": "Понимаю вашу обеспокоенность ценой, ведь сейчас вы тратите два часа на каждую поставку вручную. Wipon сокращает это время до минут благодаря массовому импорту и автозаполнению по штрихкоду. Хотите увидеть, как ускорится ваша работа в тестовом периоде?",
+          "elapsed_ms": 126819.4,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 4,
+          "user_msg": "ну а если на год то скидка есть какая нибудь?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "control_unauthorized_discounts_105",
+            "category": "pain_products",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Годовая оплата уже включает экономию по сравнению с ежемесячной. Дополнительные скидки доступны при оплате на 2 или 5 лет, но точные условия и размер скидки определяются индивидуально.",
+          "elapsed_ms": 96133.8,
+          "is_pain_turn": true
+        }
+      ]
+    },
+    {
+      "id": "D04",
+      "name": "СНР страх спрятан в общем вопросе",
+      "target_topic": "tis_transition_fear_new_regime_1001",
+      "pain_turn": 3,
+      "total_turns": 4,
+      "verdict": "PASS",
+      "issues": [
+        "topic=tis_backdated_fines_1306 (ожидался tis_transition_fear_new_regime_1001)"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "добрый день, я ип, розничная торговля",
+          "intent": "info_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "consulting_ip_liquidation_problems_3203",
+            "category": "pain_consulting",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Вы упомянули розничную торговлю, а какой именно формат у вашей точки?",
+          "elapsed_ms": 21186.8,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "слушайте а у вас есть что нибудь для учета налогов? мне бухгалтер сказала что с 2026 какие то изменения по снр и если не подготовимся то на общий режим переведут, я вообще в этом не разбираюсь",
+          "intent": "agreement",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "tis_transition_fear_new_regime_1001",
+            "category": "pain_snr",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 764,
+          "bot_response": "Да, Wipon готовит вас к переходу на СНР-2026 и предотвращает автоматический перевод на общий режим налогообложения. Система сама настроит все требования закона и учтёт новые лимиты дохода. детали по вашим текущим показателям для точной настройки?",
+          "elapsed_ms": 208370.1,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "а это прям автоматически все считает? я боюсь что штраф выпишут",
+          "intent": "question_automation",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "tis_backdated_fines_1306",
+            "category": "pain_snr",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 634,
+          "bot_response": "Да, налог при продаже считается автоматически по действующим ставкам режима, поэтому риск ошибок минимален. Система сама проверяет данные перед формированием отчётов, чтобы вы не столкнулись с штрафами. Рассказать подробнее о тариф розницы?",
+          "elapsed_ms": 97943.9,
+          "is_pain_turn": true
+        },
+        {
+          "turn": 4,
+          "user_msg": "ну и сколько это стоит тогда",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_overpayment_config_2103",
+            "category": "pain_equipment",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "У нас есть тариф Mini за 5 000 ₸ в месяц для одной точки или годовые варианты от 150 000 до 500 000 ₸ в зависимости от количества магазинов. Все тарифы включают защиту от штрафов и автоматический учёт налогов по новым правилам СНР-2026.",
+          "elapsed_ms": 91010.3,
+          "is_pain_turn": false
+        }
+      ]
+    },
+    {
+      "id": "D05",
+      "name": "Кража кассира + недоверие",
+      "target_topic": "control_cashier_theft_103",
+      "pain_turn": 4,
+      "total_turns": 4,
+      "verdict": "PASS",
+      "issues": [
+        "topic=tis_growth_without_structure_1602 (ожидался control_cashier_theft_103)"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "здрасте я ищу программу для магазина",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "integration_multiple_systems_503",
+            "category": "pain_products",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Я Айбота, рада помочь подобрать решение для вашего магазина. Подскажите, какая задача сейчас самая важная для вас?",
+          "elapsed_ms": 23002.0,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "продукты, 1 точка, алматы, 5 сотрудников",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "analytics_no_branch_control_305",
+            "category": "pain_products",
+            "score": 0.032,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Продуктовый магазин в Алматы — отличный формат для Wipon. Подскажите, что сейчас больше всего напрягает в учёте или кассе?",
+          "elapsed_ms": 49091.2,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "у нас тут проблема — подозреваю что кассирша ворует, удаляет позиции из чека а деньги себе, но доказать не могу потому что система ничего не логирует. вы это решаете?",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "control_cashier_theft_103",
+            "category": "pain_products",
+            "score": 0.0297,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 597,
+          "bot_response": "Да, Wipon фиксирует все действия кассира, включая удаление позиций из чека, чтобы вы могли контролировать смену и исключать махинации. Это позволит вам видеть полную историю операций и защищать кассу от потерь.",
+          "elapsed_ms": 152485.7,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 4,
+          "user_msg": "а она не сможет как нибудь обойти вашу систему?",
+          "intent": "objection_security",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "tis_growth_without_structure_1602",
+            "category": "pain_snr",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 612,
+          "bot_response": "В системе Wipon нет лазеек для обхода контроля: все действия кассира фиксируются и доступны только вам как владельцу. Это исключает возможность скрытого удаления позиций или вывода денег из системы.",
+          "elapsed_ms": 86189.7,
+          "is_pain_turn": true
+        }
+      ]
+    },
+    {
+      "id": "D06",
+      "name": "Ревизия + конкурент",
+      "target_topic": "ops_speed_long_inventory_004",
+      "pain_turn": 3,
+      "total_turns": 4,
+      "verdict": "FAIL",
+      "issues": [
+        "topic=reporting_data_for_accountant_401 (ожидался ops_speed_long_inventory_004)",
+        "gate=NO",
+        "pain_ctx=ПУСТО"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "мы сейчас на 1с сидим но думаем переехать",
+          "intent": "objection_competitor",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "tis_dependency_transition_accountant_1504",
+            "category": "pain_snr",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Поняла, переход с 1С на Wipon — это частый запрос для тех, кому нужна более простая настройка и автоматическая фискализация. У нас есть семидневный пробный период, чтобы вы могли лично оценить удобство системы без обязательств.",
+          "elapsed_ms": 78679.9,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "основная причина — ревизия у нас 2 дня занимает каждый месяц, все вручную считаем, это капец. 1с вообще не помогает. у вас быстрее?",
+          "intent": "objection_no_time",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "ops_speed_long_inventory_004",
+            "category": "pain_products",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 644,
+          "bot_response": "Да, в Wipon ревизия проходит через сканер с автоматическим сравнением остатков, что исключает ручной подсчет и ошибки. Это позволяет проводить инвентаризацию быстро и без остановки работы магазина.",
+          "elapsed_ms": 99228.3,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "а данные с 1с можно перенести к вам?",
+          "intent": "question_integrations",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "reporting_data_for_accountant_401",
+            "category": "pain_products",
+            "score": 0.032,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Да, Wipon поддерживает интеграцию с 1С для единого обмена данными между системами.",
+          "elapsed_ms": 77918.0,
+          "is_pain_turn": true
+        },
+        {
+          "turn": 4,
+          "user_msg": "ну и чо по цене на 3 точки",
+          "intent": "situation_provided",
+          "state": "autonomous_objection_handling",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "analytics_no_branch_control_305",
+            "category": "pain_products",
+            "score": 0.0323,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Поняла, для трёх точек идеально подойдёт тариф Standard за 220 000 ₸ в год. Он включает всё необходимое без ограничений по товарам и сотрудникам. Хотите сразу оформить семидневный пробный период, чтобы проверить удобство?",
+          "elapsed_ms": 68800.4,
+          "is_pain_turn": false
+        }
+      ]
+    },
+    {
+      "id": "D07",
+      "name": "Принтер сдох + уже злой",
+      "target_topic": "equipment_printer_break_peak_1801",
+      "pain_turn": 3,
+      "total_turns": 3,
+      "verdict": "FAIL",
+      "issues": [
+        "topic=equipment_overpayment_config_2103 (ожидался equipment_printer_break_peak_1801)",
+        "gate=NO",
+        "pain_ctx=ПУСТО",
+        "боль НЕ в ответе бота"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "вы продаете кассовое оборудование?",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_overheating_problem_1803",
+            "category": "pain_equipment",
+            "score": 0.0315,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Да, мы продаем кассовое оборудование Wipon: моноблоки, сканеры, принтеры и весы. На всё доступно рассрочку до 24 месяцев без переплат.",
+          "elapsed_ms": 120623.7,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "короче у нас принтер чеков сдох вчера прям в самый час пик, мы полдня не торговали из за этого, продавцы на телефон чеки скидывали, бред. нужен нормальный принтер который не сломается через месяц, и желательно побыстрее доставить",
+          "intent": "agreement",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_printer_break_peak_1801",
+            "category": "pain_equipment",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 678,
+          "bot_response": "Понимаю вашу ситуацию и извиняюсь за стресс в час пик. У нас есть принтеры Wipon-C200I с автоотрезом, созданные именно для интенсивной работы без простоев. Какой формат чека вам нужен?",
+          "elapsed_ms": 205699.0,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "а гарантия на него какая?",
+          "intent": "objection_trust",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "equipment_overpayment_config_2103",
+            "category": "pain_equipment",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Гарантия на все наше оборудование составляет 12 месяцев с бесплатным ремонтом или заменой при поломке. Это касается и принтеров, которые мы обсуждали.",
+          "elapsed_ms": 61240.3,
+          "is_pain_turn": true
+        }
+      ]
+    },
+    {
+      "id": "D08",
+      "name": "Бухгалтер ушел + 910 форма",
+      "target_topic": "consulting_dependency_on_one_accountant_3402",
+      "pain_turn": 4,
+      "total_turns": 4,
+      "verdict": "FAIL",
+      "issues": [
+        "topic=consulting_no_inhouse_accountant_3401 (ожидался consulting_dependency_on_one_accountant_3402)",
+        "gate=NO",
+        "pain_ctx=ПУСТО",
+        "боль НЕ в ответе бота"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "добрый день",
+          "intent": "greeting",
+          "state": "greeting",
+          "action": "greet_back",
+          "pain_search_top": {
+            "topic": "ops_speed_slow_reports_006",
+            "category": "pain_products",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+          "elapsed_ms": 8473.9,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "у меня тоо, оптовая торговля, 15 человек в штате",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "consulting_llp_registration_difficulty_3202",
+            "category": "pain_consulting",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Поняла, оптовая торговля с командой из 15 человек — это серьёзный масштаб. Подскажите, какие процессы сейчас занимают больше всего времени?",
+          "elapsed_ms": 33983.1,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "короче у нас бухгалтер уволился месяц назад, 910 форму скоро сдавать а мы вообще не понимаем как, учет весь в голове у нее был. есть у вас какой то сервис бухгалтерский?",
+          "intent": "go_back",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "reporting_data_for_accountant_401",
+            "category": "pain_products",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 685,
+          "bot_response": "Да, у нас есть сервис Wipon Consulting, который полностью берет на себя ведение бухгалтерии и сдачу отчетности, включая форму 910, вместо найма штатного специалиста. Кроме того, сама система Wipon позволяет быстро формировать необходимые отчеты и налоговые регистры в нужном формате для передачи внешнему бухгалтеру. Это решение поможет вам закрыть вопрос с учетом даже при отсутствии своего бухгалтера.",
+          "elapsed_ms": 172113.8,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 4,
+          "user_msg": "а сколько стоит ваш аутсорсинг бухгалтерии?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "consulting_no_inhouse_accountant_3401",
+            "category": "pain_consulting",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Стоимость бухгалтерского аутсорсинга рассчитывается индивидуально под ваш формат ТОО и объём операций. Давайте я уточню детали у коллег, чтобы назвать точную сумму для вашей ситуации?",
+          "elapsed_ms": 72137.4,
+          "is_pain_turn": true
+        }
+      ]
+    },
+    {
+      "id": "D09",
+      "name": "Электронный чек — боль внутри разговора о фичах",
+      "target_topic": "kassa_no_e_receipt_604",
+      "pain_turn": 4,
+      "total_turns": 4,
+      "verdict": "FAIL",
+      "issues": [
+        "topic=kassa_equipment_connection_608 (ожидался kassa_no_e_receipt_604)",
+        "gate=NO",
+        "pain_ctx=ПУСТО",
+        "боль НЕ в ответе бота"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "привет, расскажите что умеет ваша система",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "integration_multiple_systems_503",
+            "category": "pain_products",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. Wipon объединяет онлайн-кассу, учёт товаров и аналитику в одной облачной системе с доступом с любого устройства. Включены работа с ОФД, фиксация действий кассиров и интеграции с банками без посредников.",
+          "elapsed_ms": 64092.6,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "нас интересует управление товарами и складом",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "control_warehouse_theft_102",
+            "category": "pain_products",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Wipon позволяет вести учёт на нескольких складах с перемещениями и аналитикой остатков по каждому из них. Эта функция доступна в тарифах Standard и Pro для полного контроля вашей товарной базы.",
+          "elapsed_ms": 86786.3,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "а еще вопрос — у нас клиенты постоянно просят чек на вотсап или на почту а мы не можем, только бумажный, это прям стыдно уже. это у вас есть?",
+          "intent": "question_features",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "kassa_no_e_receipt_604",
+            "category": "pain_kassa",
+            "score": 0.0328,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 609,
+          "bot_response": "Да, Wipon отправляет электронные чеки прямо в WhatsApp и на почту сразу после покупки. Это избавит вас от бумажных чеков и сделает сервис удобнее для клиентов.",
+          "elapsed_ms": 111499.5,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 4,
+          "user_msg": "круто, а сколько стоит подключение?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "kassa_equipment_connection_608",
+            "category": "pain_kassa",
+            "score": 0.0313,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Стоимость подключения зависит от выбранного тарифа (Lite, Standard или Pro). Подключение программы бесплатно, если вы покупаете комплект оборудования или оплачиваете только подписку. Точная стоимость тарифов рассчитывается индивидуально после уточнения функционала и количества точек.",
+          "elapsed_ms": 127339.3,
+          "is_pain_turn": true
+        }
+      ]
+    },
+    {
+      "id": "D10",
+      "name": "Негатив без явной боли → потом боль на 4 ходу",
+      "target_topic": "tis_limit_fear_1101",
+      "pain_turn": 5,
+      "total_turns": 5,
+      "verdict": "FAIL",
+      "issues": [
+        "topic=tis_no_limit_control_1102 (ожидался tis_limit_fear_1101)",
+        "gate=NO",
+        "pain_ctx=ПУСТО",
+        "боль НЕ в ответе бота"
+      ],
+      "dialog": [
+        {
+          "turn": 1,
+          "user_msg": "здравствуйте",
+          "intent": "greeting",
+          "state": "greeting",
+          "action": "greet_back",
+          "pain_search_top": {
+            "topic": "consulting_tax_communication_difficulty_3404",
+            "category": "pain_consulting",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+          "elapsed_ms": 8458.0,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 2,
+          "user_msg": "мне нужна программа для автоматизации магазина стройматериалов",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "integration_multiple_systems_503",
+            "category": "pain_products",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Стройматериалы — отличный выбор для Wipon, мы хорошо знаем эту нишу с её сложным учётом по метрам и штукам. Подскажите, что сейчас больше всего напрягает в вашей работе?",
+          "elapsed_ms": 22426.7,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 3,
+          "user_msg": "3 точки, астана, каждый день по 200-300 чеков",
+          "intent": "situation_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "ofd_check_loss_802",
+            "category": "pain_kassa",
+            "score": 0.032,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Три точки в Астане — это уже сеть, где важен единый контроль остатков и цен. Сейчас как управляете всеми точками из одного места?",
+          "elapsed_ms": 38575.2,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 4,
+          "user_msg": "а вот еще вопрос, мы скоро наверно лимит по мрп превысим, оборот растет быстро, я боюсь что автоматом на ндс переведут. ваша система как то предупреждает об этом?",
+          "intent": "info_provided",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "tis_limit_fear_1101",
+            "category": "pain_snr",
+            "score": 0.0325,
+            "stage": "semantic"
+          },
+          "pain_gate": true,
+          "pain_context_len": 647,
+          "bot_response": "Да, Wipon предупреждает о риске перехода на НДС при приближении к пороговым значениям и контролирует оборот в реальном времени. Система покажет динамику и не даст превысить лимиты незаметно.",
+          "elapsed_ms": 185005.2,
+          "is_pain_turn": false
+        },
+        {
+          "turn": 5,
+          "user_msg": "ну если предупреждает то хорошо, а сколько стоит на 3 точки?",
+          "intent": "price_question",
+          "state": "autonomous_discovery",
+          "action": "autonomous_respond",
+          "pain_search_top": {
+            "topic": "tis_no_limit_control_1102",
+            "category": "pain_snr",
+            "score": 0.0164,
+            "stage": "semantic"
+          },
+          "pain_gate": false,
+          "pain_context_len": 0,
+          "bot_response": "Для трех точек подходит тариф Standard за 220 000 тенге в год. Он включает полный учет для сети без доплат за каждую точку.",
+          "elapsed_ms": 69517.0,
+          "is_pain_turn": true
+        }
+      ]
+    }
+  ]
+}

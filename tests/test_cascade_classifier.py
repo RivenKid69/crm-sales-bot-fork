@@ -51,25 +51,19 @@ def reset_singletons():
 
 @pytest.fixture
 def mock_embedder():
-    """Mock sentence-transformers embedder."""
-    with patch('sentence_transformers.SentenceTransformer') as mock:
-        embedder = MagicMock()
+    """Mock TEI embed calls."""
+    def mock_embed_texts(texts, **kwargs):
+        vecs = np.random.randn(len(texts), 384)
+        norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+        return (vecs / norms).tolist()
 
-        # Mock encode to return normalized vectors
-        def mock_encode(texts, **kwargs):
-            if isinstance(texts, str):
-                # Single text - return 1D array
-                vec = np.random.randn(384)
-                return vec / np.linalg.norm(vec)
-            else:
-                # List of texts - return 2D array
-                vecs = np.random.randn(len(texts), 384)
-                norms = np.linalg.norm(vecs, axis=1, keepdims=True)
-                return vecs / norms
+    def mock_embed_single(text, **kwargs):
+        vec = np.random.randn(384)
+        return (vec / np.linalg.norm(vec)).tolist()
 
-        embedder.encode = mock_encode
-        mock.return_value = embedder
-        yield mock
+    with patch('src.knowledge.tei_client.embed_texts', side_effect=mock_embed_texts) as m1, \
+         patch('src.knowledge.tei_client.embed_single', side_effect=mock_embed_single) as m2:
+        yield m1
 
 @pytest.fixture
 def semantic_classifier(mock_embedder):

@@ -3,8 +3,6 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
-    ports:
-      - "8080:11434"    # host:8080 -> ollama:11434 (для доступа снаружи)
     volumes:
       - ollama_data:/root/.ollama
     deploy:
@@ -21,6 +19,86 @@ services:
       retries: 10
       start_period: 15s
 
+  ollama-model-init:
+    image: ollama/ollama:latest
+    container_name: ollama-model-init
+    restart: "no"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3.5:27b}
+    entrypoint: ["/bin/sh", "-lc", "ollama pull \"$$OLLAMA_MODEL\""]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  tei-embed:
+    build:
+      context: .
+      dockerfile: Dockerfile.tei-local
+    image: crm-sales-bot-tei-local:latest
+    container_name: tei-embed
+    restart: unless-stopped
+    command: ["--embed-only", "--embed-port", "80"]
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:80/health', timeout=5).read()"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    depends_on:
+      tei-model-init:
+        condition: service_completed_successfully
+
+  tei-rerank:
+    image: crm-sales-bot-tei-local:latest
+    container_name: tei-rerank
+    restart: unless-stopped
+    command: ["--rerank-only", "--rerank-port", "80"]
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:80/health', timeout=5).read()"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    depends_on:
+      tei-model-init:
+        condition: service_completed_successfully
+
+  tei-model-init:
+    image: crm-sales-bot-tei-local:latest
+    container_name: tei-model-init
+    entrypoint: ["python", "/app/scripts/preload_tei_models.py"]
+    restart: "no"
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+
   bot:
     build: .
     container_name: crm-sales-bot
@@ -30,21 +108,20 @@ services:
     environment:
       - API_KEY=${API_KEY:-change-me-in-production}
       - DB_PATH=/app/data/conversations.db
-      - OLLAMA_BASE_URL=http://ollama:11434   # внутри docker-сети
-      - EMBEDDER_DEVICE=cuda
+      - EMBEDDING_CACHE_DIR=/app/data/embeddings-cache
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3.5:27b}
+      - TEI_EMBED_URL=http://tei-embed:80
+      - TEI_RERANK_URL=http://tei-rerank:80
     volumes:
       - bot_data:/app/data
-      - hf_cache:/root/.cache/huggingface
     depends_on:
-      ollama:
+      ollama-model-init:
+        condition: service_completed_successfully
+      tei-embed:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+      tei-rerank:
+        condition: service_healthy
 
 volumes:
   ollama_data:

@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 import re
 from typing import Any, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 from src.feature_flags import flags
 from src.logger import logger
@@ -22,8 +22,15 @@ from src.settings import settings
 
 class ClaimCheck(BaseModel):
     claim: str = Field(default="", max_length=300)
-    supported: bool = False
-    evidence_quote: str = Field(default="", max_length=240)
+    supported: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("supported", "is_supported"),
+    )
+    evidence_quote: str = Field(
+        default="",
+        max_length=240,
+        validation_alias=AliasChoices("evidence_quote", "reason"),
+    )
 
 
 class VerifierOutput(BaseModel):
@@ -286,7 +293,7 @@ class FactualVerifier:
                 allow_fallback=False,
                 purpose="factual_verifier",
                 temperature=self.temperature,
-                num_predict=800,
+                num_predict=1000,
             )
             if isinstance(result, VerifierOutput):
                 return result
@@ -372,6 +379,7 @@ class FactualVerifier:
             "Ты factual-verifier для ответа менеджера.\n"
             "Проверь ТОЛЬКО соответствие ответа фактам из KB_CONTEXT.\n"
             "Нельзя использовать внешние знания.\n"
+            "Отвечай КОРОТКИМ JSON без пояснений вне JSON.\n"
             "Правила проверки утверждений:\n"
             "  supported=true: прямое подтверждение в KB, парафраз KB, логический вывод из KB без добавления новых чисел.\n"
             "  supported=false: утверждение явно противоречит KB ИЛИ добавляет конкретные цифры/названия/даты которых нет в KB.\n"
@@ -381,8 +389,11 @@ class FactualVerifier:
             "  Это не фактические утверждения — игнорировать при проверке claims.\n"
             f"{completeness_policy}"
             f"Проанализируй до {self.max_claims} самых значимых утверждений (цены, тарифы, интеграции, сроки, ограничения).\n"
+            "Для каждого элемента checks используй ТОЛЬКО ключи claim, supported, evidence_quote.\n"
+            "evidence_quote делай очень коротким: 5-20 слов из KB или краткий парафраз KB.\n"
+            "Не используй поля reason, is_supported, explanation, notes.\n"
             f"{rewrite_policy}\n"
-            'Ответь JSON объектом: {"verdict": "pass"/"fail", "checks": [...], "rewritten_response": "...", "confidence": 0.0-1.0}\n\n'
+            'Ответь JSON объектом: {"verdict": "pass"/"fail", "checks": [{"claim": "...", "supported": true/false, "evidence_quote": "..."}], "rewritten_response": "...", "confidence": 0.0-1.0}\n\n'
             f"INTENT: {intent}\n"
             f"STATE: {state}\n"
             f"{history_block}"

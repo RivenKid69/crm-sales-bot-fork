@@ -75,7 +75,6 @@ export MKL_NUM_THREADS=${PARALLEL_THREADS}
 export OPENBLAS_NUM_THREADS=${PARALLEL_THREADS}
 export NUMEXPR_NUM_THREADS=${PARALLEL_THREADS}
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-export SENTENCE_TRANSFORMERS_HOME="${HOME}/.cache/sentence_transformers"
 
 echo -e "${GREEN}✓ Переменные окружения настроены${NC}"
 

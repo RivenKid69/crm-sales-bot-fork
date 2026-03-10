@@ -19,9 +19,6 @@ import sys
 import os
 from datetime import datetime
 
-# FRIDA embeddings работают на GPU (достаточно VRAM для Ollama + FRIDA)
-os.environ["SENTENCE_TRANSFORMERS_HOME"] = os.path.expanduser("~/.cache/sentence_transformers")
-
 
 from src.simulator.runner import SimulationRunner
 from src.simulator.report import ReportGenerator

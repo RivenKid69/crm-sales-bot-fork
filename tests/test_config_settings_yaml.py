@@ -162,17 +162,17 @@ retriever:
             settings = load_settings(Path(f.name))
             assert settings.retriever.use_embeddings is False
 
-    def test_embedder_model_parameter(self):
-        """Test retriever.embedder_model parameter."""
+    def test_embedder_url_parameter(self):
+        """Test retriever.embedder_url parameter."""
         yaml_content = """
 retriever:
-  embedder_model: "custom-embedder/model"
+  embedder_url: "http://custom-tei:8080"
 """
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
             f.write(yaml_content)
             f.flush()
             settings = load_settings(Path(f.name))
-            assert settings.retriever.embedder_model == "custom-embedder/model"
+            assert settings.retriever.embedder_url == "http://custom-tei:8080"
 
     def test_threshold_exact(self):
         """Test retriever.thresholds.exact parameter."""

@@ -16,6 +16,8 @@ htmlcov
 # Test/dev files
 tests/
 scripts/
+!scripts/local_tei_server.py
+!scripts/preload_tei_models.py
 results/
 reports/
 logs/

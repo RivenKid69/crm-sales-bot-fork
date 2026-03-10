@@ -32,7 +32,7 @@ def kb():
 
 @pytest.fixture(scope="module")
 def retriever_emb(kb):
-    """Retriever с эмбеддингами (FRIDA)."""
+    """Retriever с эмбеддингами (TEI)."""
     import src.knowledge.retriever as r
     r._retriever = None
     return CascadeRetriever(knowledge_base=kb, use_embeddings=True, semantic_threshold=0.25)
@@ -168,7 +168,7 @@ class TestThreshold:
             "погода завтра в Астане", retriever_emb.kb.sections, top_k=3
         )
         # Нерелевантный запрос — ожидаем мало или 0 результатов
-        # (FRIDA не должна найти секции про погоду в KB)
+        # (embeddings не должны найти секции про погоду в KB)
         if results:
             # Если что-то нашлось, score должен быть разумным
             assert results[0].score < 0.5, (

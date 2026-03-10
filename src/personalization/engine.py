@@ -115,9 +115,9 @@ class PersonalizationEngineV2:
         self.style_selector = AdaptiveStyleSelector()
         self.industry_detector = None
 
-        # Industry detector инициализируется лениво (требует retriever)
-        if retriever and flags.personalization_semantic_industry:
-            self.industry_detector = IndustryDetectorV2(retriever)
+        # Industry detector (embeddings через TEI)
+        if flags.personalization_semantic_industry:
+            self.industry_detector = IndustryDetectorV2()
 
         # Cache для industry detection (накопление уверенности)
         self._industry_cache: Dict[str, Any] = {

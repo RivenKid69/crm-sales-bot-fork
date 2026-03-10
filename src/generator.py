@@ -1884,14 +1884,12 @@ class ResponseGenerator:
         return self._last_response_embedding
 
     def _compute_and_cache_response_embedding(self, response: str) -> Optional[List[float]]:
-        """Вычисляет embedding ответа, кэширует, возвращает."""
-        self._last_response_embedding = None  # Reset BEFORE attempt (prevents stale data on failure)
+        """Вычисляет embedding ответа через TEI, кэширует, возвращает."""
+        self._last_response_embedding = None
         try:
-            retriever = get_retriever()
-            if retriever is None or retriever.embedder is None:
-                return None
-            emb = retriever.embedder.encode(response)
-            self._last_response_embedding = emb.tolist() if emb is not None else None
+            from src.knowledge.tei_client import embed_single
+            emb = embed_single(response)
+            self._last_response_embedding = emb
             return self._last_response_embedding
         except Exception:
             return None
@@ -6096,14 +6094,15 @@ class ResponseGenerator:
         """
         try:
             import numpy as np
+            from src.knowledge.tei_client import embed_texts
 
-            retriever = get_retriever()
-            if retriever is None or retriever.embedder is None:
+            embeddings = embed_texts([text_a, text_b])
+            if embeddings is None or len(embeddings) < 2:
                 return 0.0
-            emb_a = retriever.embedder.encode(text_a)
-            emb_b = retriever.embedder.encode(text_b)
 
-            # Cosine similarity
+            emb_a = np.array(embeddings[0])
+            emb_b = np.array(embeddings[1])
+
             dot_product = np.dot(emb_a, emb_b)
             norm_a = np.linalg.norm(emb_a)
             norm_b = np.linalg.norm(emb_b)
@@ -6114,7 +6113,7 @@ class ResponseGenerator:
             return float(dot_product / (norm_a * norm_b))
         except Exception as e:
             logger.warning(f"Semantic similarity calculation failed: {e}")
-            return 0.0  # Graceful degradation
+            return 0.0
 
     def _is_duplicate(self, response: str, history: List[Dict]) -> bool:
         """

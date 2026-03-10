@@ -1,7 +1,7 @@
 """
 Semantic анализатор тона (Tier 2).
 
-Использует FRIDA embeddings для вычисления similarity
+Использует TEI (Qwen3-Embedding-4B) embeddings для вычисления similarity
 между сообщением и примерами каждого типа тона.
 """
 
@@ -17,13 +17,10 @@ from .examples import TONE_EXAMPLES
 
 class SemanticToneAnalyzer:
     """
-    Tier 2: Semantic анализатор тона на основе embeddings.
-
-    Использует существующий FRIDA embedder из classifier/intents/semantic.py
-    для вычисления similarity к примерам тона.
+    Tier 2: Semantic анализатор тона на основе embeddings через TEI.
 
     Особенности:
-    - Lazy loading модели
+    - Lazy loading эмбеддингов через TEI /embed
     - Thread-safe инициализация
     - Проверка неоднозначности (ambiguity)
     """
@@ -45,7 +42,6 @@ class SemanticToneAnalyzer:
     }
 
     def __init__(self):
-        self._embedder = None
         self._np = None
         self._tone_embeddings: Dict[str, Any] = {}
         self._all_embeddings = None
@@ -55,12 +51,7 @@ class SemanticToneAnalyzer:
         self._available: Optional[bool] = None
 
     def _init_embeddings(self) -> bool:
-        """
-        Инициализировать embeddings (thread-safe).
-
-        Returns:
-            True если инициализация успешна
-        """
+        """Инициализировать embeddings через TEI (thread-safe)."""
         if self._initialized:
             return True
 
@@ -69,32 +60,9 @@ class SemanticToneAnalyzer:
                 return True
 
             try:
-                from sentence_transformers import SentenceTransformer
                 import numpy as np
+                from src.knowledge.tei_client import embed_texts_cached
                 self._np = np
-
-                # Получаем имя модели из settings
-                try:
-                    from src.settings import settings
-                    model_name = getattr(
-                        getattr(settings, 'retriever', None),
-                        'embedder_model',
-                        'ai-forever/FRIDA'
-                    )
-                except ImportError:
-                    model_name = 'ai-forever/FRIDA'
-
-                logger.info(f"Loading semantic tone model: {model_name}")
-                try:
-                    self._embedder = SentenceTransformer(model_name)
-                except Exception as e:
-                    if "out of memory" in str(e).lower() or "CUDA" in str(e):
-                        logger.warning(f"CUDA OOM loading tone embedder, falling back to CPU")
-                        import torch
-                        torch.cuda.empty_cache()
-                        self._embedder = SentenceTransformer(model_name, device="cpu")
-                    else:
-                        raise
 
                 # Собираем все примеры
                 all_examples = []
@@ -106,26 +74,28 @@ class SemanticToneAnalyzer:
                         self._example_to_tone[example_index] = (tone_str, example)
                         example_index += 1
 
-                # Batch encode все примеры
-                self._all_embeddings = self._embedder.encode(
-                    all_examples,
-                    convert_to_numpy=True,
-                    normalize_embeddings=True,
-                    show_progress_bar=False
-                )
+                # Batch encode через TEI (с disk-кэшем)
+                logger.info("Loading semantic tone embeddings via TEI")
+                arr = embed_texts_cached(all_examples, cache_name="tone_examples")
+                if arr is None:
+                    logger.warning("TEI embed failed for tone analyzer")
+                    self._available = False
+                    return False
+
+                self._all_embeddings = arr.copy()
+                # Нормализуем для dot-product = cosine
+                norms = np.linalg.norm(self._all_embeddings, axis=1, keepdims=True)
+                norms[norms == 0] = 1
+                self._all_embeddings = self._all_embeddings / norms
 
                 self._initialized = True
                 logger.info(
-                    f"Semantic tone analyzer initialized",
+                    "Semantic tone analyzer initialized via TEI",
                     examples_count=len(all_examples),
                     tones_count=len(TONE_EXAMPLES)
                 )
                 return True
 
-            except ImportError as e:
-                logger.warning(f"sentence-transformers not available: {e}")
-                self._available = False
-                return False
             except Exception as e:
                 logger.error(f"Semantic tone analyzer init error: {e}")
                 self._available = False
@@ -141,15 +111,24 @@ class SemanticToneAnalyzer:
         self._available = result
         return result
 
+    def _encode_message(self, message: str):
+        """Encode single message via TEI and normalize."""
+        from src.knowledge.tei_client import embed_single
+        raw = embed_single(message)
+        if raw is None:
+            return None
+        emb = self._np.array(raw)
+        norm = self._np.linalg.norm(emb)
+        if norm > 0:
+            emb = emb / norm
+        return emb
+
     def analyze(
         self,
         message: str
     ) -> Optional[Tuple[Tone, float, Dict[str, float]]]:
         """
         Анализировать тон через semantic similarity.
-
-        Args:
-            message: Текст сообщения
 
         Returns:
             Tuple[tone, confidence, all_scores] или None если недоступен
@@ -163,12 +142,9 @@ class SemanticToneAnalyzer:
         try:
             start_time = time.perf_counter()
 
-            # Encode сообщение
-            message_emb = self._embedder.encode(
-                message,
-                convert_to_numpy=True,
-                normalize_embeddings=True
-            )
+            message_emb = self._encode_message(message)
+            if message_emb is None:
+                return None
 
             # Cosine similarity со всеми примерами
             similarities = self._np.dot(self._all_embeddings, message_emb)
@@ -189,7 +165,6 @@ class SemanticToneAnalyzer:
                 top_scores = sorted(scores, reverse=True)[:self.TOP_K]
                 tone_avg_scores[tone_str] = sum(top_scores) / len(top_scores)
 
-            # Находим лучший тон
             if not tone_avg_scores:
                 return None
 
@@ -217,13 +192,10 @@ class SemanticToneAnalyzer:
                         second_score=round(second_score, 3),
                         delta=round(delta, 3)
                     )
-                    # Понижаем confidence при неоднозначности
                     best_score *= 0.85
 
-            # Нормализуем confidence
             confidence = max(0.0, min(1.0, best_score))
 
-            # Маппим на Tone enum
             tone = self.TONE_MAPPING.get(best_tone_str, Tone.NEUTRAL)
 
             latency_ms = (time.perf_counter() - start_time) * 1000
@@ -249,10 +221,6 @@ class SemanticToneAnalyzer:
         """
         Получить наиболее похожие примеры.
 
-        Args:
-            message: Текст сообщения
-            top_k: Количество примеров
-
         Returns:
             List[(example, tone, similarity)]
         """
@@ -260,11 +228,9 @@ class SemanticToneAnalyzer:
             return []
 
         try:
-            message_emb = self._embedder.encode(
-                message,
-                convert_to_numpy=True,
-                normalize_embeddings=True
-            )
+            message_emb = self._encode_message(message)
+            if message_emb is None:
+                return []
 
             similarities = self._np.dot(self._all_embeddings, message_emb)
             top_indices = self._np.argsort(similarities)[-top_k:][::-1]
@@ -294,11 +260,7 @@ _analyzer_lock = threading.Lock()
 
 
 def get_semantic_tone_analyzer() -> SemanticToneAnalyzer:
-    """
-    Получить singleton экземпляр SemanticToneAnalyzer.
-
-    Thread-safe с Double-Checked Locking.
-    """
+    """Получить singleton экземпляр SemanticToneAnalyzer."""
     global _semantic_tone_analyzer
 
     if _semantic_tone_analyzer is not None:

@@ -2,7 +2,7 @@
 Каскадный Retriever с 3-этапным поиском.
 
 Этапы:
-1. Semantic Match — cosine similarity эмбеддингов (FRIDA, CPU)
+1. Semantic Match — cosine similarity эмбеддингов (Qwen3-Embedding-4B через TEI)
 2. Exact Match — поиск keyword как подстроки в запросе
 3. Lemma Match — сравнение лемматизированных множеств
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 from src.settings import settings
 from src.logger import logger
 
-from .base import KnowledgeSection, KnowledgeBase
+from .base import KnowledgeSection, KnowledgeBase, section_embed_text
 from .loader import load_knowledge_base
 from .lemmatizer import get_lemmatizer
 from .reranker import get_reranker
@@ -120,7 +120,7 @@ class CascadeRetriever:
     Каскадный retriever с 3-этапным поиском.
 
     Этапы:
-    1. Semantic match — cosine similarity эмбеддингов (FRIDA, CPU)
+    1. Semantic match — cosine similarity эмбеддингов (Qwen3-Embedding-4B через TEI)
     2. Exact match — поиск keyword как подстроки в запросе
     3. Lemma match — сравнение лемматизированных множеств
     """
@@ -131,13 +131,20 @@ class CascadeRetriever:
         re.IGNORECASE,
     )
 
+    # Qwen3-Embedding-4B query instruction for asymmetric retrieval
+    _QUERY_INSTRUCTION = (
+        "Instruct: Given a user query, retrieve relevant knowledge base passages "
+        "that answer the query.\nQuery: "
+    )
+
     def __init__(
         self,
         knowledge_base: KnowledgeBase = None,
         use_embeddings: bool = None,
         exact_threshold: float = None,
         lemma_threshold: float = None,
-        semantic_threshold: float = None
+        semantic_threshold: float = None,
+        cache_name: str = "kb_sections",
     ):
         """
         Инициализация retriever.
@@ -161,10 +168,15 @@ class CascadeRetriever:
         # Лемматизатор
         self.lemmatizer = get_lemmatizer()
 
-        # Эмбеддинги (инициализируются лениво)
-        self.embedder = None
+        # Эмбеддинги через TEI
+        self._cache_name = cache_name
+        self._tei_url = getattr(
+            getattr(settings, 'retriever', None),
+            'embedder_url',
+            'http://tei-embed:80'
+        ).rstrip('/')
+        self._embeddings_ready = False
         self.np = None
-        self._use_prefixes = False  # Для FRIDA модели
 
         # Reranker параметры из settings
         self.reranker_enabled = getattr(
@@ -200,50 +212,30 @@ class CascadeRetriever:
             section.lemmatized_keywords = all_lemmas
 
     def _init_embeddings(self):
-        """Инициализировать sentence-transformers и индексировать секции."""
+        """Индексировать секции через TEI /embed endpoint (с disk-кэшем)."""
+        import numpy as np
+        from src.knowledge.tei_client import embed_texts_cached
+        self.np = np
+
+        texts = [section_embed_text(s) for s in self.kb.sections]
+
         try:
-            from sentence_transformers import SentenceTransformer
-            import numpy as np
-            self.np = np
-            # Модель из settings (по умолчанию: ai-forever/FRIDA)
-            embedder_model = settings.retriever.embedder_model
-            embedder_device = getattr(
-                getattr(settings, 'retriever', None), 'embedder_device', 'cpu'
+            arr = embed_texts_cached(
+                texts,
+                cache_name=self._cache_name,
+                tei_url=self._tei_url,
             )
-            try:
-                self.embedder = SentenceTransformer(embedder_model, device=embedder_device)
-            except Exception as e:
-                if "out of memory" in str(e).lower() or "CUDA" in str(e):
-                    logger.warning(f"CUDA OOM loading embedder, falling back to CPU: {e}")
-                    import torch
-                    torch.cuda.empty_cache()
-                    self.embedder = SentenceTransformer(embedder_model, device="cpu")
-                else:
-                    raise
+            if arr is None:
+                raise RuntimeError("TEI embed returned None")
 
-            # Проверяем нужны ли префиксы (FRIDA использует префиксы для лучшего качества)
-            self._use_prefixes = "FRIDA" in embedder_model.upper()
-
-            # Индексируем все секции.
-            # Для FRIDA добавляем metadata-aware префикс search_document.
-            if self._use_prefixes:
-                texts = [
-                    f"search_document: [{s.category}/{s.topic}] "
-                    f"({', '.join(s.keywords[:5])}). {s.facts}"
-                    for s in self.kb.sections
-                ]
-            else:
-                texts = [s.facts for s in self.kb.sections]
-
-            embeddings = self.embedder.encode(texts)
             for i, section in enumerate(self.kb.sections):
-                section.embedding = embeddings[i].tolist()
+                section.embedding = arr[i].tolist()
 
-            print(f"[CascadeRetriever] Indexed {len(texts)} sections with embeddings (prefixes={self._use_prefixes})")
-        except ImportError:
-            print("[CascadeRetriever] sentence-transformers not installed, using keywords only")
+            self._embeddings_ready = True
+            print(f"[CascadeRetriever] Indexed {len(texts)} sections via TEI ({self._tei_url})")
+        except Exception as e:
+            print(f"[CascadeRetriever] TEI embedding failed: {e}, using keywords only")
             self.use_embeddings = False
-            self._use_prefixes = False
 
     def retrieve(
         self,
@@ -452,7 +444,7 @@ class CascadeRetriever:
 
         # Всегда запускаем все 3 этапа и объединяем через RRF.
         semantic_results: List[SearchResult] = []
-        if self.use_embeddings and self.embedder:
+        if self.use_embeddings and self._embeddings_ready:
             semantic_results = self._semantic_search(query, sections, top_k=top_k * 3)
         exact_results = self._exact_search(query, sections)
         lemma_results = self._lemma_search(query, sections)
@@ -494,7 +486,7 @@ class CascadeRetriever:
 
         # Этап 1: Semantic match
         semantic_results: List[SearchResult] = []
-        if self.use_embeddings and self.embedder:
+        if self.use_embeddings and self._embeddings_ready:
             start = time.perf_counter()
             semantic_results = self._semantic_search(query, sections, top_k=top_k * 3)
             stats["semantic_time_ms"] = (time.perf_counter() - start) * 1000
@@ -680,25 +672,34 @@ class CascadeRetriever:
         top_k: int
     ) -> List[SearchResult]:
         """
-        Этап 1: Semantic search (embeddings, FRIDA CPU).
+        Этап 1: Semantic search — Qwen3-Embedding-4B через TEI.
 
         Логика:
-        - Если embedder не инициализирован → return []
-        - Получаем embedding запроса
+        - Получаем embedding запроса через TEI /embed
         - Считаем cosine similarity с каждой секцией
         - Возвращаем top_k с score >= semantic_threshold
         """
-        if not self.embedder or not self.np:
+        if not self._embeddings_ready or not self.np:
             return []
 
-        # Для FRIDA добавляем префикс search_query:
-        query_text = f"search_query: {query}" if getattr(self, '_use_prefixes', False) else query
-        query_emb = self.embedder.encode(query_text)
-        results = []
+        import requests as req
+        try:
+            # Prepend Qwen3-Embedding instruction for asymmetric retrieval
+            instructed_query = self._QUERY_INSTRUCTION + query
+            resp = req.post(
+                f"{self._tei_url}/embed",
+                json={"inputs": [instructed_query]},
+                timeout=10.0,
+            )
+            resp.raise_for_status()
+            query_emb = self.np.array(resp.json()[0])
+        except Exception as e:
+            logger.warning(f"TEI embed query failed: {e}")
+            return []
 
+        results = []
         for section in sections:
             if section.embedding:
-                # Косинусное сходство
                 section_emb = self.np.array(section.embedding)
                 score = float(self.np.dot(query_emb, section_emb) / (
                     self.np.linalg.norm(query_emb) * self.np.linalg.norm(section_emb)
