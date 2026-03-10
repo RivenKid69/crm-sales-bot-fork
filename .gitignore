@@ -50,7 +50,9 @@ logs/
 
 # Reports & Generated files
 reports/
+results/
 *.html
+tests/e2e_*_results*.json
 
 # Voice bot (large files)
 voice_bot/models/
