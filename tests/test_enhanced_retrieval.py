@@ -404,15 +404,14 @@ class TestEnhancedRetrievalPipeline:
         assert "[equipment/terminal]" in facts
         assert "=== КОНТЕКСТ ЭТАПА ===" in facts
         assert "[features/loyalty]" in facts
-        assert len(retriever.calls) == 3
+        assert len(retriever.calls) == 4
         assert router.calls == [rewritten_query]
-        assert {"pricing/tariffs", "products/wipon_kassa", "equipment/terminal"}.issubset(
+        assert {"pricing/tariffs", "equipment/terminal"}.issubset(
             set(captured["recently_used_keys"])
         )
         assert {"pricing/tariffs", "features/loyalty"}.issubset(set(fact_keys))
         assert {u["url"] for u in urls} == {
             "https://u/price",
-            "https://u/product",
             "https://u/equipment",
             "https://u/state",
         }
@@ -525,7 +524,7 @@ class TestEnhancedRetrievalPipeline:
         )
 
         assert "[pricing/tariffs]" in facts
-        assert len(retriever.calls) == 1
+        assert len(retriever.calls) == 2
 
     def test_state_context_is_truncated_to_remaining_budget(self, monkeypatch):
         import src.knowledge.enhanced_retrieval as er

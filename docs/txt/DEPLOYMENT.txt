@@ -1,5 +1,9 @@
 # Развёртывание CRM Sales Bot — Hetzner GPU Server
 
+> ARCHIVED: этот файл описывает старый systemd/manual path и оставлен только как историческая инструкция.
+> Актуальный deploy path на 10 марта 2026 года: self-contained Docker Compose + Ollama + локальный TEI.
+> Для передачи бэку используйте только `DEPLOY.md` в корне репозитория.
+
 > Инструкция для системного администратора / DevOps-инженера.
 > Цель: развернуть «машину» (on-prem сервер с Qwen-14B) на выделенном GPU-сервере Hetzner
 > для интеграции в пайплайн **n8n → Redis → AI → n8n** (MVP).

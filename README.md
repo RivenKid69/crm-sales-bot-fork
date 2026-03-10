@@ -15,32 +15,29 @@
 
 ## Быстрый старт
 
-### 1. Установить зависимости
+### Production / handoff
+
+Актуальный deploy-путь для бэка: Docker Compose + Ollama + локальный TEI.
+
+```bash
+cp .env.example .env
+# заполнить API_KEY
+docker compose up -d --build
+curl -s http://localhost:8000/ready
+```
+
+Детальная инструкция: `DEPLOY.md`.
+
+### Локальная разработка
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e .[dev]
+python3 -m src.bot --flow autonomous
 ```
 
-### 2. Поднять Ollama и скачать модель
-
-```bash
-ollama serve
-ollama pull ministral-3:14b-instruct-2512-q8_0
-```
-
-### 3. Запустить бота
-
-```bash
-python3 -m src.bot
-```
-
-Или с выбором flow:
-
-```bash
-python3 -m src.bot --flow spin_selling
-```
+Для локального запуска без Docker нужно отдельно поднять Ollama и TEI либо отключить embeddings.
 
 ## Основной pipeline хода
 

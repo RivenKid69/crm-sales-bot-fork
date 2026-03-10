@@ -14,10 +14,12 @@ import json
 import logging
 import os
 import sqlite3
+import threading
 import time
 import uuid
 from contextlib import asynccontextmanager
 
+import requests
 from fastapi import Depends, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -34,8 +36,22 @@ API_KEY = os.environ.get("API_KEY", "change-me-in-production")
 DB_PATH = os.environ.get("DB_PATH", "data/conversations.db")
 SQLITE_TIMEOUT_SECONDS = int(os.environ.get("SQLITE_TIMEOUT_SECONDS", "30"))
 SQLITE_BUSY_TIMEOUT_MS = int(os.environ.get("SQLITE_BUSY_TIMEOUT_MS", "5000"))
+DEPENDENCY_HEALTH_TIMEOUT_SECONDS = float(
+    os.environ.get("DEPENDENCY_HEALTH_TIMEOUT_SECONDS", "3")
+)
+STARTUP_WARMUP_ENABLED = os.environ.get("STARTUP_WARMUP_ENABLED", "1") == "1"
+STARTUP_WARMUP_ATTEMPTS = int(os.environ.get("STARTUP_WARMUP_ATTEMPTS", "3"))
+STARTUP_WARMUP_DELAY_SECONDS = float(os.environ.get("STARTUP_WARMUP_DELAY_SECONDS", "2"))
 
 _llm = None
+_startup_warmup_state = {
+    "status": "pending",
+    "started_at": None,
+    "finished_at": None,
+    "details": {},
+    "errors": [],
+}
+_startup_warmup_lock = threading.Lock()
 
 
 # ── Error helpers ──────────────────────────────────────
@@ -118,6 +134,17 @@ def _init_db():
     """)
     conn.commit()
     conn.close()
+
+
+def _db_healthcheck() -> bool:
+    try:
+        conn = _db_connect()
+        conn.execute("SELECT 1").fetchone()
+        conn.close()
+        return True
+    except Exception as exc:
+        logger.warning("DB healthcheck failed", extra={"error": str(exc)})
+        return False
 
 
 def _load_snapshot(session_id: str, user_id: str) -> dict | None:
@@ -254,6 +281,128 @@ def _setup_production_flags():
     # Embeddings served via TEI, no in-process model
 
 
+def _set_startup_warmup_state(
+    status: str,
+    *,
+    details: dict | None = None,
+    errors: list[str] | None = None,
+) -> None:
+    with _startup_warmup_lock:
+        if _startup_warmup_state["started_at"] is None:
+            _startup_warmup_state["started_at"] = time.time()
+        _startup_warmup_state["status"] = status
+        _startup_warmup_state["details"] = details or {}
+        _startup_warmup_state["errors"] = list(errors or [])
+        if status in {"ready", "failed"}:
+            _startup_warmup_state["finished_at"] = time.time()
+
+
+def _get_startup_warmup_state() -> dict:
+    with _startup_warmup_lock:
+        return {
+            "status": _startup_warmup_state["status"],
+            "started_at": _startup_warmup_state["started_at"],
+            "finished_at": _startup_warmup_state["finished_at"],
+            "details": dict(_startup_warmup_state["details"]),
+            "errors": list(_startup_warmup_state["errors"]),
+        }
+
+
+def _tei_healthcheck(base_url: str) -> bool:
+    try:
+        response = requests.get(
+            f"{base_url.rstrip('/')}/health",
+            timeout=DEPENDENCY_HEALTH_TIMEOUT_SECONDS,
+        )
+        return response.status_code == 200
+    except Exception as exc:
+        logger.warning(
+            "TEI healthcheck failed",
+            extra={"base_url": base_url, "error": str(exc)},
+        )
+        return False
+
+
+def _dependency_snapshot() -> dict[str, bool]:
+    return {
+        "db": _db_healthcheck(),
+        "llm": bool(_llm and _llm.health_check()),
+        "tei_embed": _tei_healthcheck(settings.retriever.embedder_url),
+        "tei_rerank": _tei_healthcheck(settings.reranker.url),
+    }
+
+
+def _warmup_retrieval_caches() -> dict:
+    from src.knowledge.pain_retriever import get_pain_retriever, reset_pain_retriever
+    from src.knowledge.retriever import get_retriever, reset_retriever
+
+    errors: list[str] = []
+    for attempt in range(1, STARTUP_WARMUP_ATTEMPTS + 1):
+        try:
+            reset_retriever()
+            reset_pain_retriever()
+
+            retriever = get_retriever(use_embeddings=settings.retriever.use_embeddings)
+            if settings.retriever.use_embeddings and not retriever._embeddings_ready:
+                raise RuntimeError("KB embeddings were not initialized")
+
+            pain_retriever = get_pain_retriever()
+            if getattr(pain_retriever, "_embeddings_ready", False) is not True:
+                raise RuntimeError("Pain embeddings were not initialized")
+
+            return {
+                "attempts_used": attempt,
+                "kb_embeddings_ready": bool(retriever._embeddings_ready),
+                "pain_embeddings_ready": bool(getattr(pain_retriever, "_embeddings_ready", False)),
+            }
+        except Exception as exc:
+            err = f"attempt {attempt}: {exc}"
+            errors.append(err)
+            logger.exception("Startup warmup attempt failed", extra={"attempt": attempt})
+            if attempt < STARTUP_WARMUP_ATTEMPTS:
+                time.sleep(STARTUP_WARMUP_DELAY_SECONDS)
+
+    raise RuntimeError("; ".join(errors))
+
+
+def _run_startup_warmup() -> None:
+    started_at = time.time()
+    _set_startup_warmup_state("running")
+    try:
+        details = _warmup_retrieval_caches()
+        details["duration_seconds"] = round(time.time() - started_at, 2)
+        _set_startup_warmup_state("ready", details=details)
+        logger.info("Startup warmup completed", extra=details)
+    except Exception as exc:
+        _set_startup_warmup_state(
+            "failed",
+            errors=[str(exc)],
+            details={"duration_seconds": round(time.time() - started_at, 2)},
+        )
+        logger.exception("Startup warmup failed")
+
+
+def _start_startup_warmup() -> None:
+    if not STARTUP_WARMUP_ENABLED:
+        _set_startup_warmup_state("ready", details={"warmup_skipped": True})
+        logger.info("Startup warmup disabled")
+        return
+
+    with _startup_warmup_lock:
+        _startup_warmup_state["status"] = "pending"
+        _startup_warmup_state["started_at"] = None
+        _startup_warmup_state["finished_at"] = None
+        _startup_warmup_state["details"] = {}
+        _startup_warmup_state["errors"] = []
+
+    thread = threading.Thread(
+        target=_run_startup_warmup,
+        name="crm-sales-bot-startup-warmup",
+        daemon=True,
+    )
+    thread.start()
+
+
 # ── App ───────────────────────────────────────────────
 
 @asynccontextmanager
@@ -264,6 +413,7 @@ async def lifespan(app: FastAPI):
         logger.warning("API_KEY is set to insecure default value")
     _init_db()
     _llm = OllamaLLM()
+    _start_startup_warmup()
     logger.info("LLM client initialized, DB ready, autonomous flags set")
     yield
     _llm = None
@@ -316,7 +466,26 @@ class ProcessRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": settings.llm.model}
+    warmup = _get_startup_warmup_state()
+    return {
+        "status": "ok",
+        "model": settings.llm.model,
+        "warmup_status": warmup["status"],
+    }
+
+
+@app.get("/ready")
+def ready():
+    dependencies = _dependency_snapshot()
+    warmup = _get_startup_warmup_state()
+    is_ready = all(dependencies.values()) and warmup["status"] == "ready"
+    payload = {
+        "status": "ready" if is_ready else "not_ready",
+        "model": settings.llm.model,
+        "dependencies": dependencies,
+        "warmup": warmup,
+    }
+    return JSONResponse(status_code=200 if is_ready else 503, content=payload)
 
 
 @app.post("/api/v1/process", dependencies=[Depends(verify_api_key)])

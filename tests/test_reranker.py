@@ -30,12 +30,11 @@ class TestRerankerBasic:
     def test_reranker_creation(self, reranker):
         """Reranker создаётся без ошибок."""
         assert reranker is not None
-        assert reranker.model_name == "BAAI/bge-reranker-v2-m3"
+        assert reranker.url == "http://tei-rerank:80"
 
     def test_reranker_lazy_init(self, reranker):
-        """Модель загружается лениво."""
-        # До вызова методов модель не загружена
-        assert reranker._initialized is False
+        """HTTP availability check кешируется лениво."""
+        assert reranker._available is None
 
     def test_reranker_singleton(self):
         """get_reranker возвращает singleton."""
@@ -156,16 +155,14 @@ class TestRerankerAvailability:
     """Тесты доступности reranker."""
 
     def test_is_available_before_init(self):
-        """is_available инициализирует модель."""
+        """is_available вычисляет и кеширует доступность HTTP сервиса."""
         reset_reranker()
         reranker = Reranker()
 
-        # Вызов is_available должен инициализировать модель
         available = reranker.is_available()
 
-        assert reranker._initialized is True
-        # available зависит от того установлена ли модель
         assert isinstance(available, bool)
+        assert reranker._available is available
 
     def test_rerank_fallback_when_unavailable(self):
         """Если модель недоступна, возвращаем кандидатов как есть."""

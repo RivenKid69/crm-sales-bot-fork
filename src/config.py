@@ -3631,6 +3631,9 @@ PROMPT_TEMPLATES = {
 
     "continue_current_goal": """{system}
 
+=== ФАКТЫ О ПРОДУКТЕ ===
+{retrieved_facts}
+
 Цель этапа: {goal}
 Уже знаем о клиенте: {collected_data}
 Нужно узнать: {missing_data}
