@@ -1,0 +1,143 @@
+services:
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:0.17.7}
+    container_name: crm-sales-bot-selfcontained-ollama
+    restart: unless-stopped
+    command: ["serve"]
+    gpus: all
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  ollama-model-init:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:0.17.7}
+    container_name: crm-sales-bot-selfcontained-ollama-model-init
+    restart: "no"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    command: ["pull", "${OLLAMA_MODEL:-qwen3.5:27b}"]
+
+  tei-model-init:
+    build:
+      context: ../..
+      dockerfile: infra/docker-selfcontained/Dockerfile.tei-local
+    image: crm-sales-bot-tei-local:latest
+    container_name: crm-sales-bot-selfcontained-tei-model-init
+    restart: "no"
+    environment:
+      HF_HOME: /root/.cache/huggingface
+      TRANSFORMERS_CACHE: /root/.cache/huggingface
+      TEI_EMBED_MODEL_ID: ${TEI_EMBED_MODEL_ID:-Qwen/Qwen3-Embedding-4B}
+      TEI_EMBED_REVISION: ${TEI_EMBED_REVISION:-5cf2132abc99cad020ac570b19d031efec650f2b}
+      TEI_RERANK_MODEL_ID: ${TEI_RERANK_MODEL_ID:-Qwen/Qwen3-Reranker-4B}
+      TEI_RERANK_REVISION: ${TEI_RERANK_REVISION:-f16fc5d5d2b9b1d0db8280929242745d79794ef5}
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    command: ["python", "/app/scripts/preload_tei_models.py"]
+
+  tei-embed:
+    image: crm-sales-bot-tei-local:latest
+    build:
+      context: ../..
+      dockerfile: infra/docker-selfcontained/Dockerfile.tei-local
+    container_name: crm-sales-bot-selfcontained-tei-embed
+    restart: unless-stopped
+    depends_on:
+      tei-model-init:
+        condition: service_completed_successfully
+    environment:
+      HF_HOME: /root/.cache/huggingface
+      TRANSFORMERS_CACHE: /root/.cache/huggingface
+      TEI_EMBED_MODEL_ID: ${TEI_EMBED_MODEL_ID:-Qwen/Qwen3-Embedding-4B}
+      TEI_EMBED_REVISION: ${TEI_EMBED_REVISION:-5cf2132abc99cad020ac570b19d031efec650f2b}
+      TEI_RERANK_MODEL_ID: ${TEI_RERANK_MODEL_ID:-Qwen/Qwen3-Reranker-4B}
+      TEI_RERANK_REVISION: ${TEI_RERANK_REVISION:-f16fc5d5d2b9b1d0db8280929242745d79794ef5}
+    gpus: all
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    command: ["--embed-only", "--embed-port", "80"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:80/health', timeout=5).read()"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  tei-rerank:
+    image: crm-sales-bot-tei-local:latest
+    build:
+      context: ../..
+      dockerfile: infra/docker-selfcontained/Dockerfile.tei-local
+    container_name: crm-sales-bot-selfcontained-tei-rerank
+    restart: unless-stopped
+    depends_on:
+      tei-model-init:
+        condition: service_completed_successfully
+    environment:
+      HF_HOME: /root/.cache/huggingface
+      TRANSFORMERS_CACHE: /root/.cache/huggingface
+      TEI_EMBED_MODEL_ID: ${TEI_EMBED_MODEL_ID:-Qwen/Qwen3-Embedding-4B}
+      TEI_EMBED_REVISION: ${TEI_EMBED_REVISION:-5cf2132abc99cad020ac570b19d031efec650f2b}
+      TEI_RERANK_MODEL_ID: ${TEI_RERANK_MODEL_ID:-Qwen/Qwen3-Reranker-4B}
+      TEI_RERANK_REVISION: ${TEI_RERANK_REVISION:-f16fc5d5d2b9b1d0db8280929242745d79794ef5}
+    gpus: all
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    command: ["--rerank-only", "--rerank-port", "80"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:80/health', timeout=5).read()"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  bot:
+    build:
+      context: ../..
+      dockerfile: infra/docker-selfcontained/Dockerfile.bot
+    container_name: crm-sales-bot-selfcontained
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-model-init:
+        condition: service_completed_successfully
+      tei-embed:
+        condition: service_healthy
+      tei-rerank:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      API_KEY: ${API_KEY:-change-me-in-production}
+      DB_PATH: ${DB_PATH:-/app/data/conversations.db}
+      EMBEDDING_CACHE_DIR: ${EMBEDDING_CACHE_DIR:-/app/data/embeddings-cache}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:27b}
+      TEI_EMBED_URL: http://tei-embed:80
+      TEI_RERANK_URL: http://tei-rerank:80
+      STARTUP_WARMUP_ENABLED: ${STARTUP_WARMUP_ENABLED:-1}
+    ports:
+      - "8000:8000"
+    volumes:
+      - bot_data:/app/data
+      - ./config:/app/docker-config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+
+volumes:
+  ollama_data:
+  hf_cache:
+  bot_data:

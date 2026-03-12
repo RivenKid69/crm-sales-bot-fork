@@ -1,0 +1,28 @@
+FROM python:3.12.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends antiword build-essential catdoc curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml requirements.txt ./
+RUN pip install --no-cache-dir .
+
+COPY src/ src/
+COPY conftest.py ./
+COPY ["БД по болям/", "./БД по болям/"]
+
+RUN mkdir -p /app/data
+
+ENV PYTHONUNBUFFERED=1
+ENV API_KEY=change-me-in-production
+ENV DB_PATH=/app/data/conversations.db
+
+COPY infra/docker-selfcontained/docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]

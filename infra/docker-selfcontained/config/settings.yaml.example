@@ -1,0 +1,17 @@
+llm:
+  model: "qwen3.5:27b"
+  base_url: "http://ollama:11434"
+
+retriever:
+  embedder_url: "http://tei-embed:80"
+
+reranker:
+  enabled: true
+  url: "http://tei-rerank:80"
+
+flow:
+  active: "spin_selling"
+
+feature_flags:
+  autonomous_flow: true
+  response_factual_verifier: true
