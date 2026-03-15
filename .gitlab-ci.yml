@@ -1,4 +1,4 @@
 include:
   - project: 'devops/gitlab-ci'
-    file: 'gitlab-ci/ai/chat-bot.yaml'
-
+    ref: main
+    file: 'corta/ai/chat-bot.yaml'
