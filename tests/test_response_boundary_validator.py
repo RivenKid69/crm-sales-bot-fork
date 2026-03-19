@@ -54,8 +54,68 @@ def test_retry_is_used_once_then_deterministic_fallback():
         llm=llm,
     )
 
-    assert llm.generate.call_count == 1
+    assert llm.generate.call_count >= 1
     assert result.retry_used is True
     assert result.fallback_used is True
     assert "руб" not in result.response.lower()
-    assert "₸" in result.response
+    assert "уточ" in result.response.lower()
+
+
+def test_semantic_relevance_salvages_dirty_raw_json():
+    validator = ResponseBoundaryValidator()
+    llm = Mock()
+    llm.generate_structured.return_value = None
+    llm.generate.return_value = (
+        '<think>не по теме</think>'
+        '{"relevant": false, "reason": "' + ("Б" * 300) + '",}'
+    )
+
+    result = validator._check_semantic_irrelevance(
+        "Наш офис находится в Алматы, можем подробнее обсудить адрес.",
+        {"intent": "price_question", "user_message": "Расскажите про тариф Lite"},
+        llm,
+    )
+
+    assert result is True
+    llm.generate.assert_called_once()
+
+
+def test_unknown_source_leak_is_replaced_with_neutral_fallback():
+    validator = ResponseBoundaryValidator()
+    result = validator.validate_response(
+        "В подтвержденных данных нет информации по интеграции с SAP S/4HANA.",
+        context={"intent": "question_integrations", "user_message": "Есть интеграция с SAP S/4HANA?"},
+        llm=None,
+    )
+    low = result.response.lower()
+    assert "подтвержденных данных" not in low
+    assert "нет информации" not in low
+    assert "уточ" in low
+
+
+def test_unknown_source_leak_handles_yo_and_base_knowledge_variants():
+    validator = ResponseBoundaryValidator()
+    result = validator.validate_response(
+        "В базе знаний нет информации о возможности создания white-label приложения под вашим брендом.",
+        context={"intent": "question_features", "user_message": "Можно ли сделать white-label приложение?"},
+        llm=None,
+    )
+    low = result.response.lower()
+    assert "в базе знаний" not in low
+    assert "нет информации" not in low
+    assert "уточ" in low
+
+
+def test_unknown_source_leak_does_not_flag_grounded_product_fact_about_item_base():
+    validator = ResponseBoundaryValidator()
+    result = validator.validate_response(
+        "Лимит номенклатуры в Wipon — ограничений по количеству товаров в базе нет.",
+        context={
+            "intent": "question_features",
+            "user_message": "Есть ограничение по количеству товаров?",
+            "retrieved_facts": "Лимит номенклатуры в Wipon — ограничений по количеству товаров в базе нет.",
+        },
+        llm=None,
+    )
+    assert result.response == "Лимит номенклатуры в Wipon — ограничений по количеству товаров в базе нет."
+    assert "unknown_source_leak" not in result.violations

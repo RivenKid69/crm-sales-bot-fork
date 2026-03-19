@@ -1017,13 +1017,13 @@ def test_boundary_sanitizes_contact_pressure_after_refusal():
     assert "без контактов" in low
 
 
-def test_boundary_detects_unrequested_business_assumption():
+def test_boundary_does_not_use_deterministic_vertical_assumption_detector():
     validator = ResponseBoundaryValidator()
     violations = validator._detect_violations(
         "Для аптек подходит тариф Standard. Ваш бизнес — аптека?",
         context={"user_message": "Отвечай коротко, чем вы лучше?"},
     )
-    assert "unrequested_business_assumption" in violations
+    assert "unrequested_business_assumption" not in violations
 
 
 def test_strip_ungrounded_modules_keeps_known_ukm_module_without_facts():

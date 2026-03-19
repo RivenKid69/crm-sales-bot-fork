@@ -1,6 +1,8 @@
 # Virtual environment
 venv/
 .venv/
+.venv-e2e/
+.venv_media_e2e/
 env/
 .tmp_tok_env/
 .tmp_tokenv/
@@ -50,7 +52,9 @@ logs/
 
 # Reports & Generated files
 reports/
+results/
 *.html
+tests/e2e_*_results*.json
 
 # Voice bot (large files)
 voice_bot/models/
@@ -69,12 +73,17 @@ prototype_retriever/
 
 # Embedding cache (TEI disk cache)
 .cache/
+data/
+downloads/
 
 # Temporary files
 *.tmp
 *.temp
 *.bak
 *~
+fromSula.json
+toSula.json
+wipon_pro_api_main/
 
 # Test baselines (generated)
 tests_baseline.txt

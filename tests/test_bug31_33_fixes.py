@@ -11,7 +11,6 @@ Covers:
 - Change 5 (bot.py): guard_rephrase state-aware resolution
 - Change 6: Close fallback options_templates
 - Change 7: IntentPatternGuardSource
-- Change 8: ComparisonRefinementLayer
 - Change 9: Feature flags
 
 NOTE: Tests skip LLM and semantic search — all tests are unit/config level.
@@ -248,12 +247,6 @@ class TestFeatureFlags:
         assert "intent_pattern_guard" in FeatureFlags.DEFAULTS
         assert FeatureFlags.DEFAULTS["intent_pattern_guard"] is False
 
-    def test_comparison_refinement_flag_exists(self):
-        """Change 9: comparison_refinement flag exists and defaults to False."""
-        from src.feature_flags import FeatureFlags
-        assert "comparison_refinement" in FeatureFlags.DEFAULTS
-        assert FeatureFlags.DEFAULTS["comparison_refinement"] is False
-
     def test_intent_pattern_guard_property(self):
         """Change 9: flags.intent_pattern_guard property works."""
         from src.feature_flags import FeatureFlags
@@ -262,15 +255,6 @@ class TestFeatureFlags:
         ff.set_override("intent_pattern_guard", True)
         assert ff.intent_pattern_guard is True
         ff.clear_override("intent_pattern_guard")
-
-    def test_comparison_refinement_property(self):
-        """Change 9: flags.comparison_refinement property works."""
-        from src.feature_flags import FeatureFlags
-        ff = FeatureFlags()
-        assert ff.comparison_refinement is False
-        ff.set_override("comparison_refinement", True)
-        assert ff.comparison_refinement is True
-        ff.clear_override("comparison_refinement")
 
 # =============================================================================
 # PHASE B: guard_rephrase state-aware resolution Tests
@@ -540,105 +524,6 @@ class TestSourceRegistryIntentPatternGuard:
         reg = SourceRegistry.get_registration("IntentPatternGuardSource")
         assert reg is not None
         assert reg.priority_order == 25
-
-# =============================================================================
-# PHASE D: ComparisonRefinementLayer Tests
-# =============================================================================
-
-class TestComparisonRefinementLayer:
-    """Test ComparisonRefinementLayer (Change 8)."""
-
-    @pytest.fixture
-    def layer(self):
-        """Create ComparisonRefinementLayer with feature flag enabled."""
-        from src.feature_flags import flags
-        flags.set_override("comparison_refinement", True)
-        from src.classifier.comparison_refinement import ComparisonRefinementLayer
-        layer = ComparisonRefinementLayer()
-        yield layer
-        flags.clear_override("comparison_refinement")
-
-    @pytest.fixture
-    def make_ctx(self):
-        """Factory for RefinementContext."""
-        from src.classifier.refinement_pipeline import RefinementContext
-
-        def _make(intent="comparison", confidence=0.85, state="close", message=""):
-            return RefinementContext(
-                message=message,
-                state=state,
-                intent=intent,
-                confidence=confidence,
-            )
-        return _make
-
-    def test_should_apply_for_comparison_intents(self, layer, make_ctx):
-        """Change 8: Layer applies to comparison intents."""
-        assert layer._should_apply(make_ctx(intent="comparison"))
-        assert layer._should_apply(make_ctx(intent="question_product_comparison"))
-        assert layer._should_apply(make_ctx(intent="question_tariff_comparison"))
-        assert layer._should_apply(make_ctx(intent="question_snr_comparison"))
-
-    def test_should_not_apply_for_other_intents(self, layer, make_ctx):
-        """Change 8: Layer does NOT apply to non-comparison intents."""
-        assert not layer._should_apply(make_ctx(intent="price_question"))
-        assert not layer._should_apply(make_ctx(intent="greeting"))
-        assert not layer._should_apply(make_ctx(intent="objection_price"))
-
-    def test_refines_competitor_cheaper(self, layer, make_ctx):
-        """Change 8: 'конкурент дешевле' → objection_competitor."""
-        from src.classifier.refinement_pipeline import RefinementDecision
-        ctx = make_ctx(message="У конкурента дешевле цена")
-        result = layer._do_refine(ctx.message, {"intent": "comparison"}, ctx)
-        assert result.decision == RefinementDecision.REFINED
-        assert result.intent == "objection_competitor"
-
-    def test_refines_competitor_name_mention(self, layer, make_ctx):
-        """Change 8: Mentioning competitor name → objection_competitor."""
-        from src.classifier.refinement_pipeline import RefinementDecision
-        ctx = make_ctx(message="Мы сейчас используем Битрикс24")
-        result = layer._do_refine(ctx.message, {"intent": "comparison"}, ctx)
-        assert result.decision == RefinementDecision.REFINED
-        assert result.intent == "objection_competitor"
-
-    def test_refines_why_you_better(self, layer, make_ctx):
-        """Change 8: 'зачем вы лучше' → objection_competitor."""
-        from src.classifier.refinement_pipeline import RefinementDecision
-        ctx = make_ctx(message="Зачем вы лучше чем другие?")
-        result = layer._do_refine(ctx.message, {"intent": "comparison"}, ctx)
-        assert result.decision == RefinementDecision.REFINED
-        assert result.intent == "objection_competitor"
-
-    def test_passes_through_neutral_comparison(self, layer, make_ctx):
-        """Change 8: Neutral comparison without competitor signals passes through."""
-        from src.classifier.refinement_pipeline import RefinementDecision
-        ctx = make_ctx(message="Сравните тарифы Lite и Pro")
-        result = layer._do_refine(ctx.message, {"intent": "comparison"}, ctx)
-        assert result.decision == RefinementDecision.PASS_THROUGH
-        assert result.intent == "comparison"
-
-    def test_confidence_boosted_on_refinement(self, layer, make_ctx):
-        """Change 8: Confidence is at least 0.75 after refinement."""
-        ctx = make_ctx(message="У AmoCRM функционал лучше", confidence=0.5)
-        result = layer._do_refine(ctx.message, {"intent": "comparison"}, ctx)
-        assert result.confidence >= 0.75
-
-    def test_layer_disabled_by_default(self):
-        """Change 8: Layer disabled when comparison_refinement flag is False."""
-        from src.feature_flags import flags
-        flags.clear_override("comparison_refinement")
-        from src.classifier.comparison_refinement import ComparisonRefinementLayer
-        layer = ComparisonRefinementLayer()
-        assert not layer.enabled
-
-class TestComparisonRefinementRegistration:
-    """Test ComparisonRefinementLayer registration."""
-
-    def test_comparison_layer_in_expected_list(self):
-        """Change 8: 'comparison' is in expected layers list."""
-        from src.classifier.refinement_layers import verify_layers_registered
-        registered = verify_layers_registered()
-        assert "comparison" in registered
 
 # =============================================================================
 # PHASE A: Config Getter Tests

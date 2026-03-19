@@ -11,6 +11,7 @@
 - `bot` - FastAPI API бота
 
 Бэку не нужно вручную запускать отдельные systemd-сервисы для TEI или руками править URL внутри контейнеров.
+Pinned defaults для образов и model revisions лежат в `.env.example`.
 
 ## Требования к серверу
 
@@ -72,11 +73,10 @@ cd /opt/crm-sales-bot
 Минимально нужен production `API_KEY`.
 
 ```bash
-cat > .env <<'EOF'
-API_KEY=replace-with-long-random-secret
-OLLAMA_MODEL=qwen3.5:27b
-EOF
+cp .env.example .env
 ```
+
+После копирования замените минимум `API_KEY` на production-secret.
 
 Сгенерировать ключ можно так:
 
@@ -85,6 +85,7 @@ openssl rand -hex 32
 ```
 
 Если модель нужно поменять, достаточно заменить `OLLAMA_MODEL` в `.env`. Ту же модель автоматически подтянет `ollama-model-init`.
+Если нужен другой pinned runtime/model revision, меняйте `OLLAMA_IMAGE`, `TEI_EMBED_REVISION`, `TEI_RERANK_REVISION`.
 
 ## Шаг 4. Запустить стек
 
@@ -97,6 +98,7 @@ docker compose up -d --build
 - собирается image TEI runtime
 - скачивается Ollama-модель
 - скачиваются TEI-модели
+- прогреваются app-side embedding caches до `warmup.status=ready`
 
 Проверка статуса:
 
@@ -110,18 +112,25 @@ docker compose ps -a
 - `tei-rerank` - `healthy`
 - `ollama-model-init` - `Exited (0)`
 - `tei-model-init` - `Exited (0)`
-- `bot` - `Up`
+- `bot` - `healthy`
 
 ## Шаг 5. Проверить API
 
+Сначала проверяем readiness:
+
 ```bash
-curl -s http://localhost:8000/health
+curl -s http://localhost:8000/ready
 ```
 
-Ожидаемый ответ:
+Ожидаемо:
+- `status` = `ready`
+- все `dependencies.*` = `true`
+- `warmup.status` = `ready`
 
-```json
-{"status":"ok","model":"qwen3.5:27b"}
+Liveness endpoint тоже доступен:
+
+```bash
+curl -s http://localhost:8000/health
 ```
 
 Тестовый запрос:
@@ -193,6 +202,13 @@ docker compose logs tei-model-init
 Обычно причина одна из двух:
 - у контейнеров нет исходящего интернета
 - GPU runtime в Docker не настроен
+
+Если `bot` долго в состоянии `starting`, это обычно не crash, а прогрев cache:
+
+```bash
+docker compose logs -f bot
+curl -s http://localhost:8000/ready
+```
 
 **TEI или Ollama не могут скачать модели**
 

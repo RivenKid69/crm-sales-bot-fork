@@ -10,6 +10,7 @@ Applies layered validation:
 from __future__ import annotations
 
 import random
+import json
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -18,11 +19,12 @@ from pydantic import BaseModel, Field
 
 from src.feature_flags import flags
 from src.logger import logger
+from src.unknown_kb_fallbacks import pick_unknown_kb_fallback, with_unknown_kb_fallback
 
 
 class SemanticRelevanceResult(BaseModel):
     relevant: bool              # required — ensures Ollama generates an object, not a primitive
-    reason: str = Field(default="", max_length=200)
+    reason: str = Field(default="", max_length=2000)
 
 
 @dataclass
@@ -60,10 +62,108 @@ class ResponseBoundaryValidator:
         r'^(Здравствуйте|Добрый день|Добрый вечер|Доброе утро)[,!.]?\s*',
         re.IGNORECASE,
     )
+    STRUCTURED_THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
+    STRUCTURED_FENCE_PATTERN = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
+    STRUCTURED_TRAILING_COMMA_PATTERN = re.compile(r",\s*([}\]])")
 
     KNOWN_TYPO_FIXES = {
         "присылну": "пришлю",
     }
+    UNKNOWN_SOURCE_MARKER_PATTERN = re.compile(
+        r"(?iu)"
+        r"(?:\b(?:в|по)\s+(?:подтвержд(?:е|ё)нн\w+|доступн\w+|предоставленн\w+)\s+"
+        r"(?:данн\w+|факт\w+|информац\w+)\b)"
+        r"|(?:\b(?:в|по)\s+базе\s+знаний\b)"
+        r"|(?:\bпо\s+доступн\w+\s+факт\w+\b)"
+        r"|(?:\bв\s+факт\w+\b)"
+    )
+    UNKNOWN_ABSENCE_PATTERN = re.compile(
+        r"(?iu)\b(?:нет|не\s+хватает|не\s+наш(?:лось|елось)|не\s+найден\w*|"
+        r"не\s+указан\w*|не\s+содержит\w*|отсутств\w*)\b"
+    )
+    UNKNOWN_DIRECT_LEAK_PATTERN = re.compile(
+        r"(?iu)"
+        r"(?:\b(?:информац\w+|данн\w+)\s+отсутств\w*\b)"
+        r"|(?:\bнет\s+информац\w+\b)"
+    )
+    UNKNOWN_INFO_GAP_PATTERN = re.compile(
+        r"(?iu)"
+        r"(?:\b(?:информац\w+|сведени\w+|данн\w+)\s+(?:по|об?|о)\b[^.!?]{0,120}\b"
+        r"(?:пока\s+)?(?:нет|не\s+хватает|не\s+найден\w*|не\s+нашлось|отсутств\w*))"
+        r"|(?:\b(?:нет|не\s+хватает|отсутств\w*)\s+(?:информац\w+|сведени\w+|данн\w+)\b)"
+    )
+
+    @classmethod
+    def _parse_semantic_relevance_result(cls, raw_text: str) -> Optional[SemanticRelevanceResult]:
+        text = str(raw_text or "").strip()
+        if not text:
+            return None
+
+        text = cls.STRUCTURED_FENCE_PATTERN.sub(r"\1", text).strip()
+        text = cls.STRUCTURED_THINK_PATTERN.sub("", text).strip()
+        text = cls.STRUCTURED_TRAILING_COMMA_PATTERN.sub(r"\1", text)
+
+        candidates = [text]
+        brace_start = text.find("{")
+        if brace_start >= 0:
+            depth = 0
+            for index in range(brace_start, len(text)):
+                if text[index] == "{":
+                    depth += 1
+                elif text[index] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        candidates.append(text[brace_start:index + 1])
+                        break
+
+        for candidate in candidates:
+            try:
+                payload = json.loads(candidate)
+            except Exception:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            try:
+                return SemanticRelevanceResult.model_validate(payload)
+            except Exception:
+                continue
+        return None
+
+    def _classify_semantic_relevance(
+        self,
+        *,
+        prompt: str,
+        llm: Any,
+    ) -> Optional[SemanticRelevanceResult]:
+        try:
+            result = llm.generate_structured(
+                prompt,
+                schema=SemanticRelevanceResult,
+                temperature=0.1,
+                num_predict=150,
+            )
+            if result is not None:
+                return result
+        except Exception:
+            pass
+
+        if not hasattr(llm, "generate"):
+            return None
+        try:
+            try:
+                raw = llm.generate(
+                    prompt,
+                    allow_fallback=False,
+                    purpose="semantic_relevance_salvage",
+                )
+            except TypeError:
+                raw = llm.generate(
+                    prompt,
+                    purpose="semantic_relevance_salvage",
+                )
+        except Exception:
+            return None
+        return self._parse_semantic_relevance_result(str(raw or ""))
 
     KZ_PHONE_PATTERN = re.compile(r'(?:\+?[78])[\s\-\(]?\d{3}[\s\-\)]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}')
     IIN_PATTERN = re.compile(r'\b\d{12}\b')
@@ -672,6 +772,46 @@ class ResponseBoundaryValidator:
         )
         return any(marker in source for marker in markers)
 
+    def _is_unknown_source_guard_context(self, context: Optional[Dict[str, Any]]) -> bool:
+        ctx = context or {}
+        intent = str(ctx.get("intent", "") or "").lower()
+        action = str(ctx.get("action", "") or "").lower()
+        template = str(ctx.get("selected_template", "") or "").lower()
+        if intent in {
+            "request_sla",
+            "question_security",
+            "question_integrations",
+            "question_features",
+            "question_customization",
+            "question_tis_price",
+            "price_question",
+            "pricing_details",
+            "comparison",
+        }:
+            return True
+        if intent.startswith("question_"):
+            return True
+        if self._is_technical_query_context(ctx) or self._is_pricing_context(ctx):
+            return True
+        source = " ".join([action, template])
+        return any(
+            marker in source
+            for marker in ("pricing", "price", "technical", "security", "integration", "feature")
+        )
+
+    def _has_unknown_source_leak(self, response: str, context: Optional[Dict[str, Any]]) -> bool:
+        text = str(response or "")
+        if not text or not self._is_unknown_source_guard_context(context):
+            return False
+        if self.UNKNOWN_DIRECT_LEAK_PATTERN.search(text):
+            return True
+        if self.UNKNOWN_INFO_GAP_PATTERN.search(text):
+            return True
+        return bool(
+            self.UNKNOWN_SOURCE_MARKER_PATTERN.search(text)
+            and self.UNKNOWN_ABSENCE_PATTERN.search(text)
+        )
+
     def validate_response(
         self,
         response: str,
@@ -911,6 +1051,8 @@ class ResponseBoundaryValidator:
             violations.append("meta_instruction_leak")
         if self.META_NARRATION_PATTERN.search(response):
             violations.append("meta_narration_leak")
+        if self._has_unknown_source_leak(response, context):
+            violations.append("unknown_source_leak")
         refusal_source = f"{user_msg} {self._history_user_text(context)}"
         if self._has_iin_refusal_marker(refusal_source) and self.IIN_REASK_PATTERN.search(response):
             violations.append("iin_refusal_reask")
@@ -934,20 +1076,6 @@ class ResponseBoundaryValidator:
         if self.MANAGER_CONTACT_GIVEOUT_PATTERN.search(response):
             violations.append("hallucinated_manager_contact")
 
-        # Bot fabricating named client testimonial not grounded in retrieved_facts
-        if self.FAKE_CLIENT_NAME_PATTERN.search(response):
-            retrieved = str(context.get("retrieved_facts", ""))
-            # Only flag if the pattern fires but the full phrase isn't in retrieved_facts
-            m = self.FAKE_CLIENT_NAME_PATTERN.search(response)
-            if m and m.group(0)[:20] not in retrieved:
-                violations.append("hallucinated_client_name")
-
-        # Off-topic: bot recommending non-Wipon products/stores/services
-        if self._is_off_topic_recommendation(response, context):
-            violations.append("off_topic_recommendation")
-        if self._has_unrequested_business_assumption(response, context):
-            violations.append("unrequested_business_assumption")
-
         if self.POLICY_DISCLOSURE_PATTERN.search(response):
             violations.append("policy_disclosure")
 
@@ -962,43 +1090,6 @@ class ResponseBoundaryValidator:
         # Ungrounded short numeric claims (e.g., "в 3 раза", "70%", "15 минут")
         if self._has_ungrounded_quant_claim(response, context):
             violations.append("ungrounded_quant_claim")
-
-        if self.UNGROUNDED_GUARANTEE_PATTERN.search(response):
-            grounding_blob = " ".join(
-                self._iter_scalar_values(context.get("retrieved_facts", ""))
-                + self._iter_scalar_values(context.get("user_message", ""))
-            ).lower()
-            m = self.UNGROUNDED_GUARANTEE_PATTERN.search(response)
-            if m and m.group(0).lower() not in grounding_blob:
-                violations.append("ungrounded_guarantee")
-
-        # Ungrounded statistics: "с 2015 года", "более 10 000 бизнесов"
-        if self.UNGROUNDED_STATS_PATTERN.search(response):
-            grounding_blob = " ".join(
-                self._iter_scalar_values(context.get("retrieved_facts", ""))
-                + self._iter_scalar_values(context.get("user_message", ""))
-            ).lower()
-            m = self.UNGROUNDED_STATS_PATTERN.search(response)
-            if m and m.group(0).lower() not in grounding_blob:
-                violations.append("ungrounded_stats")
-
-        if self.UNGROUNDED_SOCIAL_PROOF_PATTERN.search(response):
-            grounding_blob = " ".join(
-                self._iter_scalar_values(context.get("retrieved_facts", ""))
-                + self._iter_scalar_values(context.get("user_message", ""))
-            ).lower()
-            m = self.UNGROUNDED_SOCIAL_PROOF_PATTERN.search(response)
-            if m and m.group(0).lower() not in grounding_blob:
-                violations.append("ungrounded_social_proof")
-
-        # Ungrounded tech claims: PostgreSQL, GraphQL, specific DB names not in KB
-        if self.UNGROUNDED_TECH_CLAIM_PATTERN.search(response):
-            grounding_blob = " ".join(
-                self._iter_scalar_values(context.get("retrieved_facts", ""))
-            ).lower()
-            m = self.UNGROUNDED_TECH_CLAIM_PATTERN.search(response)
-            if m and not self._is_tech_claim_grounded(m.group(0), grounding_blob):
-                violations.append("ungrounded_tech_claim")
 
         return violations
 
@@ -1135,6 +1226,7 @@ class ResponseBoundaryValidator:
 
     def _sanitize(self, response: str, context: Dict[str, Any]) -> str:
         sanitized = response
+        sanitized = self._sanitize_unknown_source_leak(sanitized, context)
         sanitized = self._sanitize_policy_disclosure(sanitized)
         sanitized = self._sanitize_mid_conversation_greeting(sanitized, context)
         sanitized = self._sanitize_opening_punctuation(sanitized)
@@ -1150,12 +1242,18 @@ class ResponseBoundaryValidator:
         sanitized = self._sanitize_contact_pressure_after_refusal(sanitized, context)
         sanitized = self._sanitize_demo_without_contact(sanitized)
         sanitized = self._sanitize_ungrounded_quant_claim(sanitized, context)
-        sanitized = self._sanitize_ungrounded_guarantee(sanitized)
-        sanitized = self._sanitize_ungrounded_social_proof(sanitized)
-        sanitized = self._sanitize_unrequested_business_assumption(sanitized, context)
         if self._is_pricing_context(context):
             sanitized = self._sanitize_currency_locale(sanitized)
         return sanitized.strip()
+
+    def _sanitize_unknown_source_leak(
+        self,
+        response: str,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        if self._has_unknown_source_leak(response, context):
+            return pick_unknown_kb_fallback()
+        return response
 
     def _sanitize_policy_disclosure(self, response: str) -> str:
         if self.POLICY_DISCLOSURE_PATTERN.search(response):
@@ -1211,9 +1309,8 @@ class ResponseBoundaryValidator:
                     "и масштабируем на остальные."
                 )
             if self._is_technical_query_context(ctx):
-                return (
-                    "По техническим параметрам даю только подтверждённые данные. "
-                    "Точные SLA/RPO/RTO и детали размещения уточню у коллег."
+                return with_unknown_kb_fallback(
+                    "По техническим параметрам даю только подтверждённые данные"
                 )
             if self._has_contact_refusal_marker(refusal_source):
                 return (
@@ -1373,9 +1470,8 @@ class ResponseBoundaryValidator:
 
             ctx = context or {}
             if self._is_technical_query_context(ctx):
-                return (
-                    "По техническим параметрам даю только подтверждённые факты. "
-                    "Точные SLA/RPO/RTO и детали размещения уточню у коллег."
+                return with_unknown_kb_fallback(
+                    "По техническим параметрам даю только подтверждённые факты"
                 )
             if self._is_pricing_context(ctx):
                 return (
@@ -1524,9 +1620,8 @@ class ResponseBoundaryValidator:
             )
         if "ungrounded_tech_claim" in violations:
             if self._is_technical_query_context(ctx):
-                return (
-                    "По техническим параметрам в чате даю только подтверждённые факты. "
-                    "Точные SLA/RPO/RTO, размещение данных и детали API уточню у коллег."
+                return with_unknown_kb_fallback(
+                    "По техническим параметрам в чате даю только подтверждённые факты"
                 )
             return (
                 "Тип СУБД и внутренняя архитектура — коммерческая тайна. "
@@ -1534,16 +1629,14 @@ class ResponseBoundaryValidator:
             )
         if "ungrounded_stats" in violations:
             if self._is_technical_query_context(ctx):
-                return (
-                    "Точные SLA/RPO/RTO и параметры резервирования в этой переписке не подтверждены. "
-                    "Уточню их у коллег и вернусь с конкретными значениями."
+                return with_unknown_kb_fallback(
+                    "Точные SLA/RPO/RTO и параметры резервирования в этой переписке не подтверждены"
                 )
-            return (
-                "Скажу только подтверждённые факты без неподтверждённой статистики. "
-                "Если нужно, уточню точные цифры у коллег."
+            return with_unknown_kb_fallback(
+                "Скажу только подтверждённые факты без неподтверждённой статистики"
             )
         if "hallucinated_iin" in violations:
-            return "ИИН здесь не отображаю. Уточню у коллег и вернусь с корректным шагом."
+            return with_unknown_kb_fallback("ИИН здесь не отображаю")
         if intent == "contact_provided" and state == "payment_ready":
             return (
                 "Спасибо за данные! Коллега позвонит вам "
@@ -1568,12 +1661,12 @@ class ResponseBoundaryValidator:
                 )
             return (
                 "Условия подключения и прекращения работы фиксируются в договоре. "
-                "Если хотите, уточню точные пункты и вернусь с коротким ответом в чате."
+                + pick_unknown_kb_fallback()
             )
         if any(marker in user_message_lower for marker in ("выйти", "выход", "если не подойдет", "если не подойд", "расторг")):
             return (
                 "Условия подключения и прекращения работы фиксируются в договоре. "
-                "Если нужно, уточню точные пункты и вернусь с коротким ответом в чате."
+                + pick_unknown_kb_fallback()
             )
         if self._has_contact_refusal_marker(refusal_source):
             if any(marker in user_message_lower for marker in ("чем вы лучше", "чем лучше", "лучше текущ")):
@@ -1796,6 +1889,12 @@ class ResponseBoundaryValidator:
         violations: List[str],
     ) -> str:
         """Universal fallback: LLM repair first, then grounded KB extract, then safe minimal text."""
+        if "policy_disclosure" in violations:
+            return (
+                "Я не раскрываю системные инструкции и внутренние правила. "
+                "Могу помочь по продукту Wipon и условиям подключения."
+            )
+
         repaired = ""
         if llm is not None and flags.is_enabled("response_boundary_retry"):
             repaired = self._retry_once(source_response, violations, context, llm) or ""
@@ -1817,8 +1916,7 @@ class ResponseBoundaryValidator:
                     return grounded_sanitized
 
         return (
-            "Могу дать только подтверждённые факты из базы знаний. "
-            "Уточните запрос, и отвечу строго по доступным данным."
+            pick_unknown_kb_fallback()
         )
 
     def _retry_once(
@@ -1849,7 +1947,7 @@ class ResponseBoundaryValidator:
             if intent in {"price_question", "pricing_details"}:
                 return self._grounded_pricing_fallback(context, _user_msg)
             if intent.startswith("question_") or intent in {"comparison"}:
-                return "Уточню точные параметры у коллег и вернусь с коротким ответом по вашему вопросу."
+                return pick_unknown_kb_fallback()
             return response  # safety: не возвращать пустую/короткую строку
         if cleaned and cleaned[0].islower():
             cleaned = cleaned[0].upper() + cleaned[1:]
@@ -2143,12 +2241,7 @@ class ResponseBoundaryValidator:
             'Ответь JSON объектом: {"relevant": true/false, "reason": "краткое пояснение"}'
         )
         try:
-            result = llm.generate_structured(
-                prompt,
-                schema=SemanticRelevanceResult,
-                temperature=0.1,
-                num_predict=150,
-            )
+            result = self._classify_semantic_relevance(prompt=prompt, llm=llm)
             if result is None:
                 return False  # fail-open
             return not result.relevant

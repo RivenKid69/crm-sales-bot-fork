@@ -151,20 +151,19 @@ class TestCascade:
         return CascadeRetriever(use_embeddings=False)
 
     def test_exact_stops_cascade(self, retriever):
-        """Если exact нашёл — lemma не вызывается."""
+        """Статистика отражает hybrid merge текущего retriever."""
         results, stats = retriever.search_with_stats("розничный налог")
 
         if results:
-            assert stats["stage_used"] == "exact"
+            assert stats["stage_used"] == "hybrid"
 
     def test_lemma_after_exact_fail(self, retriever):
-        """Если exact не нашёл — идём на lemma."""
+        """Даже при непрямом запросе используется hybrid merge."""
         # Запрос с падежами которых нет в keywords буквально
         results, stats = retriever.search_with_stats("предпринимателей розничном налоге")
 
-        # Должен найти через exact или lemma
         if results:
-            assert stats["stage_used"] in ["exact", "lemma"]
+            assert stats["stage_used"] == "hybrid"
 
     def test_search_with_stats_returns_timing(self, retriever):
         """search_with_stats возвращает тайминги."""
@@ -257,26 +256,25 @@ class TestRealKnowledgeBase:
             f"None of {expected_in_result} found in result for '{query}'"
 
     def test_stage_distribution(self, retriever):
-        """Проверяем распределение по этапам."""
+        """Проверяем что большинство запросов проходят через hybrid merge."""
         test_queries = [
             "розничный налог", "ставка снр", "как перейти",
             "условия для ип", "тоо розничный", "ндс совмещение",
             "форма 913", "декларация", "сотрудники", "wipon касса",
         ]
 
-        stage_counts = {"exact": 0, "lemma": 0, "semantic": 0, "none": 0}
+        stage_counts = {"hybrid": 0, "none": 0}
 
         for q in test_queries:
             results, stats = retriever.search_with_stats(q)
             stage = stats.get("stage_used", "none")
-            stage_counts[stage] += 1
+            stage_counts[stage] = stage_counts.get(stage, 0) + 1
 
         total = len(test_queries)
-        exact_pct = stage_counts["exact"] / total * 100
+        hybrid_pct = stage_counts["hybrid"] / total * 100
 
-        # Ожидаем что большинство запросов решаются exact match
-        assert exact_pct >= 50, \
-            f"Only {exact_pct:.0f}% exact matches, expected >= 50%"
+        assert hybrid_pct >= 50, \
+            f"Only {hybrid_pct:.0f}% hybrid matches, expected >= 50%"
 
     def test_retrieve_method_returns_string(self, retriever):
         """retrieve() возвращает строку."""

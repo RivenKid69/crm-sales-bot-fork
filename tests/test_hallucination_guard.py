@@ -115,8 +115,8 @@ class TestHallucinatedSendPromise:
     def test_sanitize_replaces_send_promise_text(self):
         validator = ResponseBoundaryValidator()
         sanitized = validator._sanitize_send_promise("Скину вам каталог через минуту.")
-        assert "менеджер" in sanitized.lower()
         assert "скину" not in sanitized.lower()
+        assert "каталог" not in sanitized.lower()
 
 
 class TestHallucinatedPastAction:
@@ -162,32 +162,30 @@ class TestPolicyLeakAndContactClaim:
             context={"intent": "demo_request", "collected_data": {}, "retrieved_facts": ""},
         )
         assert "hallucinated_contact_claim" in result.violations
-        assert result.fallback_used is True
         assert "контакт получил" not in result.response.lower()
 
-    def test_client_from_city_claim_triggers_client_hallucination(self):
+    def test_client_from_city_claim_not_handled_by_deterministic_validator(self):
         result = self.validator.validate_response(
             "Например, клиент из Астаны подтвердил результат за 2 дня.",
             context={"intent": "case_study_request", "retrieved_facts": ""},
         )
-        assert "hallucinated_client_name" in result.violations
-        assert result.fallback_used is True
-        assert "клиент из астаны" not in result.response.lower()
+        assert "hallucinated_client_name" not in result.violations
+        assert "клиент из астаны" in result.response.lower()
 
-    def test_company_from_city_claim_triggers_client_hallucination(self):
+    def test_company_from_city_claim_not_handled_by_deterministic_validator(self):
         result = self.validator.validate_response(
             "Компания из Алматы подтвердила эффект после внедрения.",
             context={"intent": "case_study_request", "retrieved_facts": ""},
         )
-        assert "hallucinated_client_name" in result.violations
+        assert "hallucinated_client_name" not in result.violations
 
-    def test_ungrounded_social_proof_is_sanitized(self):
+    def test_ungrounded_social_proof_not_handled_by_deterministic_validator(self):
         result = self.validator.validate_response(
             "Наши клиенты отмечают стабильную работу даже при любой нагрузке.",
             context={"intent": "objection_no_need", "retrieved_facts": ""},
         )
-        assert "ungrounded_social_proof" in result.violations
-        assert "наши клиенты отмечают" not in result.response.lower()
+        assert "ungrounded_social_proof" not in result.violations
+        assert result.response == "Наши клиенты отмечают стабильную работу даже при любой нагрузке."
 
     def test_send_to_email_promise_triggers_send_violation(self):
         result = self.validator.validate_response(

@@ -1,10 +1,10 @@
-FROM python:3.12-slim
+FROM python:3.12.12-slim
 
 WORKDIR /app
 
 # System deps for pymorphy3
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential curl && \
+    apt-get install -y --no-install-recommends antiword build-essential catdoc curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python deps first (cache layer)

@@ -106,7 +106,9 @@ def test_factual_verifier_fail_falls_back_to_safe_minimal_when_no_verified_rewri
     assert result.verifier_used is True
     assert result.verifier_verdict == "fail"
     assert result.fallback_required is False
-    assert "недостаточно данных" in result.final_response.lower()
+    lower = result.final_response.lower()
+    assert "уточ" in lower
+    assert any(marker in lower for marker in ("позже", "отпиш", "напиш", "ответ"))
     assert "safe_minimal_fallback" in result.reason_codes
     assert "уточню у коллег" not in result.final_response.lower()
 
@@ -138,7 +140,9 @@ def test_factual_verifier_fail_never_returns_unverified_pass1_rewrite():
     assert "safe_minimal_fallback" in result.reason_codes
     assert "pass1_rewrite_fallback" not in result.reason_codes
     assert "1 ₸/мес" not in result.final_response
-    assert "недостаточно данных" in result.final_response.lower()
+    lower = result.final_response.lower()
+    assert "уточ" in lower
+    assert any(marker in lower for marker in ("позже", "отпиш", "напиш", "ответ"))
 
 
 def test_factual_verifier_fail_returns_safe_minimal_contract():
@@ -166,7 +170,9 @@ def test_factual_verifier_fail_returns_safe_minimal_contract():
         state="autonomous_discovery",
     )
     assert result.verifier_verdict == "fail"
-    assert "недостаточно данных" in result.final_response.lower()
+    lower = result.final_response.lower()
+    assert "уточ" in lower
+    assert any(marker in lower for marker in ("позже", "отпиш", "напиш", "ответ"))
     assert "safe_minimal_fallback" in result.reason_codes
 
 

@@ -22,6 +22,11 @@ from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
+_EMBED_MODEL_ID = os.environ.get("TEI_EMBED_MODEL_ID", "Qwen/Qwen3-Embedding-4B")
+_EMBED_REVISION = os.environ.get("TEI_EMBED_REVISION", "5cf2132abc99cad020ac570b19d031efec650f2b")
+_RERANK_MODEL_ID = os.environ.get("TEI_RERANK_MODEL_ID", "Qwen/Qwen3-Reranker-4B")
+_RERANK_REVISION = os.environ.get("TEI_RERANK_REVISION", "f16fc5d5d2b9b1d0db8280929242745d79794ef5")
+
 
 # ---- Embedding model ----
 
@@ -57,14 +62,17 @@ def load_embed_model():
     global _embed_model, _embed_tokenizer
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dt = torch.float16 if device == "cuda" else torch.float32
-    print(f"[embed] Loading Qwen/Qwen3-Embedding-4B on {device} ...")
+    print(f"[embed] Loading {_EMBED_MODEL_ID}@{_EMBED_REVISION} on {device} ...")
     t0 = time.time()
     _embed_tokenizer = AutoTokenizer.from_pretrained(
-        "Qwen/Qwen3-Embedding-4B", trust_remote_code=True
+        _EMBED_MODEL_ID,
+        revision=_EMBED_REVISION,
+        trust_remote_code=True,
     )
     _embed_model = AutoModel.from_pretrained(
-        "Qwen/Qwen3-Embedding-4B",
+        _EMBED_MODEL_ID,
         torch_dtype=dt,
+        revision=_EMBED_REVISION,
         trust_remote_code=True,
         **_offload_kwargs(gpu_cap_gib=8),
     ).eval()
@@ -118,14 +126,17 @@ def load_rerank_model():
     global _rerank_model, _rerank_tokenizer
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dt = torch.float16 if device == "cuda" else torch.float32
-    print(f"[rerank] Loading Qwen/Qwen3-Reranker-4B on {device} ...")
+    print(f"[rerank] Loading {_RERANK_MODEL_ID}@{_RERANK_REVISION} on {device} ...")
     t0 = time.time()
     _rerank_tokenizer = AutoTokenizer.from_pretrained(
-        "Qwen/Qwen3-Reranker-4B", trust_remote_code=True
+        _RERANK_MODEL_ID,
+        revision=_RERANK_REVISION,
+        trust_remote_code=True,
     )
     _rerank_model = AutoModelForCausalLM.from_pretrained(
-        "Qwen/Qwen3-Reranker-4B",
+        _RERANK_MODEL_ID,
         torch_dtype=dt,
+        revision=_RERANK_REVISION,
         trust_remote_code=True,
         **_offload_kwargs(gpu_cap_gib=4),
     ).eval()

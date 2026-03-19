@@ -82,6 +82,51 @@ class TestSalesBotSnapshot:
         assert restored.state_machine.collected_data == {"company_size": 50}
         assert restored.guard.turn_count == bot.guard.turn_count
 
+    def test_media_facts_survive_snapshot_restore(self, mock_llm):
+        bot = SalesBot(llm=mock_llm, flow_name="autonomous", client_id="client-media")
+        bot.context_window.episodic_memory.client_profile.add_media_facts(
+            [
+                "Документ связан с компанией Альфа Логистик.",
+                "Клиент работает в Алматы.",
+            ]
+        )
+
+        snapshot = bot.to_snapshot()
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm, history_tail=[])
+
+        assert restored.context_window.get_client_profile()["media_facts"] == [
+            "Документ связан с компанией Альфа Логистик.",
+            "Клиент работает в Алматы.",
+        ]
+
+    def test_media_knowledge_cards_survive_snapshot_restore(self, mock_llm):
+        bot = SalesBot(llm=mock_llm, flow_name="autonomous", client_id="client-media")
+        bot.context_window.episodic_memory.upsert_media_knowledge_cards(
+            [
+                {
+                    "knowledge_id": "card-1",
+                    "attachment_fingerprint": "fp-1",
+                    "file_name": "doc.pdf",
+                    "media_kind": "document",
+                    "summary": "Это документ компании Альфа Логистик.",
+                    "facts": ["Компания Альфа Логистик."],
+                    "extracted_data": {"company_name": "Альфа Логистик"},
+                    "answer_context": "Это документ компании Альфа Логистик.",
+                }
+            ]
+        )
+
+        snapshot = bot.to_snapshot()
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm, history_tail=[])
+
+        cards = restored.context_window.episodic_memory.get_recent_media_knowledge_cards(limit=5)
+        assert len(cards) == 1
+        assert cards[0]["knowledge_id"] == "card-1"
+        assert cards[0]["facts"] == ["Компания Альфа Логистик."]
+        assert restored.context_window.get_client_profile()["media_facts"] == [
+            "Компания Альфа Логистик."
+        ]
+
     def test_snapshot_format_matches_integration_spec(self, mock_llm):
         bot = SalesBot(llm=mock_llm)
         snapshot = bot.to_snapshot()

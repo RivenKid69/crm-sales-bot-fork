@@ -195,7 +195,6 @@ class FeatureFlags:
 
         # === Classification fixes ===
         "intent_pattern_guard": False,             # Configurable intent pattern detection (Change 7)
-        "comparison_refinement": False,            # Comparison refinement layer (Change 8)
 
         # === Autonomous Flow ===
         "autonomous_flow": False,                  # LLM-driven sales flow (no YAML rules)
@@ -779,11 +778,6 @@ class FeatureFlags:
     def intent_pattern_guard(self) -> bool:
         """Включён ли configurable intent pattern guard"""
         return self.is_enabled("intent_pattern_guard")
-
-    @property
-    def comparison_refinement(self) -> bool:
-        """Включён ли comparison refinement layer"""
-        return self.is_enabled("comparison_refinement")
 
     # =========================================================================
     # Autonomous Flow flags

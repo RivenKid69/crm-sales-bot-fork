@@ -154,6 +154,11 @@ class TestResponseDirectives:
 class TestResponseDirectivesBuilder:
     """Тесты для ResponseDirectivesBuilder."""
 
+    @staticmethod
+    def _empathetic_threshold() -> int:
+        builder = ResponseDirectivesBuilder(ContextEnvelope())
+        return builder.tone_thresholds.get("empathetic_frustration", 5)
+
     def test_build_neutral(self):
         """Проверить сборку для нейтрального контекста."""
         envelope = ContextEnvelope()
@@ -167,7 +172,7 @@ class TestResponseDirectivesBuilder:
 
     def test_determine_tone_empathetic_frustration(self):
         """Проверить определение эмпатичного тона при фрустрации."""
-        envelope = ContextEnvelope(frustration_level=4)
+        envelope = ContextEnvelope(frustration_level=self._empathetic_threshold())
 
         builder = ResponseDirectivesBuilder(envelope)
         directives = builder.build()
@@ -215,7 +220,7 @@ class TestResponseDirectivesBuilder:
 
     def test_apply_style_frustration(self):
         """Проверить применение стиля при фрустрации."""
-        envelope = ContextEnvelope(frustration_level=4)
+        envelope = ContextEnvelope(frustration_level=self._empathetic_threshold())
 
         builder = ResponseDirectivesBuilder(envelope)
         directives = builder.build()
@@ -260,6 +265,18 @@ class TestResponseDirectivesBuilder:
         assert directives.repair_mode is True
         assert directives.ask_clarifying is True
         assert directives.use_bullets is True
+
+    def test_fill_memory_includes_media_facts(self):
+        """Builder should surface saved media facts into directives memory."""
+        envelope = ContextEnvelope(
+            client_media_facts=["Документ связан с компанией Альфа Логистик."],
+        )
+
+        builder = ResponseDirectivesBuilder(envelope)
+        directives = builder.build()
+
+        assert directives.media_facts == ["Документ связан с компанией Альфа Логистик."]
+        assert "Альфа Логистик" in directives.instruction
 
     def test_apply_cta_soft_breakthrough(self):
         """Проверить добавление soft CTA при breakthrough."""
@@ -431,7 +448,7 @@ class TestBuildFunctions:
     def test_build_response_directives(self):
         """Проверить функцию build_response_directives."""
         envelope = ContextEnvelope(
-            frustration_level=3,
+            frustration_level=TestResponseDirectivesBuilder._empathetic_threshold(),
             is_stuck=True,
         )
 
@@ -460,7 +477,7 @@ class TestResponseDirectivesIntegration:
         """Проверить полный flow для фрустрированного клиента."""
         envelope = ContextEnvelope(
             state="spin_problem",
-            frustration_level=4,
+            frustration_level=TestResponseDirectivesBuilder._empathetic_threshold(),
             is_stuck=True,
             repeated_question="question_price",
             total_objections=2,

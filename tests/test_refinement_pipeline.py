@@ -1043,7 +1043,6 @@ class TestRegisteredLayersConfigured:
         from src.classifier.confidence_calibration import ConfidenceCalibrationLayer
         from src.classifier.disambiguation_resolution_layer import DisambiguationResolutionLayer
         from src.classifier.secondary_intent_detection import SecondaryIntentDetectionLayer
-        from src.classifier.comparison_refinement import ComparisonRefinementLayer
 
         layer_map = {
             "short_answer": ShortAnswerRefinementLayer,
@@ -1055,7 +1054,6 @@ class TestRegisteredLayersConfigured:
             "confidence_calibration": ConfidenceCalibrationLayer,
             "disambiguation_resolution": DisambiguationResolutionLayer,
             "secondary_intent_detection": SecondaryIntentDetectionLayer,
-            "comparison": ComparisonRefinementLayer,
         }
         for name, cls in layer_map.items():
             if not registry.is_registered(name):
@@ -1076,7 +1074,6 @@ class TestRegisteredLayersConfigured:
             "greeting_context",
             "objection",
             "option_selection",
-            "comparison",
         ]
 
         for layer_name in expected:

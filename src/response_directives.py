@@ -114,6 +114,7 @@ class ResponseDirectives:
     do_not_repeat: List[str] = field(default_factory=list)
     do_not_repeat_responses: List[str] = field(default_factory=list)  # НОВОЕ: предыдущие ответы бота
     reference_pain: str = ""
+    media_facts: List[str] = field(default_factory=list)
 
     # === Meta ===
     reason_codes: List[str] = field(default_factory=list)
@@ -151,6 +152,7 @@ class ResponseDirectives:
                 "do_not_repeat": self.do_not_repeat,
                 "do_not_repeat_responses": self.do_not_repeat_responses,  # НОВОЕ
                 "reference_pain": self.reference_pain,
+                "media_facts": self.media_facts,
             },
             "reason_codes": self.reason_codes,
             "instruction": self.instruction,
@@ -256,6 +258,12 @@ class ResponseDirectives:
             # Берём первые 80 символов каждого ответа для краткости
             recent = [r[:80] + "..." if len(r) > 80 else r for r in self.do_not_repeat_responses[-3:]]
             parts.append(f"НЕ ПОВТОРЯЙ дословно эти фразы: {recent}")
+
+        if self.media_facts:
+            parts.append(
+                "Если вопрос клиента касается ранее присланного media, можешь опираться на факты: "
+                + "; ".join(self.media_facts[:3])
+            )
 
         # Возражения
         if self.objection_summary:
@@ -617,6 +625,8 @@ class ResponseDirectivesBuilder:
         if envelope.client_pain_points:
             # Берём первую боль (без PII)
             directives.reference_pain = envelope.client_pain_points[0]
+
+        directives.media_facts = list(getattr(envelope, "client_media_facts", []) or [])[:3]
 
     def _build_client_card(self) -> str:
         """

@@ -545,6 +545,7 @@ class LLMTrace:
     prompt_system: Optional[str] = None
     prompt_user: str = ""
     raw_response: str = ""
+    last_cleaned_structured_response: str = ""
     tokens_input: int = 0
     tokens_output: int = 0
     latency_ms: float = 0.0
@@ -561,6 +562,10 @@ class LLMTrace:
             "prompt_system": self.prompt_system[:200] if self.prompt_system else None,
             "prompt_user": self.prompt_user[:200] if self.prompt_user else "",
             "raw_response": self.raw_response[:500] if self.raw_response else "",
+            "last_cleaned_structured_response": (
+                self.last_cleaned_structured_response[:500]
+                if self.last_cleaned_structured_response else ""
+            ),
             "tokens_input": self.tokens_input,
             "tokens_output": self.tokens_output,
             "latency_ms": round(self.latency_ms, 2),
@@ -577,6 +582,10 @@ class LLMTrace:
             "id": self.request_id,
             "purpose": self.purpose,
             "tokens": {"in": self.tokens_input, "out": self.tokens_output},
+            "last_cleaned_structured_response": (
+                self.last_cleaned_structured_response[:200]
+                if self.last_cleaned_structured_response else ""
+            ),
             "latency_ms": round(self.latency_ms, 2),
             "success": self.success,
         }
