@@ -4,7 +4,7 @@ WORKDIR /app
 
 # System deps for pymorphy3
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends antiword build-essential catdoc curl && \
+    apt-get install -y --no-install-recommends antiword build-essential catdoc curl ffmpeg poppler-utils && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python deps first (cache layer)
