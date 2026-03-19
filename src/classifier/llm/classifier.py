@@ -10,6 +10,10 @@ from src.classifier.llm.schemas import (
     normalize_intent_label,
 )
 from src.classifier.llm.prompts import build_classification_prompt
+from src.classifier.llm.repair import (
+    repair_classification_payload,
+    salvage_classification_top_intent,
+)
 from src.classifier.extractors.extraction_validator import validate_extracted_data
 
 
@@ -70,9 +74,27 @@ class LLMClassifier:
             prompt = build_classification_prompt(message, context, n_few_shot=self._n_few_shot)
 
             # Вызываем LLM с structured output
-            result = self.vllm.generate_structured(prompt, ClassificationResult)
+            result, trace = self.vllm.generate_structured(
+                prompt,
+                ClassificationResult,
+                return_trace=True,
+                repair_payload=repair_classification_payload,
+            )
 
             if result is None:
+                salvaged_result = salvage_classification_top_intent(
+                    message=message,
+                    context=context,
+                    last_cleaned_structured_response=trace.last_cleaned_structured_response,
+                    fallback_classifier=self.fallback,
+                )
+                if salvaged_result is not None:
+                    logger.info(
+                        "LLM classifier salvaged structured payload via fallback top intent",
+                        extra={"request_id": trace.request_id},
+                    )
+                    return salvaged_result
+
                 # LLM вернул None (circuit breaker или все retry провалились)
                 logger.warning("LLM classifier returned None, using fallback")
                 return self._use_fallback(message, context)

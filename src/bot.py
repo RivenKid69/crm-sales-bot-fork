@@ -16,9 +16,11 @@
 """
 
 import time
+import re
+import json
 import uuid
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Any, Set
+from dataclasses import dataclass, replace
+from typing import Dict, List, Optional, Any, Set, Sequence
 
 from src.classifier import UnifiedClassifier
 from src.state_machine import StateMachine
@@ -66,6 +68,14 @@ from src.blackboard.decision_sanitizer import (
     INVALID_NEXT_STATE_REASON,
 )
 from src.blackboard.sources.autonomous_decision import AutonomousDecisionRecord
+from src.media_turn_context import (
+    MEDIA_PROFILE_SAFE_FIELDS as MEDIA_PROFILE_SAFE_FIELDS_SET,
+    MediaTurnContext,
+    freeze_media_turn_context,
+    scrub_media_card_payload,
+    scrub_media_extracted_data,
+    scrub_media_fact_list,
+)
 
 # Personalization v2: Adaptive personalization
 from src.personalization import EffectiveActionTracker
@@ -88,6 +98,9 @@ from src.decision_trace import (
     ContextWindowTrace,
     TurnSummary,
 )
+
+
+MEDIA_PROFILE_SAFE_FIELDS: Set[str] = set(MEDIA_PROFILE_SAFE_FIELDS_SET)
 
 
 @dataclass
@@ -183,6 +196,7 @@ class SalesBot:
         self.last_action: Optional[str] = None
         self.last_intent: Optional[str] = None
         self.last_bot_message: Optional[str] = None
+        self._pending_media_meta: Dict[str, Any] = {}
 
         # Phase 0: Metrics (controlled by feature flag)
         self.metrics = ConversationMetrics(self.conversation_id)
@@ -320,6 +334,7 @@ class SalesBot:
         self.last_action = None
         self.last_intent = None
         self.last_bot_message = None
+        self._pending_media_meta = {}
 
         # Reset Phase 0
         self.metrics = ConversationMetrics(self.conversation_id)
@@ -893,6 +908,947 @@ class SalesBot:
         resolution_trace["bot_transition_sanitization"] = markers
         sm_result["resolution_trace"] = resolution_trace
 
+    def set_pending_media_meta(self, media_meta: Optional[Dict[str, Any]]) -> None:
+        """Store turn-scoped media context for the next process() call."""
+        self._pending_media_meta = dict(media_meta or {})
+
+    def _consume_pending_media_meta(self) -> Dict[str, Any]:
+        """Read and clear turn-scoped media context."""
+        meta = dict(self._pending_media_meta or {})
+        self._pending_media_meta = {}
+        return meta
+
+    def _is_autonomous_media_runtime(self, state: Optional[str] = None) -> bool:
+        current_state = state or self.state_machine.state
+        return bool(
+            self._flow
+            and self._flow.name == "autonomous"
+            and (
+                str(current_state).startswith("autonomous_")
+                or str(current_state) == "greeting"
+            )
+        )
+
+    @staticmethod
+    def _merge_extracted_data(
+        extracted_data: Optional[Dict[str, Any]],
+        media_extracted_data: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        merged = dict(media_extracted_data or {})
+        for key, value in (extracted_data or {}).items():
+            if value in (None, "", [], {}):
+                continue
+            merged[key] = value
+        return merged
+
+    def _get_client_media_facts(self) -> List[str]:
+        if not hasattr(self, "context_window") or not hasattr(self.context_window, "episodic_memory"):
+            return []
+        memory = getattr(self.context_window, "episodic_memory", None)
+        if memory is not None and hasattr(memory, "get_media_facts"):
+            return list(memory.get_media_facts(limit=10) or [])
+        if not hasattr(self, "context_window") or not hasattr(self.context_window, "episodic_memory"):
+            return []
+        profile = getattr(self.context_window.episodic_memory, "client_profile", None)
+        facts = getattr(profile, "media_facts", []) if profile else []
+        return list(facts or [])
+
+    def _get_recent_media_knowledge_cards(self, limit: int = 20) -> List[Dict[str, Any]]:
+        if not hasattr(self, "context_window") or not hasattr(self.context_window, "episodic_memory"):
+            return []
+        memory = getattr(self.context_window, "episodic_memory", None)
+        if memory is not None and hasattr(memory, "get_recent_media_knowledge_cards"):
+            return [
+                scrub_media_card_payload(card)
+                for card in list(memory.get_recent_media_knowledge_cards(limit=limit) or [])
+                if card
+            ]
+        return []
+
+    def _store_media_knowledge_cards(self, media_cards: Optional[List[Dict[str, Any]]]) -> None:
+        if not media_cards:
+            return
+        if not hasattr(self, "context_window") or not hasattr(self.context_window, "episodic_memory"):
+            return
+        memory = getattr(self.context_window, "episodic_memory", None)
+        if memory is not None and hasattr(memory, "upsert_media_knowledge_cards"):
+            memory.upsert_media_knowledge_cards(
+                [scrub_media_card_payload(card) for card in media_cards if card]
+            )
+
+    def hydrate_external_memory(
+        self,
+        *,
+        profile_data: Optional[Dict[str, Any]] = None,
+        media_cards: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
+        """Seed bot memory from cross-session persisted knowledge."""
+        profile_data = dict(profile_data or {})
+        if profile_data:
+            self.state_machine.update_data(profile_data)
+            profile = getattr(self.context_window.episodic_memory, "client_profile", None)
+            if profile is not None and hasattr(profile, "update_from_data"):
+                profile.update_from_data(profile_data)
+                for pain in profile_data.get("pain_points", []) or []:
+                    if pain and pain not in profile.pain_points:
+                        profile.pain_points.append(pain)
+                for item in profile_data.get("interested_features", []) or []:
+                    if item and item not in profile.interested_features:
+                        profile.interested_features.append(item)
+                for item in profile_data.get("objection_types", []) or []:
+                    if item and item not in profile.objection_types:
+                        profile.objection_types.append(item)
+        if media_cards:
+            self._store_media_knowledge_cards(media_cards)
+            safe_fields = self._extract_safe_media_fields(media_cards)
+            backfill = {
+                key: value
+                for key, value in safe_fields.items()
+                if self.state_machine.collected_data.get(key) in (None, "", [], {})
+            }
+            if backfill:
+                self.state_machine.update_data(backfill)
+
+    @staticmethod
+    def _extract_safe_media_fields(media_cards: Optional[List[Dict[str, Any]]]) -> Dict[str, Any]:
+        merged: Dict[str, Any] = {}
+        for card in media_cards or []:
+            extracted = scrub_media_extracted_data(card.get("extracted_data", {}) or {})
+            for key, value in extracted.items():
+                if key not in MEDIA_PROFILE_SAFE_FIELDS or value in (None, "", [], {}):
+                    continue
+                merged[key] = value
+        return merged
+
+    @staticmethod
+    def _finalize_media_cards(
+        media_cards: Optional[List[Dict[str, Any]]],
+        *,
+        source_session_id: str,
+        source_turn: int,
+    ) -> List[Dict[str, Any]]:
+        finalized: List[Dict[str, Any]] = []
+        for raw_card in media_cards or []:
+            card = scrub_media_card_payload(raw_card or {})
+            if not card:
+                continue
+            card["source_session_id"] = card.get("source_session_id") or source_session_id
+            card["source_turn"] = int(card.get("source_turn") or source_turn or 0)
+            finalized.append(scrub_media_card_payload(card))
+        return finalized
+
+    def _compat_media_cards_from_meta(
+        self,
+        pending_media_meta: Optional[Dict[str, Any]],
+        *,
+        source_session_id: str,
+        source_turn: int,
+    ) -> List[Dict[str, Any]]:
+        meta = dict(pending_media_meta or {})
+        answer_context = str(meta.get("answer_context") or "").strip()
+        if not answer_context:
+            return []
+        card = {
+            "knowledge_id": f"compat-{abs(hash(answer_context))}",
+            "attachment_fingerprint": f"compat-{abs(hash(answer_context))}",
+            "source_session_id": source_session_id,
+            "source_turn": int(source_turn or 0),
+            "file_name": "",
+            "media_kind": "media",
+            "source_user_text": str(meta.get("source_user_text") or "").strip(),
+            "summary": answer_context.splitlines()[0].strip()[:600],
+            "facts": list(meta.get("media_facts", []) or [])[:8],
+            "extracted_data": dict(meta.get("extracted_data", {}) or {}),
+            "answer_context": answer_context[:1800],
+        }
+        return [scrub_media_card_payload(card)]
+
+    def _get_media_history_candidates(self, query: str, *, limit: int = 10) -> List[Dict[str, Any]]:
+        if not hasattr(self, "context_window") or not hasattr(self.context_window, "episodic_memory"):
+            return []
+        memory = getattr(self.context_window, "episodic_memory", None)
+        if memory is None or not hasattr(memory, "get_media_knowledge_candidates"):
+            return []
+        return [
+            scrub_media_card_payload(card)
+            for card in list(memory.get_media_knowledge_candidates(query) or [])[:limit]
+            if card
+        ]
+
+    def _build_pending_media_turn_context(
+        self,
+        pending_media_meta: Optional[Dict[str, Any]],
+        *,
+        source_turn: int,
+        fallback_user_message: str,
+    ) -> Optional[MediaTurnContext]:
+        meta = dict(pending_media_meta or {})
+        if not meta:
+            return None
+
+        current_cards = self._finalize_media_cards(
+            list(meta.get("knowledge_cards", []) or []),
+            source_session_id=str(meta.get("source_session_id") or ""),
+            source_turn=source_turn,
+        )
+        if not current_cards:
+            current_cards = self._compat_media_cards_from_meta(
+                meta,
+                source_session_id=str(meta.get("source_session_id") or ""),
+                source_turn=source_turn,
+            )
+
+        if (
+            not current_cards
+            and not meta.get("used_attachments")
+            and not meta.get("skipped_attachments")
+            and not meta.get("media_facts")
+            and not meta.get("extracted_data")
+        ):
+            return None
+
+        raw_user_text = str(meta.get("source_user_text") or fallback_user_message or "")
+        safe_extracted_data = scrub_media_extracted_data(
+            meta.get("extracted_data", {}) or self._extract_safe_media_fields(current_cards)
+        )
+        safe_media_facts = tuple(
+            scrub_media_fact_list(
+                meta.get("media_facts", []) or [
+                    fact
+                    for card in current_cards
+                    for fact in list(card.get("facts", []) or [])
+                ],
+                limit=8,
+            )
+        )
+        return freeze_media_turn_context(
+            MediaTurnContext(
+                raw_user_text=raw_user_text,
+                attachment_only=not raw_user_text.strip() and bool(current_cards),
+                source_session_id=str(meta.get("source_session_id") or ""),
+                source_user_id=str(meta.get("source_user_id") or ""),
+                used_attachments=tuple(meta.get("used_attachments", []) or []),
+                skipped_attachments=tuple(meta.get("skipped_attachments", []) or []),
+                current_cards=tuple(current_cards),
+                historical_candidates=tuple(),
+                safe_extracted_data=safe_extracted_data,
+                safe_media_facts=safe_media_facts,
+            )
+        )
+
+    def _build_historical_media_turn_context(self, user_message: str) -> Optional[MediaTurnContext]:
+        historical_candidates = self._get_media_history_candidates(user_message)
+        if not historical_candidates:
+            return None
+        return freeze_media_turn_context(
+            MediaTurnContext(
+                raw_user_text=str(user_message or ""),
+                attachment_only=False,
+                source_session_id="",
+                source_user_id="",
+                used_attachments=tuple(),
+                skipped_attachments=tuple(),
+                current_cards=tuple(),
+                historical_candidates=tuple(historical_candidates),
+                safe_extracted_data={},
+                safe_media_facts=tuple(),
+            )
+        )
+
+    def _enrich_media_turn_context(
+        self,
+        media_turn_context: Optional[MediaTurnContext],
+        *,
+        current_turn_number: int,
+        fallback_user_message: str,
+    ) -> Optional[MediaTurnContext]:
+        frozen = freeze_media_turn_context(media_turn_context)
+        if frozen is None:
+            return None
+
+        current_cards = self._finalize_media_cards(
+            [dict(card) for card in tuple(frozen.current_cards or ())],
+            source_session_id=frozen.source_session_id,
+            source_turn=current_turn_number,
+        )
+        historical_candidates: List[Dict[str, Any]] = []
+        seen: set[str] = set()
+        for raw_card in list(tuple(frozen.historical_candidates or ())) + self._get_media_history_candidates(
+            frozen.raw_user_text or fallback_user_message
+        ):
+            card = scrub_media_card_payload(raw_card)
+            card_id = str(card.get("knowledge_id") or card.get("attachment_fingerprint") or "")
+            if not card_id or card_id in seen:
+                continue
+            seen.add(card_id)
+            historical_candidates.append(card)
+
+        safe_extracted_data = scrub_media_extracted_data(
+            dict(frozen.safe_extracted_data or {}) or self._extract_safe_media_fields(current_cards)
+        )
+        safe_media_facts = tuple(
+            scrub_media_fact_list(
+                tuple(frozen.safe_media_facts or ()) or [
+                    fact
+                    for card in current_cards
+                    for fact in list(card.get("facts", []) or [])
+                ],
+                limit=8,
+            )
+        )
+        raw_user_text = str(frozen.raw_user_text or fallback_user_message or "")
+        return freeze_media_turn_context(
+            replace(
+                frozen,
+                raw_user_text=raw_user_text,
+                attachment_only=not raw_user_text.strip() and bool(current_cards),
+                current_cards=tuple(current_cards),
+                historical_candidates=tuple(historical_candidates),
+                safe_extracted_data=safe_extracted_data,
+                safe_media_facts=safe_media_facts,
+            )
+        )
+
+    def _resolve_media_turn_context(
+        self,
+        *,
+        explicit_media_turn_context: Optional[MediaTurnContext],
+        pending_media_meta: Optional[Dict[str, Any]],
+        current_turn_number: int,
+        fallback_user_message: str,
+    ) -> Optional[MediaTurnContext]:
+        explicit = freeze_media_turn_context(explicit_media_turn_context)
+        pending = dict(pending_media_meta or {})
+
+        if explicit is not None and pending:
+            logger.warning(
+                "Both explicit media_turn_context and pending adapter media_meta received; using explicit context"
+            )
+            return self._enrich_media_turn_context(
+                explicit,
+                current_turn_number=current_turn_number,
+                fallback_user_message=fallback_user_message,
+            )
+
+        if explicit is not None:
+            return self._enrich_media_turn_context(
+                explicit,
+                current_turn_number=current_turn_number,
+                fallback_user_message=fallback_user_message,
+            )
+
+        compat = self._build_pending_media_turn_context(
+            pending,
+            source_turn=current_turn_number,
+            fallback_user_message=fallback_user_message,
+        )
+        if compat is not None:
+            return self._enrich_media_turn_context(
+                compat,
+                current_turn_number=current_turn_number,
+                fallback_user_message=fallback_user_message,
+            )
+
+        return self._build_historical_media_turn_context(fallback_user_message)
+
+    def _build_media_card_lookup(
+        self,
+        media_turn_context: Optional[MediaTurnContext],
+    ) -> Dict[str, Dict[str, Any]]:
+        lookup: Dict[str, Dict[str, Any]] = {}
+        frozen = freeze_media_turn_context(media_turn_context)
+        if frozen is None:
+            return lookup
+        for raw_card in list(tuple(frozen.current_cards or ())) + list(tuple(frozen.historical_candidates or ())):
+            card = scrub_media_card_payload(raw_card)
+            card_id = str(card.get("knowledge_id") or "")
+            if card_id and card_id not in lookup:
+                lookup[card_id] = card
+        return lookup
+
+    def _resolve_selected_media_cards_from_context(
+        self,
+        *,
+        media_turn_context: Optional[MediaTurnContext],
+        selected_ids: Sequence[str],
+    ) -> List[Dict[str, Any]]:
+        wanted = [str(item).strip() for item in selected_ids if str(item).strip()]
+        if not wanted:
+            return []
+        lookup = self._build_media_card_lookup(media_turn_context)
+        return [lookup[item] for item in wanted if item in lookup]
+
+    @staticmethod
+    def _extract_media_route(sm_result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        trace = (sm_result or {}).get("resolution_trace", {})
+        metadata = trace.get("winning_action_metadata", {}) if isinstance(trace, dict) else {}
+        if not isinstance(metadata, dict):
+            metadata = {}
+
+        response_mode = str(metadata.get("response_mode") or "normal_dialog").strip().lower()
+        if response_mode not in {"normal_dialog", "media_only", "hybrid"}:
+            response_mode = "normal_dialog"
+
+        selected_ids = [
+            str(item).strip()
+            for item in list(metadata.get("selected_media_card_ids", []) or [])
+            if str(item).strip()
+        ][:3]
+        if response_mode != "normal_dialog" and not selected_ids:
+            response_mode = "normal_dialog"
+
+        return {
+            "response_mode": response_mode,
+            "selected_media_card_ids": selected_ids if response_mode != "normal_dialog" else [],
+            "route_reasoning": str(metadata.get("route_reasoning") or ""),
+            "route_source": str(metadata.get("route_source") or "fallback"),
+        }
+
+    @staticmethod
+    def _is_content_generation_action(action: str) -> bool:
+        return action in {
+            "autonomous_respond",
+            "continue_current_goal",
+            "greet_back",
+        }
+
+    @staticmethod
+    def _build_media_route_instruction(
+        *,
+        response_mode: str,
+        selected_media_grounding: str,
+    ) -> str:
+        if not str(selected_media_grounding or "").strip():
+            return ""
+        if response_mode == "media_only":
+            return (
+                "MEDIA ROUTE: отвечай только по selected_media_grounding. "
+                "Не смешивай ответ с KB и не добавляй product pitch вне содержимого документа."
+            )
+        if response_mode == "hybrid":
+            return (
+                "MEDIA ROUTE: используй selected_media_grounding как документальный контекст, "
+                "а kb_retrieved_facts как продуктовый KB-контекст. Не смешивай их неявно."
+            )
+        return ""
+
+    def _build_final_grounding_facts(
+        self,
+        *,
+        effective_action: str,
+        allow_media_grounding: bool,
+        sm_result: Dict[str, Any],
+        media_turn_context: Optional[MediaTurnContext],
+        kb_retrieved_facts: str,
+    ) -> Dict[str, Any]:
+        route = self._extract_media_route(sm_result)
+        kb_facts = str(kb_retrieved_facts or "").strip()
+
+        if not allow_media_grounding or not self._is_content_generation_action(effective_action):
+            return {
+                "route": {"response_mode": "normal_dialog", "selected_media_card_ids": []},
+                "selected_media_cards": [],
+                "selected_media_facts": [],
+                "final_grounding_facts": kb_facts,
+            }
+
+        selected_media_cards = self._resolve_selected_media_cards_from_context(
+            media_turn_context=media_turn_context,
+            selected_ids=route["selected_media_card_ids"],
+        )
+        if route["response_mode"] != "normal_dialog" and not selected_media_cards:
+            route = {
+                "response_mode": "normal_dialog",
+                "selected_media_card_ids": [],
+                "route_reasoning": route.get("route_reasoning", ""),
+                "route_source": "fallback",
+            }
+
+        selected_media_facts = [
+            fact
+            for card in selected_media_cards
+            for fact in list(card.get("facts", []) or [])
+        ][:8]
+        selected_media_grounding = self._build_media_context_from_cards(selected_media_cards)
+
+        if route["response_mode"] == "media_only":
+            final_grounding_facts = selected_media_grounding
+        elif route["response_mode"] == "hybrid":
+            final_grounding_facts = "\n\n".join(
+                part for part in (kb_facts, selected_media_grounding) if str(part).strip()
+            ).strip()
+        else:
+            final_grounding_facts = kb_facts
+
+        return {
+            "route": route,
+            "selected_media_cards": selected_media_cards,
+            "selected_media_facts": selected_media_facts,
+            "selected_media_grounding": selected_media_grounding,
+            "final_grounding_facts": final_grounding_facts,
+        }
+
+    @staticmethod
+    def _looks_like_media_memory_question(user_text: str) -> bool:
+        text = str(user_text or "").strip().lower()
+        if not text:
+            return False
+        field_prompts = (
+            "как называется компания",
+            "какая компания",
+            "как зовут",
+            "какое имя",
+            "чем занимается",
+            "из какого города",
+            "какой город",
+            "что это за документ",
+            "что было в документе",
+            "что на фото",
+            "что на картинке",
+            "что на видео",
+            "что в презентации",
+            "что там было",
+            "что там написано",
+            "что основное",
+        )
+        return any(pattern in text for pattern in field_prompts)
+
+    def _select_media_cards(
+        self,
+        *,
+        user_question: str,
+        pending_cards: Optional[List[Dict[str, Any]]] = None,
+        explicit_media_reply: bool = False,
+    ) -> Dict[str, Any]:
+        pending_cards = list(pending_cards or [])
+        candidates = list(pending_cards) if explicit_media_reply else []
+        if hasattr(self, "context_window") and hasattr(self.context_window, "episodic_memory"):
+            memory = getattr(self.context_window, "episodic_memory", None)
+            if memory is not None and hasattr(memory, "get_media_knowledge_candidates"):
+                for candidate in memory.get_media_knowledge_candidates(user_question):
+                    if candidate and candidate.get("knowledge_id") not in {
+                        item.get("knowledge_id")
+                        for item in candidates
+                    }:
+                        candidates.append(candidate)
+
+        if not candidates:
+            return {"selected_card_ids": [], "answer_from_media": False, "reason": "no_media_candidates"}
+
+        if explicit_media_reply and pending_cards:
+            selected_ids = [
+                str(card.get("knowledge_id") or "")
+                for card in pending_cards[:3]
+                if str(card.get("knowledge_id") or "")
+            ]
+            return {
+                "selected_card_ids": selected_ids,
+                "answer_from_media": True,
+                "reason": "explicit_current_media",
+            }
+
+        selector_prompt = (
+            "Ты выбираешь, какие карточки знаний из прошлых media-вложений релевантны текущему сообщению клиента.\n"
+            "Верни JSON с ключами selected_card_ids (список строк), answer_from_media (true/false), reason (строка).\n"
+            "answer_from_media=true только если на вопрос нужно отвечать именно по media-контенту, а не вести обычный sales-диалог.\n"
+            "Если не уверен, выбери answer_from_media=false.\n\n"
+            f"Сообщение клиента:\n{str(user_question or '').strip()}\n\n"
+            "Кандидаты:\n"
+        )
+        candidate_lines = []
+        for card in candidates[:10]:
+            facts = "; ".join(list(card.get("facts", []) or [])[:3])
+            candidate_lines.append(
+                json.dumps(
+                    {
+                        "knowledge_id": card.get("knowledge_id"),
+                        "file_name": card.get("file_name"),
+                        "summary": card.get("summary"),
+                        "facts": facts,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+        selector_prompt += "\n".join(candidate_lines)
+
+        parsed: Dict[str, Any] = {}
+        try:
+            raw = str(
+                self.generator.llm.generate(
+                    selector_prompt,
+                    allow_fallback=False,
+                    purpose="media_selector",
+                )
+                or ""
+            ).strip()
+        except TypeError:
+            raw = str(self.generator.llm.generate(selector_prompt) or "").strip()
+        except Exception as exc:
+            logger.warning("media selector failed", error=str(exc))
+            raw = ""
+
+        if raw:
+            parsed = self._extract_json_object(raw)
+
+        if not parsed:
+            answer_from_media = self._looks_like_media_memory_question(user_question)
+            selected = [
+                str(card.get("knowledge_id") or "")
+                for card in candidates[:3]
+                if str(card.get("knowledge_id") or "")
+            ]
+            return {
+                "selected_card_ids": selected,
+                "answer_from_media": bool(answer_from_media and selected),
+                "reason": "selector_fallback",
+            }
+
+        selected_ids = [
+            str(item)
+            for item in list(parsed.get("selected_card_ids", []) or [])
+            if str(item).strip()
+        ]
+        candidate_ids = {
+            str(card.get("knowledge_id") or "")
+            for card in candidates
+            if str(card.get("knowledge_id") or "")
+        }
+        selected_ids = [item for item in selected_ids if item in candidate_ids][:3]
+        if not selected_ids and parsed.get("answer_from_media"):
+            selected_ids = [
+                str(card.get("knowledge_id") or "")
+                for card in candidates[:3]
+                if str(card.get("knowledge_id") or "")
+            ]
+        return {
+            "selected_card_ids": selected_ids,
+            "answer_from_media": bool(parsed.get("answer_from_media") and selected_ids),
+            "reason": str(parsed.get("reason") or "selector_json"),
+        }
+
+    @staticmethod
+    def _extract_json_object(raw_text: str) -> Dict[str, Any]:
+        text = str(raw_text or "").strip()
+        if not text:
+            return {}
+        candidates = [text]
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            candidates.append(text[start:end + 1])
+        for candidate in candidates:
+            try:
+                parsed = json.loads(candidate)
+            except Exception:
+                continue
+            if isinstance(parsed, dict):
+                return parsed
+        return {}
+
+    def _resolve_selected_media_cards(
+        self,
+        *,
+        selected_ids: Sequence[str],
+        pending_cards: Optional[List[Dict[str, Any]]] = None,
+    ) -> List[Dict[str, Any]]:
+        selected = [str(item) for item in selected_ids if str(item).strip()]
+        if not selected:
+            return []
+        cards_by_id: Dict[str, Dict[str, Any]] = {}
+        for card in list(pending_cards or []) + self._get_recent_media_knowledge_cards(limit=20):
+            card_id = str(card.get("knowledge_id") or "")
+            if card_id and card_id not in cards_by_id:
+                cards_by_id[card_id] = card
+        return [cards_by_id[item] for item in selected if item in cards_by_id]
+
+    def _build_media_context_from_cards(self, cards: Optional[List[Dict[str, Any]]]) -> str:
+        cards = list(cards or [])
+        if not cards:
+            return ""
+        parts: List[str] = []
+        for card in cards[:3]:
+            label = card.get("file_name") or card.get("media_kind") or "media"
+            parts.append(f"[{label}]")
+            if card.get("summary"):
+                parts.append(str(card["summary"]))
+            facts = list(card.get("facts", []) or [])[:4]
+            if facts:
+                parts.append("Факты:")
+                parts.extend(f"- {fact}" for fact in facts)
+            if card.get("answer_context"):
+                parts.append(str(card["answer_context"]))
+        return "\n".join(parts).strip()
+
+    def _generate_media_grounded_response(
+        self,
+        *,
+        user_question: str,
+        answer_context: str,
+        purpose: str,
+    ) -> str:
+        cleaned_question = str(user_question or "").strip() or "Объясни, что содержится во вложении."
+        cleaned_context = str(answer_context or "").strip()
+        if not cleaned_context:
+            return "Не вижу достаточно данных, чтобы точно ответить по этому вложению."
+
+        prompt = (
+            "Ты отвечаешь клиенту только по содержимому media-вложения или сохранённым фактам из него.\n"
+            "Не ссылайся на базу знаний Wipon, не предлагай продукт, не проси контакты.\n"
+            "Если в контексте нет ответа, честно скажи об этом.\n"
+            "Ответь по-русски, коротко и по делу.\n\n"
+            f"Вопрос клиента:\n{cleaned_question}\n\n"
+            f"Контекст:\n{cleaned_context}\n"
+        )
+
+        try:
+            response = str(
+                self.generator.llm.generate(
+                    prompt,
+                    allow_fallback=False,
+                    purpose=purpose,
+                ) or ""
+            ).strip()
+        except TypeError:
+            response = str(self.generator.llm.generate(prompt) or "").strip()
+        except Exception as exc:
+            logger.warning("media-grounded response generation failed", error=str(exc), purpose=purpose)
+            response = ""
+
+        if response:
+            response = re.sub(
+                r"^(?:здравствуйте|добрый день|добрый вечер)[^.!?]*[.!?]\s*",
+                "",
+                response,
+                flags=re.IGNORECASE,
+            ).strip()
+        return response or cleaned_context.splitlines()[0].strip()
+
+    def _build_media_process_result(
+        self,
+        *,
+        user_message: str,
+        raw_user_message: str,
+        response: str,
+        intent: str,
+        confidence: float,
+        current_state: str,
+        tone_info: Dict[str, Any],
+        extracted_data: Dict[str, Any],
+        media_facts: Optional[List[str]],
+        media_cards_to_store: Optional[List[Dict[str, Any]]] = None,
+        trace_builder: Optional[DecisionTraceBuilder],
+        reason_code: str,
+        action: str,
+    ) -> Dict[str, Any]:
+        self.state_machine.update_data(extracted_data or {})
+        self.history.append({"user": user_message, "bot": response})
+
+        self.context_window.add_turn_from_dict(
+            user_message=user_message,
+            bot_response=response,
+            intent=intent,
+            confidence=confidence,
+            action=action,
+            state=current_state,
+            next_state=current_state,
+            method="media",
+            extracted_data=extracted_data,
+            is_fallback=False,
+            fallback_tier=None,
+            fact_keys_used=[],
+            response_embedding=None,
+        )
+        self._store_media_knowledge_cards(media_cards_to_store)
+
+        self.last_action = action
+        self.last_intent = intent
+        self.last_bot_message = response
+
+        self._record_turn_metrics(
+            state=current_state,
+            intent=intent,
+            tone=tone_info.get("tone"),
+            fallback_used=False,
+            fallback_tier=None,
+        )
+        if flags.metrics_tracking:
+            for key, value in (extracted_data or {}).items():
+                if value:
+                    self.metrics.record_collected_data(key, value)
+
+        if extracted_data or media_facts or media_cards_to_store:
+            self.guard.record_progress()
+
+        decision_trace_dict = None
+        if trace_builder:
+            trace_builder.record_response(
+                template_key=reason_code,
+                requested_action=action,
+                response_text=response,
+                elapsed_ms=0.0,
+                cta_added=False,
+                cta_type=None,
+            )
+            decision_trace_dict = self._build_decision_trace_dict(
+                trace_builder=trace_builder,
+                fallback_used=False,
+                fallback_tier=None,
+                intervention=None,
+                fallback_action=None,
+                fallback_message=None,
+            )
+
+        return self._build_process_result(
+            response=response,
+            intent=intent,
+            action=action,
+            state=current_state,
+            is_final=False,
+            confidence=confidence,
+            spin_phase=self.state_machine.current_phase,
+            visited_states=[current_state],
+            initial_state=current_state,
+            fallback_used=False,
+            fallback_tier=None,
+            tone=tone_info.get("tone"),
+            frustration_level=tone_info.get("frustration_level"),
+            lead_score=self.lead_scorer.current_score if flags.lead_scoring else None,
+            objection_detected=False,
+            reason_codes=[reason_code],
+            resolution_trace={},
+            options=None,
+            cta_result=CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason=reason_code,
+            ),
+            decision_trace=decision_trace_dict,
+        )
+
+    def _build_forced_process_result(
+        self,
+        *,
+        user_message: str,
+        response: str,
+        intent: str,
+        confidence: float,
+        current_state: str,
+        next_state: str,
+        tone_info: Dict[str, Any],
+        extracted_data: Dict[str, Any],
+        media_facts: Optional[List[str]],
+        media_cards_to_store: Optional[List[Dict[str, Any]]],
+        trace_builder: Optional[DecisionTraceBuilder],
+        action: str,
+        is_final: bool,
+        spin_phase: Optional[str],
+        visited_states: Optional[List[str]],
+        initial_state: str,
+        reason_codes: Optional[List[str]],
+        resolution_trace: Optional[Dict[str, Any]],
+        lead_score: Optional[float],
+        objection_detected: bool,
+        method: str,
+    ) -> Dict[str, Any]:
+        self.state_machine.update_data(extracted_data or {})
+        self.history.append({"user": user_message, "bot": response})
+
+        self.context_window.add_turn_from_dict(
+            user_message=user_message,
+            bot_response=response,
+            intent=intent,
+            confidence=confidence,
+            action=action,
+            state=current_state,
+            next_state=next_state,
+            method=method,
+            extracted_data=extracted_data,
+            is_fallback=False,
+            fallback_tier=None,
+            fact_keys_used=[],
+            response_embedding=None,
+        )
+        self._store_media_knowledge_cards(media_cards_to_store)
+
+        if self.action_tracker and self.last_action:
+            turn_type = "NEUTRAL"
+            if hasattr(self.context_window, "get_last_turn_type"):
+                turn_type = self.context_window.get_last_turn_type() or "NEUTRAL"
+            self.action_tracker.record_outcome(
+                action=self.last_action,
+                turn_type=turn_type,
+                intent=intent,
+            )
+
+        self.last_action = action
+        self.last_intent = intent
+        self.last_bot_message = response
+
+        self._record_turn_metrics(
+            state=next_state,
+            intent=intent,
+            tone=tone_info.get("tone"),
+            fallback_used=False,
+            fallback_tier=None,
+        )
+        if flags.metrics_tracking:
+            for key, value in (extracted_data or {}).items():
+                if value:
+                    self.metrics.record_collected_data(key, value)
+
+        if current_state != next_state or extracted_data or media_facts or media_cards_to_store:
+            self.guard.record_progress()
+
+        decision_trace_dict = None
+        if trace_builder:
+            trace_builder.record_response(
+                template_key=action,
+                requested_action=action,
+                response_text=response,
+                elapsed_ms=0.0,
+                cta_added=False,
+                cta_type=None,
+            )
+            decision_trace_dict = self._build_decision_trace_dict(
+                trace_builder=trace_builder,
+                fallback_used=False,
+                fallback_tier=None,
+                intervention=None,
+                fallback_action=None,
+                fallback_message=None,
+            )
+
+        return self._build_process_result(
+            response=response,
+            intent=intent,
+            action=action,
+            state=next_state,
+            is_final=is_final,
+            confidence=confidence,
+            spin_phase=spin_phase,
+            visited_states=visited_states,
+            initial_state=initial_state,
+            fallback_used=False,
+            fallback_tier=None,
+            tone=tone_info.get("tone"),
+            frustration_level=tone_info.get("frustration_level"),
+            lead_score=lead_score,
+            objection_detected=objection_detected,
+            reason_codes=reason_codes or [],
+            resolution_trace=resolution_trace or {},
+            options=None,
+            cta_result=CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="forced_misroute_response",
+            ),
+            decision_trace=decision_trace_dict,
+        )
+
     def _build_decision_trace_dict(
         self,
         trace_builder: Optional[DecisionTraceBuilder],
@@ -967,7 +1923,12 @@ class SalesBot:
             "decision_trace": decision_trace,
         }
 
-    def process(self, user_message: str) -> Dict:
+    def process(
+        self,
+        user_message: str,
+        *,
+        media_turn_context: Optional[MediaTurnContext] = None,
+    ) -> Dict:
         """
         Обработать сообщение клиента.
 
@@ -989,10 +1950,12 @@ class SalesBot:
         Returns:
             Dict с response, intent, action, state, is_final и др.
         """
-        # Decision Tracing: Create trace builder for this turn
-        trace_builder: Optional[DecisionTraceBuilder] = None
-        if self._enable_decision_tracing:
-            trace_builder = DecisionTraceBuilder(turn=self.turn + 1, message=user_message)
+        pending_media_meta = self._consume_pending_media_meta()
+        current_turn_number = (
+            self.context_window.get_total_turn_count() + 1
+            if hasattr(self, "context_window") and hasattr(self.context_window, "get_total_turn_count")
+            else 1
+        )
 
         # Phase 4: Increment turn counter for disambiguation cooldown
         self.state_machine.increment_turn()
@@ -1012,6 +1975,62 @@ class SalesBot:
         current_state = self.state_machine.state
         collected_data = self.state_machine.collected_data
         was_in_disambiguation = self.state_machine.in_disambiguation
+        autonomous_media_runtime = self._is_autonomous_media_runtime(current_state)
+
+        resolved_media_turn_context: Optional[MediaTurnContext] = None
+        legacy_pending_media_cards: List[Dict[str, Any]] = []
+        legacy_pending_media_safe_fields: Dict[str, Any] = {}
+
+        if autonomous_media_runtime:
+            resolved_media_turn_context = self._resolve_media_turn_context(
+                explicit_media_turn_context=media_turn_context,
+                pending_media_meta=pending_media_meta,
+                current_turn_number=current_turn_number,
+                fallback_user_message=user_message,
+            )
+        elif pending_media_meta:
+            legacy_pending_media_cards = self._finalize_media_cards(
+                list((pending_media_meta or {}).get("knowledge_cards", []) or []),
+                source_session_id=str((pending_media_meta or {}).get("source_session_id") or ""),
+                source_turn=current_turn_number,
+            )
+            if not legacy_pending_media_cards:
+                legacy_pending_media_cards = self._compat_media_cards_from_meta(
+                    pending_media_meta,
+                    source_session_id=str((pending_media_meta or {}).get("source_session_id") or ""),
+                    source_turn=current_turn_number,
+                )
+            legacy_pending_media_safe_fields = self._extract_safe_media_fields(legacy_pending_media_cards)
+
+        raw_user_message = str(
+            (
+                resolved_media_turn_context.raw_user_text
+                if resolved_media_turn_context is not None
+                else (pending_media_meta.get("source_user_text") if pending_media_meta else "")
+            )
+            or user_message
+            or ""
+        ).strip()
+        visible_user_message = raw_user_message if autonomous_media_runtime else str(user_message or "").strip()
+        current_media_cards = (
+            [scrub_media_card_payload(card) for card in tuple(resolved_media_turn_context.current_cards or ())]
+            if resolved_media_turn_context is not None
+            else legacy_pending_media_cards
+        )
+        current_media_safe_fields = (
+            dict(resolved_media_turn_context.safe_extracted_data or {})
+            if resolved_media_turn_context is not None
+            else legacy_pending_media_safe_fields
+        )
+        media_facts = (
+            list(resolved_media_turn_context.safe_media_facts or ())
+            if resolved_media_turn_context is not None
+            else list(pending_media_meta.get("media_facts", []) or [])
+        )
+
+        trace_builder: Optional[DecisionTraceBuilder] = None
+        if self._enable_decision_tracing:
+            trace_builder = DecisionTraceBuilder(turn=self.turn + 1, message=visible_user_message)
 
         # FIX: Track all visited states during this turn for accurate phase coverage
         # This is critical for cases like fallback skip where bot transitions through
@@ -1023,7 +2042,7 @@ class SalesBot:
 
         # Phase 2: Analyze tone
         tone_start = time.time()
-        tone_info = self._analyze_tone(user_message)
+        tone_info = self._analyze_tone(visible_user_message)
         frustration_level = tone_info.get("frustration_level", 0)
         tone_elapsed = (time.time() - tone_start) * 1000
 
@@ -1033,9 +2052,25 @@ class SalesBot:
 
         # FIX 1: Classify intent BEFORE guard check so guard uses current intent
         classification_start = time.time()
-        classification = self.classifier.classify(user_message, current_context)
+        classifier_input = visible_user_message
+        if (
+            resolved_media_turn_context is not None
+            and resolved_media_turn_context.attachment_only
+            and not visible_user_message.strip()
+        ):
+            classifier_input = "[attachment-only-media]"
+        classification = self.classifier.classify(classifier_input, current_context)
         intent = classification["intent"]
-        extracted = classification["extracted_data"]
+        extracted = self._merge_extracted_data(
+            classification.get("extracted_data", {}),
+            current_media_safe_fields
+            or (
+                pending_media_meta.get("extracted_data", {})
+                if pending_media_meta and not autonomous_media_runtime
+                else {}
+            ),
+        )
+        classification["extracted_data"] = extracted
         classification_confidence = float(classification.get("confidence", 0.0) or 0.0)
         classification_elapsed = (time.time() - classification_start) * 1000
 
@@ -1093,7 +2128,7 @@ class SalesBot:
             guard_start = time.time()
             guard_result = self._check_guard(
                 state=current_state,
-                message=user_message,
+                message=visible_user_message,
                 collected_data=collected_data,
                 frustration_level=frustration_level,
                 last_intent=intent  # FIX 1: Use current intent, not self.last_intent
@@ -1160,7 +2195,7 @@ class SalesBot:
                         )
 
                         self.history.append({
-                            "user": user_message,
+                            "user": visible_user_message,
                             "bot": fb_result["response"]
                         })
 
@@ -1241,7 +2276,7 @@ class SalesBot:
         # Track competitor mention for dynamic CTA
         if intent == "objection_competitor":
             self.state_machine.collected_data["competitor_mentioned"] = True
-            competitor_name = self._extract_competitor_name(user_message)
+            competitor_name = self._extract_competitor_name(visible_user_message)
             if competitor_name:
                 self.state_machine.collected_data["competitor_name"] = competitor_name
 
@@ -1264,7 +2299,7 @@ class SalesBot:
         # Phase 3: Check for objection
         objection_info = None
         if not (self._flow and self._flow.name == "autonomous"):
-            objection_info = self._check_objection(user_message, collected_data)
+            objection_info = self._check_objection(visible_user_message, collected_data)
 
         # Decision Tracing: Record objection
         if trace_builder and objection_info:
@@ -1303,7 +2338,7 @@ class SalesBot:
                 last_intent=self.last_intent,
                 current_intent=intent,
                 classification_result=classification,
-                user_message=user_message,
+                user_message=visible_user_message,
                 last_bot_message=self.last_bot_message or "",
             )
 
@@ -1324,17 +2359,24 @@ class SalesBot:
         response_directives = None
         prepared_response_ctx: Optional[Dict[str, Any]] = None
 
-        if (
+        merged_autonomous_enabled = bool(
             self._flow
             and self._flow.name == "autonomous"
             and flags.is_enabled("merged_autonomous_call")
-        ):
+        )
+        should_prepare_autonomous_response_context = bool(
+            self._flow
+            and self._flow.name == "autonomous"
+            and (current_state.startswith("autonomous_") or current_state == "greeting")
+        )
+
+        if should_prepare_autonomous_response_context:
             try:
                 prepared_response_ctx = self.generator.prepare_response_context(
                     state=current_state,
                     context={
                         "action": "autonomous_respond",
-                        "user_message": user_message,
+                        "user_message": visible_user_message,
                         "intent": intent,
                         "state": current_state,
                         "history": self.history,
@@ -1359,14 +2401,17 @@ class SalesBot:
                         "secondary_signals": classification.get("secondary_signals", []),
                         "semantic_frame": classification.get("semantic_frame", {}),
                         "style_separation_applied": classification.get("style_separation_applied", False),
+                        "media_turn_context": resolved_media_turn_context,
                         "terminal_state_requirements": self._flow.states.get(current_state, {}).get(
                             "terminal_state_requirements", {}
                         ),
                     },
                 )
-                self._orchestrator.blackboard.set_response_context(prepared_response_ctx)
+                self._orchestrator.blackboard.set_response_context(
+                    prepared_response_ctx if merged_autonomous_enabled else None
+                )
             except Exception as e:
-                logger.warning("prepare_response_context failed: %s", e)
+                logger.warning("prepare_response_context failed", error=str(e))
                 prepared_response_ctx = None
                 self._orchestrator.blackboard.set_response_context(None)
         else:
@@ -1395,9 +2440,10 @@ class SalesBot:
             intent=intent,
             extracted_data=extracted,
             context_envelope=context_envelope,
-            user_message=user_message,
+            user_message=visible_user_message,
             frustration_level=frustration_level,
             dialog_history=decision_dialog_history,
+            media_turn_context=resolved_media_turn_context,
         )
         # Convert to sm_result dict for compatibility with DialoguePolicy/Generator
         sm_result = decision.to_sm_result()
@@ -1472,17 +2518,6 @@ class SalesBot:
         if trace_builder:
             trace_builder.record_policy_override(policy_override)
 
-        # Build ResponseDirectives AFTER policy override.
-        # Ensures directives reflect the final action, not pre-override state.
-        if flags.context_response_directives and context_envelope:
-            response_directives = build_response_directives(
-                context_envelope, config=self._config.response_directives
-            )
-
-        # Propagate rephrase_mode to directives (moved from pre-override location)
-        if rephrase_mode and response_directives:
-            response_directives.rephrase_mode = True
-
         # === Defense-in-depth block (old path only) ===
         # In new pipeline path, conflict resolution handles all of this.
         if not flags.conversation_guard_in_pipeline:
@@ -1522,62 +2557,68 @@ class SalesBot:
                 fallback_response = None
                 fallback_used = False
 
-        # Build context for response generation
-        # При наличии ResponseDirectives используем их instruction
-        directive_instruction = ""
-        if response_directives:
-            directive_instruction = response_directives.get_instruction()
-
-        context = {
-            "user_message": user_message,
-            "intent": intent,
-            "state": sm_result["next_state"],
-            "history": self.history,
-            "is_first_bot_reply": len(self.history) == 0,
-            "goal": sm_result["goal"],
-            "collected_data": sm_result["collected_data"],
-            "missing_data": sm_result["missing_data"],
-            "spin_phase": sm_result.get("spin_phase"),
-            "optional_data": sm_result.get("optional_data", []),
-            # Phase 2: Tone and style instructions
-            # FIXED: Concatenate both instructions to preserve apology from tone_info
-            # SSoT: src/apology_ssot.py
-            "tone_instruction": " ".join(filter(None, [
-                directive_instruction,
-                tone_info.get("tone_instruction", "")
-            ])),
-            "style_instruction": tone_info.get("style_instruction", ""),
-            "frustration_level": frustration_level,
-            "should_apologize": tone_info.get("should_apologize", False),
-            "should_offer_exit": tone_info.get("should_offer_exit", False),
-            # Phase 3: Objection info
-            "objection_info": objection_info,
-            # For CTA
-            "last_action": self.last_action,
-            # Phase 5: Policy reason codes for generator
-            "policy_reason_codes": policy_override.reason_codes if policy_override else [],
-            # Personalization v2: Context envelope and action tracker
-            "context_envelope": context_envelope,
-            "action_tracker": self.action_tracker,
-            "user_messages": [turn.get("user", "") for turn in self.history[-5:]] + [user_message],
-            # Phase 2: ResponseDirectives для generator
-            "response_directives": response_directives,
-            # Fact rotation: recently used KB section keys for autonomous flow
-            "recent_fact_keys": list(self.context_window.get_recent_fact_keys(3)),
-            # Style separation fields from classification (for generator._apply_style_modifiers)
-            "style_modifiers": classification.get("style_modifiers", []),
-            "secondary_signals": classification.get("secondary_signals", []),
-            "semantic_frame": classification.get("semantic_frame", {}),
-            "style_separation_applied": classification.get("style_separation_applied", False),
-            # RC1 fix: terminal_state_requirements was missing — generator.py:1134 reads this
-            # to compute closing_data_request. Without it, closing_data_request was always "".
-            "terminal_state_requirements": sm_result.get("terminal_state_requirements", {}),
-        }
-
         # Determine action
         action = sm_result["action"]
         next_state = sm_result["next_state"]
         is_final = sm_result["is_final"]
+        route_media_grounding_allowed = True
+
+        forced_misroute_responses = {
+            "misroute_wipon_outage": (
+                "redirect_misroute_wipon_outage",
+                "Здравствуйте! Извините за неудобства. Вы обратились в отдел продаж. "
+                "Пожалуйста, свяжитесь с технической поддержкой: +77070202019.",
+                "Извините за неудобства. Вы обратились в отдел продаж. "
+                "Пожалуйста, свяжитесь с технической поддержкой: +77070202019.",
+            ),
+            "misroute_pending_delivery": (
+                "redirect_misroute_pending_delivery",
+                "Здравствуйте! Извините за неудобства. Вы обратились в отдел продаж. По вопросам оборудования и доставки, "
+                "пожалуйста, свяжитесь с менеджером по оборудованию: +77087010744.",
+                "Извините за неудобства. Вы обратились в отдел продаж. По вопросам оборудования и доставки, "
+                "пожалуйста, свяжитесь с менеджером по оборудованию: +77087010744.",
+            ),
+            "misroute_training_support": (
+                "redirect_misroute_training_support",
+                "Здравствуйте! Извините за неудобства. Вы обратились в отдел продаж. "
+                "По вопросам обучения, пожалуйста, свяжитесь с технической поддержкой: +77070202019.",
+                "Извините за неудобства. Вы обратились в отдел продаж. "
+                "По вопросам обучения, пожалуйста, свяжитесь с технической поддержкой: +77070202019.",
+            ),
+            "misroute_technical_support": (
+                "redirect_misroute_technical_support",
+                "Здравствуйте! Извините за неудобства. Вы обратились в отдел продаж. Пожалуйста, свяжитесь с технической поддержкой: +77070202019.",
+                "Извините за неудобства. Вы обратились в отдел продаж. Пожалуйста, свяжитесь с технической поддержкой: +77070202019.",
+            ),
+        }
+        if intent in forced_misroute_responses:
+            forced_action, first_turn_response, followup_response = forced_misroute_responses[intent]
+            forced_response = first_turn_response if not self.history else followup_response
+            forced_reason_codes = list(sm_result.get("reason_codes", []))
+            forced_reason_codes.append("forced_misroute_response")
+            return self._build_forced_process_result(
+                user_message=visible_user_message,
+                response=forced_response,
+                intent=intent,
+                confidence=classification_confidence,
+                current_state=current_state,
+                next_state=next_state,
+                tone_info=tone_info,
+                extracted_data=extracted,
+                media_facts=media_facts,
+                media_cards_to_store=current_media_cards,
+                trace_builder=trace_builder,
+                action=forced_action,
+                is_final=is_final,
+                spin_phase=sm_result.get("spin_phase"),
+                visited_states=visited_states,
+                initial_state=initial_state,
+                reason_codes=forced_reason_codes,
+                resolution_trace=sm_result.get("resolution_trace", {}),
+                lead_score=self.lead_scorer.current_score if flags.lead_scoring else None,
+                objection_detected=objection_info is not None,
+                method=classification.get("method", "unknown"),
+            )
 
         # Autonomous action normalization:
         # In autonomous flow, non-structural actions should resolve through
@@ -1601,6 +2642,8 @@ class SalesBot:
                 "redirect_after_repetition",
                 "escalate_repeated_content",
             }
+            if action in structural_actions or action == "ask_clarification":
+                route_media_grounding_allowed = False
             current_state = self.state_machine.state
             keep_greeting_action = (action == "greet_back" and current_state == "greeting")
             if (
@@ -1670,6 +2713,99 @@ class SalesBot:
                 if not self.generator._get_template(action):
                     action = "continue_current_goal"
 
+        kb_retrieved_facts = ""
+        retrieved_urls = ""
+        grounding_contract_version = None
+        if isinstance(prepared_response_ctx, dict):
+            kb_retrieved_facts = str(
+                prepared_response_ctx.get("kb_retrieved_facts")
+                or prepared_response_ctx.get("retrieved_facts")
+                or ""
+            )
+            retrieved_urls = str(prepared_response_ctx.get("retrieved_urls") or "")
+            grounding_contract_version = prepared_response_ctx.get("grounding_contract_version")
+
+        final_grounding = self._build_final_grounding_facts(
+            effective_action=action,
+            allow_media_grounding=route_media_grounding_allowed,
+            sm_result=sm_result,
+            media_turn_context=resolved_media_turn_context,
+            kb_retrieved_facts=kb_retrieved_facts,
+        )
+        media_route_mode = str(final_grounding["route"].get("response_mode") or "normal_dialog")
+        selected_media_cards = final_grounding["selected_media_cards"]
+        selected_media_facts = final_grounding["selected_media_facts"]
+        selected_media_grounding = str(final_grounding.get("selected_media_grounding") or "")
+        final_grounding_facts = final_grounding["final_grounding_facts"]
+        media_route_instruction = self._build_media_route_instruction(
+            response_mode=media_route_mode,
+            selected_media_grounding=selected_media_grounding,
+        )
+
+        if (
+            context_envelope
+            and self._is_content_generation_action(action)
+            and media_route_mode in {"media_only", "hybrid"}
+        ):
+            context_envelope.client_media_facts = selected_media_facts[:3]
+
+        if flags.context_response_directives and context_envelope:
+            response_directives = build_response_directives(
+                context_envelope,
+                config=self._config.response_directives,
+            )
+        else:
+            response_directives = None
+
+        if rephrase_mode and response_directives:
+            response_directives.rephrase_mode = True
+
+        directive_instruction = response_directives.get_instruction() if response_directives else ""
+        context = {
+            "user_message": visible_user_message,
+            "intent": intent,
+            "state": sm_result["next_state"],
+            "history": self.history,
+            "is_first_bot_reply": len(self.history) == 0,
+            "goal": sm_result["goal"],
+            "collected_data": sm_result["collected_data"],
+            "missing_data": sm_result["missing_data"],
+            "spin_phase": sm_result.get("spin_phase"),
+            "optional_data": sm_result.get("optional_data", []),
+            "tone_instruction": " ".join(
+                filter(None, [directive_instruction, tone_info.get("tone_instruction", "")])
+            ),
+            "style_instruction": tone_info.get("style_instruction", ""),
+            "frustration_level": frustration_level,
+            "should_apologize": tone_info.get("should_apologize", False),
+            "should_offer_exit": tone_info.get("should_offer_exit", False),
+            "objection_info": objection_info,
+            "last_action": self.last_action,
+            "policy_reason_codes": policy_override.reason_codes if policy_override else [],
+            "context_envelope": context_envelope,
+            "action_tracker": self.action_tracker,
+            "user_messages": [turn.get("user", "") for turn in self.history[-5:]] + [visible_user_message],
+            "response_directives": response_directives,
+            "recent_fact_keys": list(self.context_window.get_recent_fact_keys(3)),
+            "fact_keys": (prepared_response_ctx or {}).get("fact_keys", []),
+            "style_modifiers": classification.get("style_modifiers", []),
+            "secondary_signals": classification.get("secondary_signals", []),
+            "semantic_frame": classification.get("semantic_frame", {}),
+            "style_separation_applied": classification.get("style_separation_applied", False),
+            "terminal_state_requirements": sm_result.get("terminal_state_requirements", {}),
+            "retrieved_facts": final_grounding_facts,
+            "retrieved_urls": retrieved_urls,
+            "media_route_mode": media_route_mode,
+            "selected_media_grounding": selected_media_grounding,
+            "kb_retrieved_facts": kb_retrieved_facts,
+            "final_grounding_facts": final_grounding_facts,
+            "media_route_instruction": media_route_instruction,
+            "media_turn_context": resolved_media_turn_context,
+            "_skip_retrieval": self._is_content_generation_action(action) and isinstance(prepared_response_ctx, dict),
+        }
+        if grounding_contract_version is not None:
+            context["grounding_contract_version"] = grounding_contract_version
+
         # FIX: Record the final state for phase coverage tracking
         if next_state not in visited_states:
             visited_states.append(next_state)
@@ -1688,11 +2824,7 @@ class SalesBot:
         response_elapsed: float = 0.0
         generator_used: bool = False
         pre_gen = self._orchestrator.blackboard.get_pre_generated_response()
-        merged_retrieved_facts = (
-            str((prepared_response_ctx or {}).get("retrieved_facts", "") or "")
-            if isinstance(prepared_response_ctx, dict)
-            else ""
-        )
+        merged_retrieved_facts = final_grounding_facts
 
         # If objection detected and needs soft close - override state machine result
         # In autonomous states, ObjectionGuardSource (blackboard-native) handles limits
@@ -1933,7 +3065,7 @@ class SalesBot:
                 state=current_state, intent="fallback_close",
                 tone=tone_info.get("tone"), fallback_used=True, fallback_tier="soft_close",
             )
-            self.history.append({"user": user_message, "bot": response})
+            self.history.append({"user": visible_user_message, "bot": response})
             self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
             if trace_builder:
                 trace_builder.record_response(
@@ -2010,7 +3142,7 @@ class SalesBot:
                     "action": action,
                     "intent": intent,
                     "objection_info": objection_info,
-                    "user_message": user_message,
+                    "user_message": visible_user_message,
                     # Pass collected_data for contact gate
                     "collected_data": self.state_machine.collected_data,
                     "history": self.history,
@@ -2048,7 +3180,7 @@ class SalesBot:
 
         # 4. Save to history
         self.history.append({
-            "user": user_message,
+            "user": visible_user_message,
             "bot": response
         })
 
@@ -2065,7 +3197,7 @@ class SalesBot:
             else None
         )
         self.context_window.add_turn_from_dict(
-            user_message=user_message,
+            user_message=visible_user_message,
             bot_response=response,
             intent=intent,
             confidence=classification_confidence,
@@ -2079,6 +3211,7 @@ class SalesBot:
             fact_keys_used=_fact_keys,
             response_embedding=_response_embedding,
         )
+        self._store_media_knowledge_cards(current_media_cards)
 
         # 4.2 Record action outcome for personalization v2
         if self.action_tracker and self.last_action:
@@ -2170,7 +3303,7 @@ class SalesBot:
                 self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
 
         # Record progress if state changed or data collected
-        if sm_result["prev_state"] != next_state or extracted:
+        if sm_result["prev_state"] != next_state or extracted or media_facts or current_media_cards:
             self.guard.record_progress()
 
         # Decision Tracing: Build and store final trace

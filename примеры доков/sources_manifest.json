@@ -1,0 +1,48 @@
+[
+  {
+    "file_name": "TIS Заявление на возврат.docx",
+    "path": "/home/corta/crm-sales-bot-fork/примеры доков/TIS Заявление на возврат.docx",
+    "size_bytes": 14028,
+    "source": "user_provided"
+  },
+  {
+    "file_name": "Каталог wipon.pdf",
+    "path": "/home/corta/crm-sales-bot-fork/примеры доков/Каталог wipon.pdf",
+    "size_bytes": 3696465,
+    "source": "user_provided"
+  },
+  {
+    "file_name": "Удостоверение Аэлиты.pdf",
+    "path": "/home/corta/crm-sales-bot-fork/примеры доков/Удостоверение Аэлиты.pdf",
+    "size_bytes": 2262414,
+    "source": "user_provided"
+  },
+  {
+    "file_name": "Startup Pitch Notes.txt",
+    "path": "/home/corta/crm-sales-bot-fork/примеры доков/Startup Pitch Notes.txt",
+    "size_bytes": 3204,
+    "source": "downloaded",
+    "url": "https://gist.githubusercontent.com/sejaldeshpande/a750e87498a3f4b950c54f5f1f0be78b/raw/gistfile1.txt"
+  },
+  {
+    "file_name": "company-sales.csv",
+    "path": "/home/corta/crm-sales-bot-fork/примеры доков/company-sales.csv",
+    "size_bytes": 645,
+    "source": "downloaded",
+    "url": "https://gist.githubusercontent.com/fishtai0/5975c7e38c8566b9b3144e45a99b65cf/raw/company-sales.csv"
+  },
+  {
+    "file_name": "Жалоба в Роспотребнадзор.doc",
+    "path": "/home/corta/crm-sales-bot-fork/примеры доков/Жалоба в Роспотребнадзор.doc",
+    "size_bytes": 30208,
+    "source": "downloaded",
+    "url": "https://zpp.rospotrebnadzor.ru/Show/File/23214"
+  },
+  {
+    "file_name": "Marketing Slides.pptx",
+    "path": "/home/corta/crm-sales-bot-fork/примеры доков/Marketing Slides.pptx",
+    "size_bytes": 16820300,
+    "source": "downloaded",
+    "url": "https://ugstudents.smeal.psu.edu/academics-advising/degree-requirements/scheduling-info-for-juniors/documents/marketing-slides-ppt/at_download/file"
+  }
+]

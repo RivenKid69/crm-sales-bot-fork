@@ -28,9 +28,10 @@ Context Window — расширенный контекст для классиф
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Set, Tuple, TYPE_CHECKING
+from typing import List, Dict, Optional, Any, Set, Tuple, TYPE_CHECKING, Sequence
 from collections import Counter
 from enum import Enum
+import re
 import time
 
 # CRITICAL FIX: Import intent categories from single source of truth (constants.yaml)
@@ -41,6 +42,12 @@ from src.yaml_config.constants import (
     QUESTION_INTENTS,
     # Objection limits from YAML (single source of truth)
     MAX_CONSECUTIVE_OBJECTIONS,
+)
+from src.media_turn_context import (
+    redact_media_text,
+    scrub_media_card_payload,
+    scrub_media_extracted_data,
+    scrub_media_fact_list,
 )
 
 if TYPE_CHECKING:
@@ -384,6 +391,9 @@ class ClientProfile:
     # Интересы
     interested_features: List[str] = field(default_factory=list)
 
+    # Короткие факты, извлечённые из media в текущей сессии
+    media_facts: List[str] = field(default_factory=list)
+
     # Возражения которые были
     objection_types: List[str] = field(default_factory=list)
 
@@ -452,6 +462,16 @@ class ClientProfile:
         if objection_type not in self.objection_types:
             self.objection_types.append(objection_type)
 
+    def add_media_facts(self, facts: List[str]) -> None:
+        """Append unique media-derived facts for in-session memory."""
+        for fact in scrub_media_fact_list(facts or [], limit=10):
+            value = str(fact or "").strip()
+            if not value or value in self.media_facts:
+                continue
+            self.media_facts.append(value)
+        if len(self.media_facts) > 10:
+            self.media_facts = self.media_facts[-10:]
+
     def has_data(self) -> bool:
         """Проверить есть ли собранные данные."""
         return bool(
@@ -480,6 +500,7 @@ class ClientProfile:
             "preferred_channel": self.preferred_channel,
             "pain_points": self.pain_points,
             "interested_features": self.interested_features,
+            "media_facts": scrub_media_fact_list(self.media_facts, limit=10),
             "objection_types": self.objection_types,
         }
 
@@ -506,8 +527,84 @@ class ClientProfile:
             preferred_channel=data.get("preferred_channel"),
             pain_points=list(data.get("pain_points", []) or []),
             interested_features=list(data.get("interested_features", []) or []),
+            media_facts=scrub_media_fact_list(data.get("media_facts", []) or [], limit=10),
             objection_types=list(data.get("objection_types", []) or []),
         )
+
+
+@dataclass
+class MediaKnowledgeCard:
+    """Structured knowledge derived from a single media attachment."""
+
+    knowledge_id: str
+    attachment_fingerprint: str
+    source_session_id: str = ""
+    source_turn: int = 0
+    file_name: str = ""
+    media_kind: str = ""
+    source_user_text: str = ""
+    summary: str = ""
+    facts: List[str] = field(default_factory=list)
+    extracted_data: Dict[str, Any] = field(default_factory=dict)
+    answer_context: str = ""
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return scrub_media_card_payload(
+            {
+            "knowledge_id": self.knowledge_id,
+            "attachment_fingerprint": self.attachment_fingerprint,
+            "source_session_id": self.source_session_id,
+            "source_turn": self.source_turn,
+            "file_name": self.file_name,
+            "media_kind": self.media_kind,
+            "source_user_text": self.source_user_text,
+            "summary": self.summary,
+            "facts": list(self.facts or []),
+            "extracted_data": dict(self.extracted_data or {}),
+            "answer_context": self.answer_context,
+            "created_at": float(self.created_at or time.time()),
+            "updated_at": float(self.updated_at or time.time()),
+            }
+        )
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "MediaKnowledgeCard":
+        if not data:
+            return cls(knowledge_id="", attachment_fingerprint="")
+        payload = scrub_media_card_payload(data)
+        return cls(
+            knowledge_id=str(payload.get("knowledge_id") or ""),
+            attachment_fingerprint=str(payload.get("attachment_fingerprint") or ""),
+            source_session_id=str(payload.get("source_session_id") or ""),
+            source_turn=int(payload.get("source_turn", 0) or 0),
+            file_name=str(payload.get("file_name") or ""),
+            media_kind=str(payload.get("media_kind") or ""),
+            source_user_text=str(payload.get("source_user_text") or ""),
+            summary=str(payload.get("summary") or ""),
+            facts=list(payload.get("facts", []) or []),
+            extracted_data=dict(payload.get("extracted_data", {}) or {}),
+            answer_context=str(payload.get("answer_context") or ""),
+            created_at=float(payload.get("created_at", time.time()) or time.time()),
+            updated_at=float(payload.get("updated_at", time.time()) or time.time()),
+        )
+
+    def searchable_text(self) -> str:
+        parts = [
+            self.file_name,
+            self.media_kind,
+            self.source_user_text,
+            self.summary,
+            self.answer_context,
+            " ".join(self.facts or []),
+            " ".join(
+                f"{key} {value}"
+                for key, value in (self.extracted_data or {}).items()
+                if value not in (None, "", [], {})
+            ),
+        ]
+        return redact_media_text(" ".join(part for part in parts if part).strip()).lower()
 
 
 class EpisodicMemory:
@@ -522,6 +619,7 @@ class EpisodicMemory:
         """Инициализация эпизодической памяти."""
         self.episodes: List[Episode] = []
         self.client_profile = ClientProfile()
+        self.media_knowledge_cards: List[MediaKnowledgeCard] = []
         self.total_turns = 0
 
         # Статистика за весь диалог
@@ -708,6 +806,7 @@ class EpisodicMemory:
         """Очистить память для нового диалога."""
         self.episodes.clear()
         self.client_profile = ClientProfile()
+        self.media_knowledge_cards = []
         self.total_turns = 0
         self.all_objections.clear()
         self.all_questions.clear()
@@ -847,6 +946,7 @@ class EpisodicMemory:
             "client_has_data": self.client_profile.has_data(),
             "client_company_size": self.client_profile.company_size,
             "client_pain_points": self.client_profile.pain_points,
+            "client_media_facts": self.get_media_facts(),
             "client_objection_history": self.client_profile.objection_types,
 
             # Мета
@@ -856,7 +956,145 @@ class EpisodicMemory:
 
     def get_client_profile(self) -> Dict[str, Any]:
         """Получить профиль клиента."""
+        self._sync_media_facts_view()
         return self.client_profile.to_dict()
+
+    def upsert_media_knowledge_card(self, card: Dict[str, Any] | MediaKnowledgeCard) -> Optional[MediaKnowledgeCard]:
+        """Add or update a media knowledge card."""
+        if isinstance(card, MediaKnowledgeCard):
+            normalized = card
+        else:
+            normalized = MediaKnowledgeCard.from_dict(card)
+
+        if not normalized.knowledge_id and not normalized.attachment_fingerprint:
+            return None
+
+        if not normalized.updated_at:
+            normalized.updated_at = time.time()
+        if not normalized.created_at:
+            normalized.created_at = normalized.updated_at
+
+        for index, existing in enumerate(self.media_knowledge_cards):
+            same_fingerprint = (
+                normalized.attachment_fingerprint
+                and existing.attachment_fingerprint == normalized.attachment_fingerprint
+            )
+            same_id = normalized.knowledge_id and existing.knowledge_id == normalized.knowledge_id
+            if not (same_fingerprint or same_id):
+                continue
+
+            created_at = existing.created_at or normalized.created_at
+            merged = MediaKnowledgeCard(
+                knowledge_id=normalized.knowledge_id or existing.knowledge_id,
+                attachment_fingerprint=normalized.attachment_fingerprint or existing.attachment_fingerprint,
+                source_session_id=normalized.source_session_id or existing.source_session_id,
+                source_turn=int(normalized.source_turn or existing.source_turn or 0),
+                file_name=normalized.file_name or existing.file_name,
+                media_kind=normalized.media_kind or existing.media_kind,
+                source_user_text=normalized.source_user_text or existing.source_user_text,
+                summary=normalized.summary or existing.summary,
+                facts=self._merge_card_list(existing.facts, normalized.facts),
+                extracted_data=self._merge_card_dict(existing.extracted_data, normalized.extracted_data),
+                answer_context=normalized.answer_context or existing.answer_context,
+                created_at=float(created_at or time.time()),
+                updated_at=float(normalized.updated_at or time.time()),
+            )
+            self.media_knowledge_cards[index] = merged
+            self.media_knowledge_cards.sort(key=lambda item: item.updated_at)
+            self.media_knowledge_cards = self.media_knowledge_cards[-20:]
+            self._sync_media_facts_view()
+            return merged
+
+        self.media_knowledge_cards.append(normalized)
+        self.media_knowledge_cards.sort(key=lambda item: item.updated_at)
+        self.media_knowledge_cards = self.media_knowledge_cards[-20:]
+        self._sync_media_facts_view()
+        return normalized
+
+    def upsert_media_knowledge_cards(
+        self,
+        cards: Sequence[Dict[str, Any] | MediaKnowledgeCard] | None,
+    ) -> List[MediaKnowledgeCard]:
+        stored: List[MediaKnowledgeCard] = []
+        for card in cards or []:
+            saved = self.upsert_media_knowledge_card(card)
+            if saved is not None:
+                stored.append(saved)
+        return stored
+
+    def get_recent_media_knowledge_cards(self, limit: int = 20) -> List[Dict[str, Any]]:
+        if limit <= 0:
+            return []
+        cards = sorted(self.media_knowledge_cards, key=lambda item: item.updated_at, reverse=True)
+        return [card.to_dict() for card in cards[:limit]]
+
+    def get_media_facts(
+        self,
+        *,
+        limit: int = 3,
+        card_ids: Optional[Sequence[str]] = None,
+    ) -> List[str]:
+        if not self.media_knowledge_cards:
+            return list(self.client_profile.media_facts or [])[:limit]
+        cards = sorted(self.media_knowledge_cards, key=lambda item: item.updated_at, reverse=True)
+        if card_ids:
+            selected = []
+            wanted = {str(item) for item in card_ids if item}
+            for card in cards:
+                if card.knowledge_id in wanted:
+                    selected.append(card)
+            cards = selected
+
+        facts: List[str] = []
+        for card in cards:
+            for fact in card.facts:
+                value = str(fact or "").strip()
+                if not value or value in facts:
+                    continue
+                facts.append(value)
+                if len(facts) >= limit:
+                    return facts
+        return facts
+
+    def get_media_knowledge_candidates(
+        self,
+        query: str,
+        *,
+        limit_recent: int = 5,
+        limit_overlap: int = 5,
+    ) -> List[Dict[str, Any]]:
+        cards = list(self.media_knowledge_cards or [])
+        if not cards:
+            return []
+
+        query_text = str(query or "").strip().lower()
+        recent = sorted(cards, key=lambda item: item.updated_at, reverse=True)[: max(limit_recent, 0)]
+        recent_ids = {card.knowledge_id for card in recent}
+
+        overlap_scored: List[tuple[int, float, MediaKnowledgeCard]] = []
+        for card in cards:
+            overlap_scored.append((self._media_overlap_score(query_text, card), card.updated_at, card))
+        overlap = [
+            item[2]
+            for item in sorted(overlap_scored, key=lambda row: (row[0], row[1]), reverse=True)
+            if item[0] > 0
+        ][: max(limit_overlap, 0)]
+
+        merged: List[MediaKnowledgeCard] = []
+        seen: set[str] = set()
+        for bucket in (recent, overlap):
+            for card in bucket:
+                key = card.knowledge_id or card.attachment_fingerprint
+                if not key or key in seen:
+                    continue
+                seen.add(key)
+                merged.append(card)
+
+        return [card.to_dict() for card in merged]
+
+    def seed_media_knowledge(self, cards: Sequence[Dict[str, Any] | MediaKnowledgeCard] | None) -> None:
+        """Seed knowledge cards without creating new turns."""
+        self.upsert_media_knowledge_cards(cards)
 
     def __len__(self) -> int:
         """Количество записанных эпизодов."""
@@ -868,9 +1106,11 @@ class EpisodicMemory:
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize episodic memory state."""
+        self._sync_media_facts_view()
         return {
             "episodes": [ep.to_dict() for ep in self.episodes],
             "client_profile": self.client_profile.to_dict(),
+            "media_knowledge_cards": [card.to_dict() for card in self.media_knowledge_cards[-20:]],
             "total_turns": self.total_turns,
             "all_objections": dict(self.all_objections),
             "all_questions": dict(self.all_questions),
@@ -896,6 +1136,12 @@ class EpisodicMemory:
                 episodes.append(ep)
         mem.episodes = episodes
         mem.client_profile = ClientProfile.from_dict(data.get("client_profile", {}) or {})
+        cards_raw = data.get("media_knowledge_cards", []) or []
+        mem.media_knowledge_cards = [
+            MediaKnowledgeCard.from_dict(item)
+            for item in cards_raw
+            if item
+        ][-20:]
         mem.total_turns = int(data.get("total_turns", 0))
         mem.all_objections = dict(data.get("all_objections", {}) or {})
         mem.all_questions = dict(data.get("all_questions", {}) or {})
@@ -905,7 +1151,43 @@ class EpisodicMemory:
         mem._first_objection_recorded = bool(data.get("_first_objection_recorded", False))
         mem._breakthrough_recorded = bool(data.get("_breakthrough_recorded", False))
         mem._last_momentum_direction = data.get("_last_momentum_direction")
+        mem._sync_media_facts_view()
         return mem
+
+    @staticmethod
+    def _merge_card_list(base: Sequence[str] | None, incoming: Sequence[str] | None) -> List[str]:
+        return scrub_media_fact_list(list(base or []) + list(incoming or []), limit=8)
+
+    @staticmethod
+    def _merge_card_dict(base: Dict[str, Any] | None, incoming: Dict[str, Any] | None) -> Dict[str, Any]:
+        merged = scrub_media_extracted_data(base or {})
+        for key, value in scrub_media_extracted_data(incoming or {}).items():
+            if value in (None, "", [], {}):
+                continue
+            merged[key] = value
+        return merged
+
+    def _sync_media_facts_view(self) -> None:
+        if self.media_knowledge_cards:
+            self.client_profile.media_facts = self.get_media_facts(limit=10)
+
+    @staticmethod
+    def _media_overlap_score(query: str, card: MediaKnowledgeCard) -> int:
+        if not query:
+            return 0
+        query_tokens = {
+            token
+            for token in re.findall(r"[a-zа-яё0-9]{3,}", query.lower())
+            if token
+        }
+        if not query_tokens:
+            return 0
+        haystack_tokens = {
+            token
+            for token in re.findall(r"[a-zа-яё0-9]{3,}", card.searchable_text())
+            if token
+        }
+        return len(query_tokens & haystack_tokens)
 
 
 class ContextWindow:

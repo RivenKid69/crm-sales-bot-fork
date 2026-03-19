@@ -925,6 +925,11 @@ intents:
     # Технические проблемы → поддержка
     problem_technical: offer_support
     request_technical_support: connect_to_support
+    # Non-sales misroutes
+    misroute_wipon_outage: redirect_misroute_wipon_outage
+    misroute_pending_delivery: redirect_misroute_pending_delivery
+    misroute_training_support: redirect_misroute_training_support
+    misroute_technical_support: redirect_misroute_technical_support
 
   # =================================================================
   # INTENT PATTERN GUARD CONFIG
@@ -2136,6 +2141,45 @@ intent_taxonomy:
     fallback_action: offer_configuration_help
     fallback_transition: null
     priority: medium
+
+  # =================================================================
+  # NON-SALES / MISROUTED SERVICE CASES (4 intents)
+  # =================================================================
+  misroute_wipon_outage:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: redirect_misroute_wipon_outage
+    fallback_transition: escalated
+    priority: critical
+    bypass_disambiguation: true
+
+  misroute_pending_delivery:
+    category: question
+    super_category: user_input
+    semantic_domain: service
+    fallback_action: redirect_misroute_pending_delivery
+    fallback_transition: escalated
+    priority: critical
+    bypass_disambiguation: true
+
+  misroute_training_support:
+    category: question
+    super_category: user_input
+    semantic_domain: support
+    fallback_action: redirect_misroute_training_support
+    fallback_transition: escalated
+    priority: critical
+    bypass_disambiguation: true
+
+  misroute_technical_support:
+    category: technical_problem
+    super_category: user_action
+    semantic_domain: support
+    fallback_action: redirect_misroute_technical_support
+    fallback_transition: escalated
+    priority: critical
+    bypass_disambiguation: true
 
   # =================================================================
   # FISCAL QUESTIONS (8 intents)
@@ -5273,14 +5317,28 @@ refinement_pipeline:
       priority: HIGH  # 75
       feature_flag: composite_refinement
 
-    # Слой 4: Objection Refinement (Objection Stuck Fix)
+    # Слой 4: First Contact Refinement (First Turn Objection Bug Fix)
+    # Исправляет ложные objection_* на первых ходах greeting/initial.
+    - name: first_contact
+      enabled: true
+      priority: HIGH  # 75
+      feature_flag: first_contact_refinement
+
+    # Слой 4.5: Greeting Context Refinement (Dialog Failure Fix)
+    # Нормализует технические/смещённые интенты в greeting-контексте.
+    - name: greeting_context
+      enabled: true
+      priority: HIGH  # 75
+      feature_flag: greeting_context_refinement
+
+    # Слой 5: Objection Refinement (Objection Stuck Fix)
     # Валидирует objection классификации
     - name: objection
       enabled: true
       priority: NORMAL  # 50
       feature_flag: objection_refinement
 
-    # Слой 5: Option Selection Refinement (Disambiguation Assist Fix)
+    # Слой 6: Option Selection Refinement (Disambiguation Assist Fix)
     # Обрабатывает короткие ответы ("1", "2", "первое") на вопросы с вариантами
     # FIX: Решает проблему когда бот задаёт вопрос "скорость или функционал?"
     # и клиент отвечает "1" - LLM неверно классифицирует как request_brevity
@@ -5289,7 +5347,7 @@ refinement_pipeline:
       priority: HIGH  # 75 - runs before objection refinement
       feature_flag: option_selection_refinement
 
-    # Слой 6: Data-Aware Refinement (Stall Prevention Layer 1)
+    # Слой 7: Data-Aware Refinement (Stall Prevention Layer 1)
     # Promotes 'unclear' → 'info_provided' when DataExtractor found meaningful data
     # Defense-in-depth: catches cases where patterns miss but DataExtractor succeeds
     - name: data_aware
@@ -6549,6 +6607,9 @@ fact_question_source:
     - question_support
     - question_training
     - question_documentation
+    - misroute_wipon_outage
+    - misroute_training_support
+    - misroute_technical_support
 
     # =========================================================================
     # EQUIPMENT (equipment) - оборудование
@@ -6632,6 +6693,7 @@ fact_question_source:
     - question_delivery
     - question_cities
     - question_coverage
+    - misroute_pending_delivery
 
     # =========================================================================
     # STABILITY (stability) - надёжность и стабильность
@@ -6694,12 +6756,17 @@ fact_question_source:
     question_security: answer_security_question
     question_stability: answer_reliability_question
     question_support: explain_support_options
+    question_training: explain_training_options
     question_competitors: compare_with_competitor
     comparison: compare_with_competitor
     question_tis: explain_tis_solution
     question_fiscal: explain_fiscal_requirements
     question_mobile: explain_mobile_features
     question_analytics: explain_analytics_features
+    misroute_wipon_outage: redirect_misroute_wipon_outage
+    misroute_pending_delivery: redirect_misroute_pending_delivery
+    misroute_training_support: redirect_misroute_training_support
+    misroute_technical_support: redirect_misroute_technical_support
     # FIX: Добавлены действия для новых интентов
     question_data_migration: answer_with_facts
     question_implementation: explain_implementation_process

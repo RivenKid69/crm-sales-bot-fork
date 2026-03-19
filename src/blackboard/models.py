@@ -14,69 +14,12 @@ from typing import Any, Optional, List, Dict, TYPE_CHECKING
 from datetime import datetime
 
 from .enums import Priority, ProposalType
+from src.immutable_types import FrozenDict, deep_freeze_dict
+from src.media_turn_context import MediaTurnContext
 
 if TYPE_CHECKING:
     from .protocols import TenantConfig, IIntentTrackerReader, IIntentTracker
     from src.context_envelope import ContextEnvelope
-
-
-# =============================================================================
-# FrozenDict — immutable dict subclass (Issue #4)
-# =============================================================================
-
-class FrozenDict(dict):
-    """Immutable dict subclass that raises TypeError on any mutation.
-
-    Unlike MappingProxyType, passes isinstance(x, dict) checks — zero breaking
-    changes to existing code that uses isinstance for type dispatch on YAML configs.
-
-    Read operations work normally: .get(), [], in, len, .items(), .keys(), .values()
-    Mutation operations blocked: []= , del, .update(), .pop(), .clear(), .setdefault()
-    dict(frozen) creates a mutable copy (standard Python dict constructor behavior).
-    """
-    _FROZEN_MSG = "FrozenDict does not support mutation"
-
-    def __setitem__(self, key, value):
-        raise TypeError(self._FROZEN_MSG)
-
-    def __delitem__(self, key):
-        raise TypeError(self._FROZEN_MSG)
-
-    def update(self, *args, **kwargs):
-        raise TypeError(self._FROZEN_MSG)
-
-    def pop(self, *args):
-        raise TypeError(self._FROZEN_MSG)
-
-    def popitem(self):
-        raise TypeError(self._FROZEN_MSG)
-
-    def clear(self):
-        raise TypeError(self._FROZEN_MSG)
-
-    def setdefault(self, key, default=None):
-        if key not in self:
-            raise TypeError(self._FROZEN_MSG)
-        return self[key]
-
-    def __ior__(self, other):  # |= operator
-        raise TypeError(self._FROZEN_MSG)
-
-    def __repr__(self):
-        return f"FrozenDict({dict.__repr__(self)})"
-
-
-def deep_freeze_dict(d: dict) -> FrozenDict:
-    """Recursively create immutable FrozenDict from dict.
-
-    All nested dicts become FrozenDict. Lists are NOT frozen (accepted limitation).
-    O(n) on creation, O(1) per access — negligible for config-sized dicts.
-    Passes isinstance(x, dict) for all nested levels.
-    """
-    return FrozenDict({
-        k: deep_freeze_dict(v) if isinstance(v, dict) and not isinstance(v, FrozenDict) else v
-        for k, v in d.items()
-    })
 
 
 # =============================================================================
@@ -425,6 +368,7 @@ class ContextSnapshot:
     frustration_level: int = 0
     # Dialog history for decision LLM (last N turns: [{user: str, bot: str}])
     dialog_history: tuple = field(default_factory=tuple)
+    media_turn_context: Optional[MediaTurnContext] = None
 
     # Computed properties for convenience
     @property

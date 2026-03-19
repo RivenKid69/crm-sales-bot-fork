@@ -237,6 +237,7 @@ class ContextEnvelope:
     client_has_data: bool = False
     client_company_size: Optional[int] = None
     client_pain_points: List[str] = field(default_factory=list)
+    client_media_facts: List[str] = field(default_factory=list)
 
     # === Tone & Guard ===
     tone: Optional[str] = None
@@ -353,6 +354,7 @@ class ContextEnvelope:
             "repeated_objection_types": self.repeated_objection_types,
             "client_pain_points": self.client_pain_points,
             "client_company_size": self.client_company_size,
+            "client_media_facts": self.client_media_facts,
 
             # Reason codes
             "reason_codes": self.reason_codes,
@@ -455,6 +457,7 @@ class ContextEnvelope:
             "most_effective_action": self.most_effective_action,
             "least_effective_action": self.least_effective_action,
             "client_pain_points": self.client_pain_points,
+            "client_media_facts": self.client_media_facts,
 
             # === Tone & Guard ===
             "tone": self.tone,
@@ -743,6 +746,7 @@ class ContextEnvelopeBuilder:
         envelope.client_has_data = level3.get("client_has_data", False)
         envelope.client_company_size = level3.get("client_company_size")
         envelope.client_pain_points = level3.get("client_pain_points", [])
+        envelope.client_media_facts = level3.get("client_media_facts", [])
         envelope.total_turns = level3.get("total_turns", 0)
 
         # Вычисляем turns_since_breakthrough

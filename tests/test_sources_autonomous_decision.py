@@ -21,6 +21,7 @@ from types import SimpleNamespace
 from src.blackboard.sources.autonomous_decision import (
     AutonomousDecisionSource,
     AutonomousDecision,
+    AutonomousDecisionAndResponse,
     AutonomousDecisionRecord,
 )
 from src.blackboard.enums import Priority
@@ -42,6 +43,7 @@ class MockContextSnapshot:
         user_message: str = "Да, расскажите",
         collected_data: Optional[Dict[str, Any]] = None,
         context_envelope: Optional[Any] = None,
+        media_turn_context: Optional[Any] = None,
     ):
         self.state = state
         self.state_config = state_config or {
@@ -54,6 +56,7 @@ class MockContextSnapshot:
         self.user_message = user_message
         self.collected_data = collected_data or {}
         self.context_envelope = context_envelope
+        self.media_turn_context = media_turn_context
 
 
 class MockFlowConfig:
@@ -87,6 +90,7 @@ def make_blackboard(
     states: Optional[Dict] = None,
     state_config: Optional[Dict] = None,
     context_envelope: Optional[Any] = None,
+    media_turn_context: Optional[Any] = None,
 ):
     """Create a mock blackboard for AutonomousDecisionSource tests."""
     flow_config = MockFlowConfig(name=flow_name, states=states)
@@ -102,6 +106,7 @@ def make_blackboard(
         user_message=user_message,
         collected_data=collected_data or {},
         context_envelope=context_envelope,
+        media_turn_context=media_turn_context,
     )
 
     bb = Mock()
@@ -120,6 +125,8 @@ def make_blackboard(
     bb.propose_action.side_effect = propose_action
     bb.propose_transition.side_effect = propose_transition
     bb.get_context_signals.return_value = []
+    bb._pre_generated_response = None
+    bb.set_pre_generated_response.side_effect = lambda value: setattr(bb, "_pre_generated_response", value)
 
     return bb
 
@@ -446,6 +453,180 @@ class TestDecisionPromptEnrichment:
         )
 
         assert "ПЕРЕБИВАНИЕ ЭТАПА" in prompt
+
+    def test_media_prompt_includes_attachment_class_and_mode(self):
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_qualification",
+            phase="qualification",
+            goal="Понять потребности",
+            intent="question_features",
+            user_message="что в документе?",
+            collected_data={},
+            available_states=["autonomous_presentation"],
+            attachment_only=True,
+            media_safety_class="attachment_summary",
+            media_candidate_mode="current",
+            media_candidates=[
+                {
+                    "knowledge_id": "card-1",
+                    "file_name": "doc.pdf",
+                    "media_kind": "document",
+                    "summary": "Документ клиента",
+                    "facts": ["Компания Альфа"],
+                }
+            ],
+        )
+
+        assert "attachment_only: true" in prompt
+        assert "media_safety_class: attachment_summary" in prompt
+        assert "media_candidate_mode: current" in prompt
+
+
+# =============================================================================
+# Test: Media routing safety classifier and deterministic rewrite
+# =============================================================================
+
+class TestMediaRoutingSafety:
+    """Verify deterministic media safety classes and route enforcement."""
+
+    @staticmethod
+    def _media_context(*, attachment_only=False, current=None, historical=None):
+        return SimpleNamespace(
+            attachment_only=attachment_only,
+            current_cards=tuple(current or ()),
+            historical_candidates=tuple(historical or ()),
+        )
+
+    @staticmethod
+    def _card(card_id: str, summary: str = "Документ клиента") -> Dict[str, Any]:
+        return {
+            "knowledge_id": card_id,
+            "file_name": "doc.pdf",
+            "media_kind": "document",
+            "summary": summary,
+            "facts": [summary],
+        }
+
+    @pytest.mark.parametrize(
+        ("attachment_only", "user_message", "has_current", "has_historical", "expected"),
+        [
+            (True, "", True, False, "attachment_summary"),
+            (False, "что в документе?", True, False, "current_media_factual"),
+            (False, "посмотри документ и скажи, подойдет ли Lite", True, False, "current_media_product_fit"),
+            (False, "что было в документе?", False, True, "historical_media_factual"),
+            (False, "по документу какой тариф подойдет?", False, True, "historical_media_product_fit"),
+            (False, "Сколько стоит Lite?", False, False, "none"),
+        ],
+    )
+    def test_media_safety_classifier(self, attachment_only, user_message, has_current, has_historical, expected):
+        source = AutonomousDecisionSource(llm=Mock())
+        current = [self._card("card-current")] if has_current else []
+        historical = [self._card("card-history")] if has_historical else []
+
+        result = source._classify_media_safety(
+            attachment_only=attachment_only,
+            user_message=user_message,
+            current_candidates=current,
+            historical_candidates=historical,
+        )
+
+        assert result == expected
+
+    def test_product_fit_has_precedence_over_factual_markers(self):
+        source = AutonomousDecisionSource(llm=Mock())
+
+        result = source._classify_media_safety(
+            attachment_only=False,
+            user_message="что в документе и подойдет ли Lite?",
+            current_candidates=[self._card("card-current")],
+            historical_candidates=[],
+        )
+
+        assert result == "current_media_product_fit"
+
+    def test_route_rewrite_forces_media_only_and_deterministic_ids(self):
+        source = AutonomousDecisionSource(llm=Mock())
+        decision = AutonomousDecision(
+            reasoning="client asked about document",
+            should_transition=False,
+            response_mode="hybrid",
+            selected_media_card_ids=["bad-id"],
+        )
+        current_candidates = [
+            self._card("card-2", "Второй"),
+            self._card("card-1", "Первый"),
+        ]
+
+        metadata, rewritten = source._resolve_route_metadata(
+            decision,
+            media_safety_class="current_media_factual",
+            current_candidates=current_candidates,
+            historical_candidates=[],
+        )
+
+        assert rewritten is True
+        assert metadata["response_mode"] == "media_only"
+        assert metadata["selected_media_card_ids"] == ["card-2", "card-1"]
+        assert metadata["route_source"] == "fallback"
+
+    def test_empty_shortlist_keeps_normal_dialog_fallback_contract(self):
+        source = AutonomousDecisionSource(llm=Mock())
+        decision = AutonomousDecision(
+            reasoning="broken media route",
+            should_transition=False,
+            response_mode="media_only",
+            selected_media_card_ids=["card-1"],
+        )
+
+        metadata, rewritten = source._resolve_route_metadata(
+            decision,
+            media_safety_class="current_media_factual",
+            current_candidates=[],
+            historical_candidates=[],
+        )
+
+        assert rewritten is False
+        assert metadata["response_mode"] == "normal_dialog"
+        assert metadata["selected_media_card_ids"] == []
+        assert metadata["route_source"] == "fallback"
+
+    @patch("src.feature_flags.flags")
+    def test_merged_pre_generated_response_disabled_when_route_rewritten(self, mock_flags):
+        mock_flags.is_enabled.side_effect = lambda name: name in {"autonomous_flow", "merged_autonomous_call"}
+
+        merged = AutonomousDecisionAndResponse(
+            reasoning="respond from document",
+            should_transition=False,
+            response_mode="hybrid",
+            selected_media_card_ids=[],
+            response="MERGED RESPONSE",
+        )
+        llm = Mock()
+        llm.generate_merged.return_value = merged
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard(
+            intent="question_features",
+            user_message="что в документе?",
+            media_turn_context=self._media_context(
+                current=[self._card("card-1")],
+            ),
+        )
+        bb.get_response_context.return_value = {
+            "variables": {},
+            "retrieved_facts": "KB FACT",
+            "kb_retrieved_facts": "KB FACT",
+            "media_candidates_compact": "",
+            "grounding_contract_version": 2,
+        }
+
+        source.contribute(bb)
+
+        assert bb._pre_generated_response is None
+        assert len(bb._action_proposals) == 1
+        assert bb._action_proposals[0]["metadata"]["response_mode"] == "media_only"
+        assert bb._action_proposals[0]["metadata"]["route_source"] == "fallback"
 
 
 # =============================================================================

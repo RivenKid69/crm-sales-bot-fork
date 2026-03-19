@@ -1401,7 +1401,7 @@ class DecompositionResultLike(BaseModel):
 
 class SemanticRelevanceResultLike(BaseModel):
     relevant: bool
-    reason: str = Field(default="", max_length=200)
+    reason: str = Field(default="", max_length=2000)
 
 class HistoryCompactSchemaLike(BaseModel):
     summary: List[str] = Field(default_factory=list)
@@ -1433,12 +1433,16 @@ class AutonomousDecisionLike(BaseModel):
     reasoning: str
     should_transition: bool = False
     next_state: str = ""
+    response_mode: str = "normal_dialog"
+    selected_media_card_ids: List[str] = Field(default_factory=list)
     action: str = "autonomous_respond"
 
 class AutonomousDecisionAndResponseLike(BaseModel):
     reasoning: str
     should_transition: bool = False
     next_state: str = ""
+    response_mode: str = "normal_dialog"
+    selected_media_card_ids: List[str] = Field(default_factory=list)
     action: str = "autonomous_respond"
     response: str = ""
 
@@ -1493,19 +1497,19 @@ class TestProductionSchemaExact:
         assert result.relevant is False
         assert "не по теме" in result.reason
 
-    def test_semantic_relevance_reason_exceeds_max_length(self):
-        """reason max_length=200 exceeded — retry."""
+    def test_semantic_relevance_long_reason_does_not_retry(self):
+        """Long reason stays valid locally and should not burn retry budget."""
         client = OllamaClient(enable_retry=True, enable_circuit_breaker=False)
         client.MAX_RETRIES = 2
         client.INITIAL_DELAY = 0.001
 
         long_reason = "Б" * 250
-        bad = _ollama_response(f'{{"relevant": true, "reason": "{long_reason}"}}')
-        good = _ollama_response('{"relevant": true, "reason": "ok"}')
-        with patch('requests.post', side_effect=[bad, good]):
+        response = _ollama_response(f'{{"relevant": true, "reason": "{long_reason}"}}')
+        with patch('requests.post', return_value=response) as mock_post:
             result = client.generate_structured("test", SemanticRelevanceResultLike)
         assert result is not None
-        assert result.reason == "ok"
+        assert result.reason == long_reason
+        assert mock_post.call_count == 1
 
     def test_history_compact_schema_dirty(self):
         """history_compactor.py:64 — HistoryCompactSchema with 6 list fields."""

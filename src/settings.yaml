@@ -19,7 +19,7 @@ llm:
   model: "qwen3.5:27b"
 
   # URL Ollama сервера
-  base_url: "http://ollama:11434"
+  base_url: "http://host.docker.internal:8080"
 
   # Формат API: "ollama" или "openai" (llama-server, vLLM, etc.)
   api_format: "ollama"

@@ -7,6 +7,7 @@ REST API обёртка для CRM Sales Bot (Production — autonomous flow).
 Two SQLite tables:
   - conversations: full bot snapshots by (session_id, user_id)
   - user_profiles: structured extracted data per (session_id, user_id)
+  - media_knowledge: persistent media-derived knowledge per user
 """
 
 import hmac
@@ -18,6 +19,7 @@ import threading
 import time
 import uuid
 from contextlib import asynccontextmanager
+from dataclasses import replace
 
 import requests
 from fastapi.concurrency import run_in_threadpool
@@ -29,6 +31,14 @@ from pydantic import BaseModel, Field, ValidationError
 from src.bot import SalesBot
 from src.feature_flags import flags
 from src.llm import OllamaLLM
+from src.media_preprocessor import prepare_autonomous_incoming_message, prepare_incoming_message
+from src.media_turn_context import (
+    freeze_media_turn_context,
+    redact_media_text,
+    scrub_media_card_payload,
+    scrub_media_extracted_data,
+    scrub_media_fact_list,
+)
 from src.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -133,6 +143,27 @@ def _init_db():
             PRIMARY KEY (session_id, user_id)
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS media_knowledge (
+            user_id               TEXT NOT NULL,
+            session_id            TEXT NOT NULL,
+            knowledge_id          TEXT NOT NULL,
+            attachment_fingerprint TEXT NOT NULL,
+            file_name             TEXT,
+            media_kind            TEXT,
+            source_user_text      TEXT,
+            summary               TEXT,
+            facts_json            TEXT,
+            extracted_data_json   TEXT,
+            answer_context        TEXT,
+            created_at            REAL,
+            updated_at            REAL,
+            PRIMARY KEY (user_id, attachment_fingerprint)
+        )
+    """)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_media_knowledge_user_updated ON media_knowledge(user_id, updated_at DESC)"
+    )
     conn.commit()
     conn.close()
 
@@ -160,18 +191,56 @@ def _load_snapshot(session_id: str, user_id: str) -> dict | None:
 
 def _save_snapshot(session_id: str, user_id: str, snapshot: dict):
     conn = _db_connect()
-    conn.execute(
-        """INSERT INTO conversations (session_id, user_id, snapshot, updated_at)
-           VALUES (?, ?, ?, ?)
-           ON CONFLICT(session_id, user_id)
-           DO UPDATE SET snapshot=excluded.snapshot, updated_at=excluded.updated_at""",
-        (session_id, user_id, json.dumps(snapshot, ensure_ascii=False), time.time()),
+    _save_snapshot_conn(
+        conn,
+        session_id=session_id,
+        user_id=user_id,
+        snapshot=snapshot,
+        updated_at=time.time(),
     )
     conn.commit()
     conn.close()
 
 
+def _save_snapshot_conn(
+    conn: sqlite3.Connection,
+    *,
+    session_id: str,
+    user_id: str,
+    snapshot: dict,
+    updated_at: float,
+) -> None:
+    conn.execute(
+        """INSERT INTO conversations (session_id, user_id, snapshot, updated_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(session_id, user_id)
+           DO UPDATE SET snapshot=excluded.snapshot, updated_at=excluded.updated_at""",
+        (session_id, user_id, json.dumps(snapshot, ensure_ascii=False), updated_at),
+    )
+
+
 def _save_user_profile(session_id: str, user_id: str, bot: SalesBot):
+    """Extract and persist structured user data from bot state."""
+    conn = _db_connect()
+    _save_user_profile_conn(
+        conn,
+        session_id=session_id,
+        user_id=user_id,
+        bot=bot,
+        updated_at=time.time(),
+    )
+    conn.commit()
+    conn.close()
+
+
+def _save_user_profile_conn(
+    conn: sqlite3.Connection,
+    *,
+    session_id: str,
+    user_id: str,
+    bot: SalesBot,
+    updated_at: float,
+) -> None:
     """Extract and persist structured user data from bot state."""
     # Merge data from collected_data + client_profile
     collected = bot.state_machine.collected_data or {}
@@ -211,7 +280,6 @@ def _save_user_profile(session_id: str, user_id: str, bot: SalesBot):
     interested_features = json.dumps(profile_dict.get("interested_features", []), ensure_ascii=False)
     objection_types = json.dumps(profile_dict.get("objection_types", []), ensure_ascii=False)
 
-    conn = _db_connect()
     conn.execute(
         """INSERT INTO user_profiles (
                session_id, user_id,
@@ -252,11 +320,9 @@ def _save_user_profile(session_id: str, user_id: str, bot: SalesBot):
             _get("pain_category"), _get("role"), _get("users_count"), _get("urgency"),
             _get("preferred_channel"),
             pain_points, interested_features, objection_types,
-            lead_score, lead_temperature, time.time(),
+            lead_score, lead_temperature, updated_at,
         ),
     )
-    conn.commit()
-    conn.close()
 
 
 def _load_user_profile(user_id: str) -> list[dict]:
@@ -269,6 +335,203 @@ def _load_user_profile(user_id: str) -> list[dict]:
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def _load_recent_media_knowledge(user_id: str, limit: int = 20) -> list[dict]:
+    conn = _db_connect()
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        """
+        SELECT *
+        FROM media_knowledge
+        WHERE user_id=?
+        ORDER BY updated_at DESC
+        LIMIT ?
+        """,
+        (user_id, limit),
+    ).fetchall()
+    conn.close()
+
+    cards: list[dict] = []
+    for row in rows:
+        item = dict(row)
+        item["facts"] = _safe_json_list(item.pop("facts_json", None))
+        item["extracted_data"] = _safe_json_dict(item.pop("extracted_data_json", None))
+        scrubbed = scrub_media_card_payload(item)
+        if scrubbed:
+            cards.append(scrubbed)
+    return cards
+
+
+def _safe_json_list(raw: str | None) -> list:
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        return []
+    return list(parsed) if isinstance(parsed, list) else []
+
+
+def _safe_json_dict(raw: str | None) -> dict:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        return {}
+    return dict(parsed) if isinstance(parsed, dict) else {}
+
+
+def _merge_user_profiles(user_id: str) -> dict:
+    rows = _load_user_profile(user_id)
+    merged: dict = {}
+    list_fields = {"pain_points", "interested_features", "objection_types"}
+
+    for row in rows:
+        for key, value in row.items():
+            if key in {"session_id", "user_id", "updated_at"}:
+                continue
+            if key in list_fields:
+                existing = list(merged.get(key, []) or [])
+                for item in _safe_json_list(value):
+                    if item not in existing:
+                        existing.append(item)
+                if existing:
+                    merged[key] = existing
+                continue
+            if key not in merged and value not in (None, ""):
+                merged[key] = _coerce_profile_value(key, value)
+    return merged
+
+
+def _coerce_profile_value(key: str, value):
+    if value in (None, ""):
+        return value
+    if key in {"company_size", "lead_score"}:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return value
+    return value
+
+
+def _save_media_knowledge_conn(
+    conn: sqlite3.Connection,
+    *,
+    session_id: str,
+    user_id: str,
+    bot: SalesBot,
+    updated_at: float,
+) -> None:
+    if not hasattr(bot, "context_window") or not hasattr(bot.context_window, "episodic_memory"):
+        return
+    memory = bot.context_window.episodic_memory
+    if not hasattr(memory, "get_recent_media_knowledge_cards"):
+        return
+
+    cards = memory.get_recent_media_knowledge_cards(limit=100)
+    for raw_card in cards:
+        card = scrub_media_card_payload(raw_card)
+        if not card:
+            continue
+        conn.execute(
+            """
+            INSERT INTO media_knowledge (
+                user_id, session_id, knowledge_id, attachment_fingerprint,
+                file_name, media_kind, source_user_text, summary,
+                facts_json, extracted_data_json, answer_context,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(user_id, attachment_fingerprint) DO UPDATE SET
+                session_id=excluded.session_id,
+                knowledge_id=excluded.knowledge_id,
+                file_name=excluded.file_name,
+                media_kind=excluded.media_kind,
+                source_user_text=excluded.source_user_text,
+                summary=excluded.summary,
+                facts_json=excluded.facts_json,
+                extracted_data_json=excluded.extracted_data_json,
+                answer_context=excluded.answer_context,
+                created_at=COALESCE(media_knowledge.created_at, excluded.created_at),
+                updated_at=excluded.updated_at
+            """,
+            (
+                user_id,
+                session_id,
+                str(card.get("knowledge_id") or ""),
+                str(card.get("attachment_fingerprint") or ""),
+                str(card.get("file_name") or ""),
+                str(card.get("media_kind") or ""),
+                redact_media_text(card.get("source_user_text")),
+                redact_media_text(card.get("summary")),
+                json.dumps(scrub_media_fact_list(card.get("facts", []) or [], limit=8), ensure_ascii=False),
+                json.dumps(scrub_media_extracted_data(card.get("extracted_data", {}) or {}), ensure_ascii=False),
+                redact_media_text(card.get("answer_context")),
+                float(card.get("created_at") or updated_at),
+                float(card.get("updated_at") or updated_at),
+            ),
+        )
+
+    conn.execute(
+        """
+        DELETE FROM media_knowledge
+        WHERE user_id=?
+          AND attachment_fingerprint NOT IN (
+              SELECT attachment_fingerprint
+              FROM media_knowledge
+              WHERE user_id=?
+              ORDER BY updated_at DESC
+              LIMIT 100
+          )
+        """,
+        (user_id, user_id),
+    )
+
+
+def _persist_bot_state(session_id: str, user_id: str, bot: SalesBot) -> None:
+    snapshot = bot.to_snapshot()
+    updated_at = time.time()
+    conn = _db_connect()
+    try:
+        _save_snapshot_conn(
+            conn,
+            session_id=session_id,
+            user_id=user_id,
+            snapshot=snapshot,
+            updated_at=updated_at,
+        )
+        _save_user_profile_conn(
+            conn,
+            session_id=session_id,
+            user_id=user_id,
+            bot=bot,
+            updated_at=updated_at,
+        )
+        _save_media_knowledge_conn(
+            conn,
+            session_id=session_id,
+            user_id=user_id,
+            bot=bot,
+            updated_at=updated_at,
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def _bootstrap_bot_memory(bot: SalesBot, *, user_id: str) -> None:
+    try:
+        profile_data = _merge_user_profiles(user_id)
+        media_cards = _load_recent_media_knowledge(user_id, limit=20)
+    except sqlite3.OperationalError as exc:
+        logger.warning("cross-session media bootstrap skipped", extra={"error": str(exc)})
+        return
+    if hasattr(bot, "hydrate_external_memory"):
+        bot.hydrate_external_memory(profile_data=profile_data, media_cards=media_cards)
 
 
 # ── Production flag setup ─────────────────────────────
@@ -443,9 +706,20 @@ async def request_validation_error_handler(_: Request, exc: RequestValidationErr
 
 # ── Models ────────────────────────────────────────────
 
+class AttachmentPayload(BaseModel):
+    type: str | None = None
+    mime_type: str | None = None
+    file_name: str | None = None
+    url: str | None = None
+    data_base64: str | None = None
+    text_content: str | None = None
+    caption: str | None = None
+
+
 class MessagePayload(BaseModel):
-    text: str
+    text: str = ""
     timestamp_ms: int = 0
+    attachments: list[AttachmentPayload] = Field(default_factory=list)
 
 
 class ContextPayload(BaseModel):
@@ -539,12 +813,19 @@ def _render_sula_response(response: dict, normalized: dict, wrap_in_list: bool) 
 
 
 def _process_message_request(req: ProcessRequest) -> dict:
-    if not req.message.text.strip():
-        raise APIError(400, "BAD_REQUEST", "message.text must not be empty")
-
-    snapshot = _load_snapshot(req.session_id, req.user_id)
+    if not req.message.text.strip() and not req.message.attachments:
+        raise APIError(400, "BAD_REQUEST", "message.text must not be empty when attachments are absent")
 
     start = time.time()
+    snapshot = _load_snapshot(req.session_id, req.user_id)
+    prepared_message = prepare_autonomous_incoming_message(
+        user_text=req.message.text,
+        attachments=[item.model_dump(exclude_none=True) for item in req.message.attachments],
+        llm=_llm,
+    )
+    if not prepared_message.text.strip() and not prepared_message.media_used:
+        raise APIError(400, "BAD_REQUEST", "message must contain text or a supported attachment")
+
     if snapshot:
         history_tail = [
             {"user": t["user_message"], "bot": t["bot_response"]}
@@ -560,13 +841,26 @@ def _process_message_request(req: ProcessRequest) -> dict:
             _llm, flow_name="autonomous", config_name="default",
             enable_tracing=True,
         )
+        _bootstrap_bot_memory(bot, user_id=req.user_id)
 
-    result = bot.process(req.message.text)
+    media_turn_context = prepared_message.media_turn_context
+    if media_turn_context is not None:
+        media_turn_context = freeze_media_turn_context(
+            replace(
+                media_turn_context,
+                source_session_id=req.session_id,
+                source_user_id=req.user_id,
+            )
+        )
+
+    result = bot.process(
+        prepared_message.text,
+        media_turn_context=media_turn_context,
+    )
     processing_ms = int((time.time() - start) * 1000)
 
     # Persist snapshot + structured user profile
-    _save_snapshot(req.session_id, req.user_id, bot.to_snapshot())
-    _save_user_profile(req.session_id, req.user_id, bot)
+    _persist_bot_state(req.session_id, req.user_id, bot)
 
     # kb_used: check KB results in traces
     trace = result.get("decision_trace") or {}
@@ -581,6 +875,9 @@ def _process_message_request(req: ProcessRequest) -> dict:
             "model": settings.llm.model,
             "processing_ms": processing_ms,
             "kb_used": kb_used,
+            "media_used": prepared_message.media_used,
+            "attachments_used": len(prepared_message.used_attachments),
+            "attachments_skipped": len(prepared_message.skipped_attachments),
         },
     }
 

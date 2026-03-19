@@ -24,10 +24,10 @@ import re
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, TypeVar, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, Tuple, Union
 
 import requests
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from src.logger import logger
 from src.settings import settings
@@ -186,6 +186,7 @@ class OllamaClient:
         schema: Type[T],
         allow_fallback: bool = True,
         return_trace: bool = False,
+        repair_payload: Optional[Callable[[dict, Exception], Optional[dict]]] = None,
         purpose: str = "structured_generation",
         temperature: float = 0.05,
         num_predict: int = 2048,
@@ -201,6 +202,7 @@ class OllamaClient:
             schema: Pydantic модель для валидации
             allow_fallback: Игнорируется (для совместимости)
             return_trace: Если True, возвращает (result, LLMTrace)
+            repair_payload: Опциональный hook для deterministic dict repair после ValidationError
             purpose: Цель вызова (для трейсинга)
 
         Returns:
@@ -228,6 +230,7 @@ class OllamaClient:
             return (None, trace) if return_trace else None
 
         last_error: Optional[Exception] = None
+        last_cleaned_structured_response = ""
         delay = self.INITIAL_DELAY
         max_attempts = self.MAX_RETRIES if self._enable_retry else 1
 
@@ -284,9 +287,30 @@ class OllamaClient:
 
                 # Clean LLM artefacts before validation
                 content = self._clean_structured_output(content)
+                last_cleaned_structured_response = content
+                trace.last_cleaned_structured_response = content
 
                 # Validate first — only count as success if schema parses
-                result = schema.model_validate_json(content)
+                try:
+                    result = schema.model_validate_json(content)
+                except ValidationError as e:
+                    last_error = e
+                    if repair_payload is not None:
+                        repaired_payload: Optional[dict] = None
+                        try:
+                            repaired_payload = repair_payload(json.loads(content), e)
+                        except Exception as repair_error:
+                            logger.warning(
+                                "Structured repair hook failed",
+                                extra={"error": str(repair_error)[:200]},
+                            )
+
+                        if repaired_payload is not None:
+                            result = schema.model_validate(repaired_payload)
+                        else:
+                            raise
+                    else:
+                        raise
 
                 elapsed_ms = (time.time() - start_time) * 1000
                 self._stats.successful_requests += 1
@@ -331,6 +355,7 @@ class OllamaClient:
         trace.retry_count = max_attempts
         trace.success = False
         trace.error = str(last_error)[:100] if last_error else "unknown"
+        trace.last_cleaned_structured_response = last_cleaned_structured_response
 
         logger.error(f"Ollama structured all retries failed: {str(last_error)[:100] if last_error else 'unknown'}")
         return (None, trace) if return_trace else None
@@ -486,6 +511,110 @@ class OllamaClient:
 
         return ("", trace) if return_trace else ""
 
+    def generate_multimodal(
+        self,
+        prompt: str,
+        *,
+        images: list[str],
+        mime_type: Optional[str] = None,
+        allow_fallback: bool = True,
+        return_trace: bool = False,
+        purpose: str = "multimodal_generation",
+        temperature: float = 0.2,
+        num_predict: int = 768,
+    ) -> Union[str, Tuple[str, LLMTrace]]:
+        """
+        Generate a response from text + images using the same resilience rules.
+
+        Args:
+            prompt: User prompt for the multimodal model.
+            images: Base64-encoded images.
+            mime_type: MIME type for OpenAI-compatible API data URLs.
+        """
+        self._stats.total_requests += 1
+        start_time = time.time()
+
+        trace = LLMTrace(
+            request_id=str(uuid.uuid4())[:8],
+            purpose=purpose,
+            prompt_user=prompt,
+            model_used=self.model,
+            circuit_breaker_state=self._circuit_breaker.status,
+        )
+
+        if self._enable_circuit_breaker and self._is_circuit_open():
+            logger.warning("Circuit breaker open, using multimodal fallback")
+            self._stats.fallback_used += 1
+            trace.latency_ms = (time.time() - start_time) * 1000
+            trace.success = False
+            trace.error = "circuit_breaker_open"
+            response = self._get_fallback(None) if allow_fallback else ""
+            trace.raw_response = response
+            return (response, trace) if return_trace else response
+
+        last_error: Optional[Exception] = None
+        delay = self.INITIAL_DELAY
+        max_attempts = self.MAX_RETRIES if self._enable_retry else 1
+
+        for attempt in range(max_attempts):
+            try:
+                response_text = self._call_multimodal_llm(
+                    prompt,
+                    images=images,
+                    mime_type=mime_type,
+                    temperature=temperature,
+                    num_predict=num_predict,
+                )
+
+                elapsed_ms = (time.time() - start_time) * 1000
+                self._stats.successful_requests += 1
+                self._stats.total_response_time_ms += elapsed_ms
+                self._reset_failures()
+
+                trace.latency_ms = elapsed_ms
+                trace.raw_response = response_text
+                trace.retry_count = attempt
+                trace.success = True
+                trace.tokens_input = self._estimate_tokens(prompt)
+                trace.tokens_output = self._estimate_tokens(response_text)
+
+                return (response_text, trace) if return_trace else response_text
+
+            except requests.exceptions.Timeout as e:
+                last_error = e
+                logger.warning(f"Ollama multimodal timeout (attempt {attempt + 1}/{max_attempts})")
+            except requests.exceptions.ConnectionError as e:
+                last_error = e
+                logger.warning(f"Ollama multimodal connection error (attempt {attempt + 1}/{max_attempts})")
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                logger.warning(f"Ollama multimodal request failed (attempt {attempt + 1}/{max_attempts})")
+            except Exception as e:
+                last_error = e
+                logger.error(f"Ollama multimodal unexpected error (attempt {attempt + 1}/{max_attempts})")
+
+            if attempt < max_attempts - 1:
+                self._stats.total_retries += 1
+                time.sleep(delay)
+                delay = min(delay * self.BACKOFF_MULTIPLIER, self.MAX_DELAY)
+
+        self._stats.failed_requests += 1
+        if self._enable_circuit_breaker:
+            self._record_failure()
+
+        trace.latency_ms = (time.time() - start_time) * 1000
+        trace.retry_count = max_attempts
+        trace.success = False
+        trace.error = str(last_error)[:100] if last_error else "unknown"
+
+        if allow_fallback:
+            self._stats.fallback_used += 1
+            response = self._get_fallback(None)
+            trace.raw_response = response
+            return (response, trace) if return_trace else response
+
+        return ("", trace) if return_trace else ""
+
     # =========================================================================
     # INTERNAL LLM CALL METHOD
     # =========================================================================
@@ -558,6 +687,68 @@ class OllamaClient:
             )
         response.raise_for_status()
 
+        data = response.json()
+        return self._extract_content(data)
+
+    def _call_multimodal_llm(
+        self,
+        prompt: str,
+        *,
+        images: list[str],
+        mime_type: Optional[str] = None,
+        temperature: float = 0.2,
+        num_predict: int = 768,
+    ) -> str:
+        """Internal multimodal chat call for text + images."""
+        if not images:
+            raise ValueError("generate_multimodal requires at least one image")
+
+        base_url_normalized = self.base_url.rstrip("/")
+
+        if self._is_openai_api:
+            image_mime = mime_type or "image/jpeg"
+            content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+            for image in images:
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{image_mime};base64,{image}"},
+                    }
+                )
+            response = requests.post(
+                f"{base_url_normalized}/v1/chat/completions",
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": content}],
+                    "temperature": temperature,
+                    "max_tokens": num_predict,
+                },
+                timeout=self.timeout,
+            )
+        else:
+            response = requests.post(
+                f"{base_url_normalized}/api/chat",
+                json={
+                    "model": self.model,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt,
+                            "images": images,
+                        }
+                    ],
+                    "stream": False,
+                    "think": False,
+                    "options": {
+                        "temperature": temperature,
+                        "num_predict": num_predict,
+                        "num_ctx": 8192,
+                    },
+                },
+                timeout=self.timeout,
+            )
+
+        response.raise_for_status()
         data = response.json()
         return self._extract_content(data)
 

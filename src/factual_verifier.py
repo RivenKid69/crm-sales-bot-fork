@@ -18,6 +18,10 @@ from pydantic import AliasChoices, BaseModel, Field
 from src.feature_flags import flags
 from src.logger import logger
 from src.settings import settings
+from src.unknown_kb_fallbacks import (
+    LEGACY_KB_FALLBACK_RE,
+    pick_unknown_kb_fallback,
+)
 
 
 class ClaimCheck(BaseModel):
@@ -57,10 +61,7 @@ class FactualVerifier:
         r"(?:₸|тенге|тг|\b\d[\d\s]{2,}\b|стоим|цена|тариф|в\s+месяц|в\s+год)",
         re.IGNORECASE,
     )
-    _FORBIDDEN_FALLBACK_RE = re.compile(
-        r"(?:уточню\s+у\s+коллег|вернусь\s+с\s+ответом|коллега\s+позвонит|передам\s+вопрос\s+коллег)",
-        re.IGNORECASE,
-    )
+    _FORBIDDEN_FALLBACK_RE = LEGACY_KB_FALLBACK_RE
     _TERM_RE = re.compile(r"[a-zA-Zа-яА-ЯёЁ0-9-]{3,}")
     _QUERY_CONTEXT_SEPARATOR_RE = re.compile(r"\n===\s*КОНТЕКСТ\s+ЭТАПА\s*===\n", re.IGNORECASE)
     _EMPTY_CONTEXT_RE = re.compile(r"^\(\s*response[_\s]context\s+empty\s*\)$", re.IGNORECASE)
@@ -432,16 +433,8 @@ class FactualVerifier:
         return self._build_safe_minimal_response(user_message=user_message)
 
     def _build_safe_minimal_response(self, *, user_message: str) -> str:
-        query = str(user_message or "").lower()
-        if re.search(r"(?:цена|стоимост|сколько|тариф|рассроч|оплат)", query):
-            return (
-                "Могу отвечать только по подтвержденным фактам из базы. "
-                "Сейчас в контексте недостаточно данных для точного ответа по цене."
-            )
-        return (
-            "Могу отвечать только по подтвержденным фактам из базы. "
-            "Сейчас в контексте недостаточно данных для точного ответа."
-        )
+        _ = user_message
+        return pick_unknown_kb_fallback()
 
     def _build_kb_rewrite_prompt(
         self,
@@ -626,7 +619,7 @@ class FactualVerifier:
     def _build_db_only_response(self, *, user_message: str, retrieved_facts: str) -> str:
         sentences = self._fact_sentences(retrieved_facts)
         if not sentences:
-            return "В предоставленных фактах БД нет подтвержденного ответа по этому вопросу."
+            return pick_unknown_kb_fallback()
 
         query_text = str(user_message or "").lower()
         query_terms = self._extract_terms(user_message)
@@ -773,7 +766,7 @@ class FactualVerifier:
         response = self._FORBIDDEN_FALLBACK_RE.sub("", response)
         response = re.sub(r"\s{2,}", " ", response).strip(" ,.;")
         if not response:
-            return "В предоставленных фактах БД нет подтвержденного ответа по этому вопросу."
+            return pick_unknown_kb_fallback()
         return self._normalize_sentence(response)
 
 

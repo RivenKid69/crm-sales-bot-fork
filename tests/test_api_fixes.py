@@ -20,6 +20,7 @@ import time
 from unittest.mock import MagicMock
 
 import pytest
+from src.media_preprocessor import PreparedMessage
 
 
 # ---------------------------------------------------------------------------
@@ -127,6 +128,113 @@ class TestInitDbWalMode:
             loaded = api_mod._load_snapshot("sess1", "user1")
 
             assert loaded == data
+        finally:
+            api_mod.DB_PATH = original
+
+    def test_process_bootstraps_media_knowledge_for_new_session(self, tmp_path, monkeypatch):
+        import src.api as api_mod
+
+        db_path = str(tmp_path / "bootstrap.db")
+        original = api_mod.DB_PATH
+        api_mod.DB_PATH = db_path
+        try:
+            api_mod._init_db()
+
+            conn = sqlite3.connect(db_path)
+            conn.execute(
+                """
+                INSERT INTO user_profiles (
+                    session_id, user_id, company_name, business_type,
+                    pain_points, interested_features, objection_types, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "old-session",
+                    "user-1",
+                    "Альфа Логистик",
+                    "логистика",
+                    json.dumps(["нет контроля остатков"], ensure_ascii=False),
+                    json.dumps([], ensure_ascii=False),
+                    json.dumps([], ensure_ascii=False),
+                    time.time(),
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO media_knowledge (
+                    user_id, session_id, knowledge_id, attachment_fingerprint,
+                    file_name, media_kind, source_user_text, summary,
+                    facts_json, extracted_data_json, answer_context,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "user-1",
+                    "old-session",
+                    "card-1",
+                    "fp-1",
+                    "doc.pdf",
+                    "document",
+                    "посмотрите документ",
+                    "Это документ компании Альфа Логистик.",
+                    json.dumps(["Компания Альфа Логистик."], ensure_ascii=False),
+                    json.dumps({"company_name": "Альфа Логистик"}, ensure_ascii=False),
+                    "Это документ компании Альфа Логистик.",
+                    time.time(),
+                    time.time(),
+                ),
+            )
+            conn.commit()
+            conn.close()
+
+            captured = {}
+
+            class _FakeBot:
+                def __init__(self, *_args, **_kwargs):
+                    pass
+
+                def hydrate_external_memory(self, *, profile_data=None, media_cards=None):
+                    captured["profile_data"] = profile_data
+                    captured["media_cards"] = media_cards
+
+                def set_pending_media_meta(self, *_args, **_kwargs):
+                    pass
+
+                def process(self, _text, *, media_turn_context=None):
+                    captured["media_turn_context"] = media_turn_context
+                    return {"response": "ok", "decision_trace": None}
+
+                def to_snapshot(self):
+                    return {}
+
+            monkeypatch.setattr(api_mod, "_llm", MagicMock())
+            monkeypatch.setattr(api_mod, "SalesBot", _FakeBot)
+            monkeypatch.setattr(api_mod, "_load_snapshot", lambda *_args, **_kwargs: None)
+            monkeypatch.setattr(api_mod, "_persist_bot_state", lambda *_args, **_kwargs: None)
+            monkeypatch.setattr(
+                api_mod,
+                "prepare_autonomous_incoming_message",
+                lambda **_kwargs: PreparedMessage(
+                    text="Привет",
+                    media_used=False,
+                    used_attachments=[],
+                    skipped_attachments=[],
+                    media_meta={},
+                    media_turn_context=None,
+                ),
+            )
+
+            req = api_mod.ProcessRequest(
+                session_id="new-session",
+                user_id="user-1",
+                message=api_mod.MessagePayload(text="Привет"),
+            )
+
+            api_mod._process_message_request(req)
+
+            assert captured["profile_data"]["company_name"] == "Альфа Логистик"
+            assert captured["profile_data"]["business_type"] == "логистика"
+            assert captured["media_cards"][0]["knowledge_id"] == "card-1"
         finally:
             api_mod.DB_PATH = original
 

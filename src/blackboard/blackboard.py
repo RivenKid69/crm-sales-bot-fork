@@ -20,6 +20,7 @@ from src.blackboard.protocols import (
 from src.intent_tracker import IntentTracker, should_skip_objection_recording as _shared_skip_objection
 from src.context_envelope import ContextEnvelope
 from src.config_loader import FlowConfig
+from src.media_turn_context import MediaTurnContext, freeze_media_turn_context
 # Import objection limits from YAML (single source of truth)
 from src.yaml_config.constants import MAX_CONSECUTIVE_OBJECTIONS, MAX_TOTAL_OBJECTIONS
 
@@ -183,6 +184,7 @@ class DialogueBlackboard:
         user_message: str = "",
         frustration_level: int = 0,
         dialog_history: list = None,
+        media_turn_context: Optional[MediaTurnContext] = None,
     ) -> None:
         """
         Begin a new dialogue turn.
@@ -324,6 +326,7 @@ class DialogueBlackboard:
             frustration_level=frustration_level,
             # Dialog history for decision LLM
             dialog_history=tuple(dialog_history or []),
+            media_turn_context=freeze_media_turn_context(media_turn_context),
         )
 
         # Clear proposal layer

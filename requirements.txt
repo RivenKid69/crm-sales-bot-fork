@@ -1,6 +1,9 @@
 # Core dependencies
+faster-whisper>=1.1.0
+pypdf>=5.0.0
 requests>=2.32.0
 pymorphy3>=2.0.6
+xlrd>=2.0.1
 
 # Testing
 pytest>=8.0.0

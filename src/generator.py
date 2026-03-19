@@ -7,9 +7,11 @@
 - SafeDict: безопасная подстановка переменных в шаблоны
 """
 
+import json
 import random
 import re
 from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Any, Set, Tuple
+from pydantic import BaseModel, Field
 from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
 from src.knowledge.retriever import get_retriever
 from src.settings import settings
@@ -32,6 +34,7 @@ from src.generator_autonomous import (
     build_autonomous_objection_instructions,
     should_suppress_followup_question_for_interrupt,
     build_address_instruction,
+    count_name_mentions_in_history,
     has_address_question_in_history,
     build_language_instruction,
     build_stress_instruction,
@@ -41,10 +44,23 @@ from src.generator_autonomous import (
     enforce_no_contact_boundaries,
     format_client_card,
 )
+from src.media_turn_context import MediaTurnContext, freeze_media_turn_context
+from src.unknown_kb_fallbacks import (
+    LEGACY_KB_FALLBACK_RE,
+    UNKNOWN_KB_FALLBACK_VARIANTS,
+    is_approved_unknown_kb_fallback,
+    is_pure_approved_unknown_kb_fallback,
+    pick_unknown_kb_fallback,
+)
 
 if TYPE_CHECKING:
     from src.config_loader import FlowConfig
     from src.personalization import PersonalizationEngineV2
+
+
+class ApprovedUnknownFallbackFollowupResult(BaseModel):
+    use_followup: bool = False
+    question: str = Field(default="", max_length=120)
 
 
 # =============================================================================
@@ -109,6 +125,12 @@ PERSONALIZATION_DEFAULTS: Dict[str, str] = {
 
     # Question suppression
     "question_instruction": "Задай ОДИН вопрос по цели этапа.",
+    # Autonomous media-route internals
+    "media_route_mode": "normal_dialog",
+    "selected_media_grounding": "",
+    "kb_retrieved_facts": "",
+    "final_grounding_facts": "",
+    "media_route_instruction": "",
 }
 
 # Actions exempt from trailing question stripping (probe/transition templates need "?")
@@ -509,21 +531,91 @@ class ResponseGenerator:
     SIMILARITY_THRESHOLD = 0.70
 
     # KB-empty response pools (class-level to avoid recreation per call)
-    _KB_EMPTY_CONTACT_KNOWN = [
-        "В текущем фрагменте БД нет подтвержденного факта по этому пункту. Уточните, пожалуйста, какой тариф или интеграцию сравниваем.",
-        "По доступным фактам БД ответа на этот параметр нет. Назовите продукт или сценарий — отвечу строго по базе.",
-        "В предоставленных фактах БД не хватает данных для прямого ответа. Уточните вопрос, и я отвечу только по базе.",
-    ]
-    _KB_EMPTY_CONTACT_UNKNOWN = [
-        "В текущем фрагменте БД нет подтвержденного факта по этому пункту. Уточните, пожалуйста, какой тариф или интеграцию сравниваем.",
-        "По доступным фактам БД ответа на этот параметр нет. Назовите продукт или сценарий — отвечу строго по базе.",
-        "В предоставленных фактах БД не хватает данных для прямого ответа. Уточните вопрос, и я отвечу только по базе.",
-    ]
-    _COLLEAGUE_FALLBACK_RE = re.compile(
-        r"(?:уточню\s+у\s+коллег|вернусь\s+с\s+ответом|коллега\s+позвонит|передам\s+вопрос\s+коллег)",
+    _KB_EMPTY_CONTACT_KNOWN = list(UNKNOWN_KB_FALLBACK_VARIANTS)
+    _KB_EMPTY_CONTACT_UNKNOWN = list(UNKNOWN_KB_FALLBACK_VARIANTS)
+    _COLLEAGUE_FALLBACK_RE = LEGACY_KB_FALLBACK_RE
+    _FACT_TERM_RE = re.compile(r"[a-zA-Zа-яА-ЯёЁ0-9-]{3,}")
+    _FOLLOWUP_WORD_RE = re.compile(r"[A-Za-zА-Яа-яЁё0-9]+(?:-[A-Za-zА-Яа-яЁё0-9]+)?")
+    _FOLLOWUP_GREETING_RE = re.compile(
+        r"^\s*(?:здравствуйте|добрый\s+день|добрый\s+вечер|доброе\s+утро|привет)\b",
         re.IGNORECASE,
     )
-    _FACT_TERM_RE = re.compile(r"[a-zA-Zа-яА-ЯёЁ0-9-]{3,}")
+    _FOLLOWUP_LINK_RE = re.compile(
+        r"(?:https?://|www\.|t\.me/|\S+@\S+|\.(?:kz|ru|com|net|org)\b)",
+        re.IGNORECASE,
+    )
+    _FOLLOWUP_PHONE_RE = re.compile(r"(?:\+?\d[\d\s\-\(\)]{8,}|\b\d{12}\b)")
+    _FOLLOWUP_CALL_TO_ACTION_RE = re.compile(
+        r"(?:"
+        r"звон(?:ок|ка|ки|ков)?|"
+        r"созвон|"
+        r"перезвон|"
+        r"позвон|"
+        r"видеозвон|"
+        r"телефон|"
+        r"номер|"
+        r"email|e-mail|"
+        r"почт|"
+        r"контакт|"
+        r"иин"
+        r")",
+        re.IGNORECASE,
+    )
+    _FOLLOWUP_META_RE = re.compile(
+        r"(?:"
+        r"баз[аеиыу]\s+знан|"
+        r"\bбаза\b|"
+        r"данн|"
+        r"информац|"
+        r"сведени|"
+        r"факт|"
+        r"источник|"
+        r"коллег|"
+        r"менеджер|"
+        r"специалист"
+        r")",
+        re.IGNORECASE,
+    )
+    _FOLLOWUP_PROMISE_RE = re.compile(
+        r"(?:"
+        r"уточню|"
+        r"проверю|"
+        r"вернусь|"
+        r"напишу|"
+        r"отпишу|"
+        r"пришлю|"
+        r"отправлю|"
+        r"подготовлю|"
+        r"свяжусь|"
+        r"позвоню|"
+        r"перезвоню|"
+        r"дам\b|"
+        r"покажу"
+        r")",
+        re.IGNORECASE,
+    )
+    _FOLLOWUP_TIME_RE = re.compile(
+        r"(?:"
+        r"\bсегодня\b|"
+        r"\bзавтра\b|"
+        r"\bпозже\b|"
+        r"\bчерез\b|"
+        r"\bминут(?:у|ы)?\b|"
+        r"\bчас(?:а|ов)?\b|"
+        r"\bдн(?:я|ей)?\b|"
+        r"\bнедел(?:ю|и|ь)\b|"
+        r"\bмесяц(?:а|ев)?\b|"
+        r"\bсрок(?:и|ов)?\b"
+        r")",
+        re.IGNORECASE,
+    )
+    _FOLLOWUP_INTEGRATION_RE = re.compile(
+        r"(?:"
+        r"kaspi|wipon|telegram|whatsapp|api|rest|"
+        r"каспи|интеграц|вайлдберриз|озон|маркетплейс"
+        r")",
+        re.IGNORECASE,
+    )
     _FACT_STOP_WORDS = frozenset({
         "как", "что", "это", "где", "когда", "какой", "какая", "какие", "какое",
         "мне", "вам", "для", "про", "или", "если", "есть", "можно", "нужно",
@@ -1430,7 +1522,7 @@ class ResponseGenerator:
                 continue
             result = result.replace(
                 snippet,
-                "Для дополнительных точек в этом фрагменте БД нет подтверждённой формулы расчёта. ",
+                pick_unknown_kb_fallback() + " ",
             )
 
         # Collapse malformed "/год/точка" style artifacts.
@@ -2096,7 +2188,7 @@ class ResponseGenerator:
             "Если вопрос общий про тарифы, дай полный структурированный перечень тарифов из фактов.",
             "Для каждого тарифа указывай цену и период оплаты строго по фактам.",
             "Для запроса вида 'для N точек' подбирай минимально подходящий тариф по лимитам из фактов.",
-            "Если в фактах не хватает данных, скажи об этом прямо и попроси уточнение.",
+            "Если в фактах не хватает данных, нейтрально скажи: «Я уточню этот вопрос и чуть позже отпишу вам». Не упоминай базу знаний, факты или данные. Формулировки «в данных нет», «информация отсутствует», «в фактах нет» запрещены.",
         ]
         if self._is_broad_tariff_list_request(user_message):
             rules.append("Запрос про полный перечень: не сокращай ответ до общего описания, перечисли все тарифы.")
@@ -2106,7 +2198,7 @@ class ResponseGenerator:
         """General LLM-only factual constraints replacing deterministic semantic rewrites."""
         rules = [
             "КРИТИЧЕСКИЕ ПРАВИЛА ФАКТОЛОГИИ:",
-            "Отвечай только по фактам из БАЗЫ ЗНАНИЙ. Если факта нет, прямо скажи об этом.",
+            "Отвечай только по доступным grounding-фактам. Если точного факта нет, нейтрально скажи: «Я уточню этот вопрос и чуть позже отпишу вам». Не упоминай базу знаний, факты или данные. Формулировки «в данных нет», «информация отсутствует», «в фактах нет» запрещены.",
             "Не подменяй названия тарифов, модулей, интеграций и продуктов.",
             "Не отрицай поддержку функции/интеграции, если в фактах есть подтверждение.",
             "Не подтверждай поддержку функции/интеграции, если в фактах этого нет.",
@@ -2175,6 +2267,16 @@ class ResponseGenerator:
         facts_text = cls._grounding_facts_text(str(retrieved_facts or ""))
         if not facts_text.strip():
             return False
+
+        # Package/equipment asks need package/equipment support in facts.
+        # A shared model token like "Pro" is not enough when facts only cover tariff pricing.
+        if re.search(r"(?:комплект|оборудован|что\s+входит|входит\s+в\s+комплект)", msg_text, re.IGNORECASE):
+            if not re.search(
+                r"(?:комплект|оборудован|входит|включает|сканер|принтер|ящик|терминал|pos|моноблок)",
+                facts_text,
+                re.IGNORECASE,
+            ):
+                return False
 
         msg_terms = cls._fact_terms(msg_text)
         fact_terms = cls._fact_terms(facts_text)
@@ -2639,6 +2741,133 @@ class ResponseGenerator:
 
         return template_key
 
+    @staticmethod
+    def _build_media_candidates_compact(media_turn_context: Optional[MediaTurnContext]) -> str:
+        frozen = freeze_media_turn_context(media_turn_context)
+        if frozen is None:
+            return ""
+
+        cards = list(tuple(frozen.current_cards or ())) + list(tuple(frozen.historical_candidates or ()))
+        if not cards:
+            return ""
+
+        compact_lines: List[str] = []
+        for card in cards[:4]:
+            compact_lines.append(
+                json.dumps(
+                    {
+                        "knowledge_id": str(card.get("knowledge_id") or ""),
+                        "file_name": str(card.get("file_name") or ""),
+                        "media_kind": str(card.get("media_kind") or ""),
+                        "summary": str(card.get("summary") or ""),
+                        "facts": list(card.get("facts", []) or [])[:3],
+                    },
+                    ensure_ascii=False,
+                )
+            )
+        return "\n".join(compact_lines)
+
+    @staticmethod
+    def _normalize_media_route_mode(value: Any) -> str:
+        mode = str(value or "normal_dialog").strip().lower()
+        if mode in {"media_only", "hybrid"}:
+            return mode
+        return "normal_dialog"
+
+    @staticmethod
+    def _default_media_route_instruction(
+        *,
+        media_route_mode: str,
+        selected_media_grounding: str,
+    ) -> str:
+        if not str(selected_media_grounding or "").strip():
+            return ""
+        if media_route_mode == "media_only":
+            return (
+                "MEDIA ROUTE: отвечай только по selected_media_grounding. "
+                "Не смешивай ответ с KB и не добавляй product pitch вне документа."
+            )
+        if media_route_mode == "hybrid":
+            return (
+                "MEDIA ROUTE: используй selected_media_grounding как документальный контекст, "
+                "а kb_retrieved_facts как KB-контекст. Не смешивай их неявно."
+            )
+        return ""
+
+    @classmethod
+    def _looks_like_media_factual_recall(cls, user_message: str) -> bool:
+        text = str(user_message or "").strip().lower()
+        if not text:
+            return False
+
+        document_markers = (
+            "в документе",
+            "в файле",
+            "в договоре",
+            "в счете",
+            "в счёте",
+            "в презентации",
+            "в таблице",
+            "на фото",
+            "на картинке",
+            "на изображении",
+            "на видео",
+            "посмотри документ",
+            "посмотри файл",
+            "что в документе",
+            "что в файле",
+            "что на фото",
+            "что на картинке",
+            "что там",
+            "что там написано",
+            "что указано",
+            "как называется компания",
+            "какая компания",
+            "какое имя",
+            "что основное",
+        )
+        if any(marker in text for marker in document_markers):
+            return True
+        recall_prefixes = (
+            "что ",
+            "какая ",
+            "какой ",
+            "какие ",
+            "кто ",
+            "где ",
+        )
+        return text.startswith(recall_prefixes) and any(
+            hint in text for hint in ("документ", "файл", "фото", "картин", "изображен", "видео")
+        )
+
+    @classmethod
+    def _is_route_aware_media_factual_turn(cls, context: Dict[str, Any]) -> bool:
+        media_route_mode = cls._normalize_media_route_mode(context.get("media_route_mode"))
+        selected_media_grounding = str(context.get("selected_media_grounding", "") or "").strip()
+        if media_route_mode not in {"media_only", "hybrid"} or not selected_media_grounding:
+            return False
+        return cls._looks_like_media_factual_recall(str(context.get("user_message", "") or ""))
+
+    @staticmethod
+    def _apply_route_aware_template_override(
+        *,
+        requested_action: str,
+        selected_template_key: str,
+        context: Dict[str, Any],
+    ) -> str:
+        if requested_action not in {"autonomous_respond", "continue_current_goal"}:
+            return selected_template_key
+        if selected_template_key not in {"autonomous_respond", "continue_current_goal"}:
+            return selected_template_key
+
+        media_route_mode = ResponseGenerator._normalize_media_route_mode(context.get("media_route_mode"))
+        selected_media_grounding = str(context.get("selected_media_grounding", "") or "").strip()
+        if media_route_mode == "media_only" and selected_media_grounding:
+            return "autonomous_media_only"
+        if media_route_mode == "hybrid":
+            return "autonomous_respond"
+        return selected_template_key
+
     def prepare_response_context(self, state: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare autonomous response variables/facts without an LLM generation call."""
         intent = str(context.get("intent", "") or "")
@@ -2650,6 +2879,7 @@ class ResponseGenerator:
         working_context = dict(context)
         working_context["state"] = state
         working_context["user_message"] = user_message
+        media_turn_context = freeze_media_turn_context(working_context.get("media_turn_context"))
 
         _is_autonomous = bool(
             self._flow
@@ -2847,7 +3077,7 @@ class ResponseGenerator:
                 logger.warning("Pain retrieval failed, skipping", error=str(e))
                 variables["pain_context"] = ""
 
-        return {
+        response_context = {
             "state": state,
             "intent": intent,
             "requested_action": action,
@@ -2857,6 +3087,15 @@ class ResponseGenerator:
             "fact_keys": _fact_keys,
             "variables": variables,
         }
+        if _is_autonomous and media_turn_context is not None:
+            response_context.update(
+                {
+                    "grounding_contract_version": 2,
+                    "kb_retrieved_facts": retrieved_facts,
+                    "media_candidates_compact": self._build_media_candidates_compact(media_turn_context),
+                }
+            )
+        return response_context
 
     def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""
@@ -2916,8 +3155,17 @@ class ResponseGenerator:
             and self._flow.name == "autonomous"
             and (state.startswith("autonomous_") or state in {"handle_objection", "greeting"})
         )
-        _fact_keys: List[str] = []  # Track which fact sections were used (for rotation)
-        if _is_autonomous:
+        use_context_grounding = bool(context.get("_skip_retrieval"))
+        _fact_keys: List[str] = list(context.get("fact_keys", []) or [])
+        retrieved_urls: List[Dict[str, str]] | List[Any] = []
+        if use_context_grounding:
+            retrieved_facts = str(context.get("retrieved_facts", "") or "")
+            if _is_autonomous:
+                _kb = get_retriever().kb
+                _company_info = f"{_kb.company_name}: {_kb.company_description}"
+            else:
+                _company_info = get_retriever().get_company_info()
+        elif _is_autonomous:
             from src.knowledge.autonomous_kb import load_facts_for_state
 
             # Keep autonomous state-context and query-context on the same KB snapshot.
@@ -3015,13 +3263,22 @@ class ResponseGenerator:
             return self._kb_empty_handoff(context)
 
         # Форматируем URLs для включения в ответ
-        formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""
+        if use_context_grounding:
+            formatted_urls = str(context.get("retrieved_urls", "") or "")
+        else:
+            formatted_urls = self._format_urls_for_response(retrieved_urls) if retrieved_urls else ""
 
         requested_action = action
         template_key = self._select_template_key(intent=intent, action=action, context=context)
         # Inject blocking_with_pricing when a blocking action has a secondary price question.
         if _is_autonomous and self._should_inject_secondary_answer(action, context):
             template_key = "blocking_with_pricing"
+        if _is_autonomous:
+            template_key = self._apply_route_aware_template_override(
+                requested_action=requested_action,
+                selected_template_key=template_key,
+                context=context,
+            )
         selected_template_key = template_key
 
         # Mirror real template selection when fallback is triggered in _get_template().
@@ -3073,6 +3330,18 @@ class ResponseGenerator:
         variables = dict(PERSONALIZATION_DEFAULTS)
 
         # === Добавляем базовые переменные (перезаписывают fallback при наличии) ===
+        media_route_mode = self._normalize_media_route_mode(context.get("media_route_mode"))
+        selected_media_grounding = str(context.get("selected_media_grounding", "") or "")
+        kb_retrieved_facts = str(context.get("kb_retrieved_facts", "") or "")
+        final_grounding_facts = str(context.get("final_grounding_facts", "") or retrieved_facts or "")
+        media_route_instruction = str(
+            context.get("media_route_instruction")
+            or self._default_media_route_instruction(
+                media_route_mode=media_route_mode,
+                selected_media_grounding=selected_media_grounding,
+            )
+            or ""
+        )
         variables.update({
             "system": system_prompt,
             "user_message": user_message,
@@ -3132,6 +3401,11 @@ class ResponseGenerator:
                 frustration_level=context.get("frustration_level", 0),
                 user_message=user_message,
             ),
+            "media_route_mode": media_route_mode,
+            "selected_media_grounding": selected_media_grounding,
+            "kb_retrieved_facts": kb_retrieved_facts,
+            "final_grounding_facts": final_grounding_facts,
+            "media_route_instruction": media_route_instruction,
         })
         _secondary_intents = self._get_secondary_intents(context)
         variables["state_gated_rules"] = self._build_state_gated_rules(
@@ -3374,7 +3648,7 @@ class ResponseGenerator:
             )
             variables["question_instruction"] = (
                 "Клиент повторно спрашивает о цене: дай конкретный ответ по стоимости "
-                "из БАЗЫ ЗНАНИЙ (цифры/диапазон/тариф), БЕЗ встречных вопросов."
+                "из подтвержденных фактов (цифры/диапазон/тариф), БЕЗ встречных вопросов."
             )
             existing_do_not_ask = variables.get("do_not_ask", "")
             no_ask = (
@@ -3585,12 +3859,14 @@ class ResponseGenerator:
 
         # Direct factual answer mode in autonomous flow:
         # answer first, no discovery follow-up in the same message.
-        if (
-            _is_autonomous
-            and self._is_direct_factual_request(intent, user_message)
-        ):
+        route_aware_media_factual_turn = self._is_route_aware_media_factual_turn(context)
+        direct_or_media_factual_turn = bool(
+            self._is_direct_factual_request(intent, user_message)
+            or route_aware_media_factual_turn
+        )
+        if _is_autonomous and direct_or_media_factual_turn:
             variables["question_instruction"] = (
-                "⚠️ DIRECT FACTUAL MODE: сначала дай прямой ответ по фактам из БАЗЫ ЗНАНИЙ. "
+                "⚠️ DIRECT FACTUAL MODE: сначала дай прямой ответ по доступным grounding-фактам. "
                 "В этом сообщении НЕ задавай встречных вопросов."
             )
             variables["available_questions"] = ""
@@ -3627,17 +3903,17 @@ class ResponseGenerator:
         for var in CRITICAL_TEMPLATE_VARS:
             if var not in variables or not variables[var]:
                 logger.warning(
-                    "Critical template var '%s' missing/empty for action=%s state=%s",
-                    var,
-                    action,
-                    state,
+                    "Critical template var missing/empty",
+                    variable=var,
+                    action=action,
+                    state=state,
                 )
 
         # Подставляем в шаблон с безопасной подстановкой
         # SafeDict возвращает пустую строку для отсутствующих ключей,
         # предотвращая KeyError и показ {переменных} клиенту
         prompt = template.format_map(SafeDict(variables))
-        _is_direct_factual_turn = _is_autonomous and self._is_direct_factual_request(intent, user_message)
+        _is_direct_factual_turn = _is_autonomous and direct_or_media_factual_turn
         _is_pricing_turn = self._is_tariff_or_pricing_query(intent, user_message)
         if _is_direct_factual_turn:
             prompt = f"{prompt}\n\n{self._factual_llm_guardrails(intent, user_message)}"
@@ -3709,7 +3985,7 @@ class ResponseGenerator:
                 prompt += (
                     "\n\nВАЖНО: Твой предыдущий ответ был слишком общим и не отвечал на конкретный"
                     f" запрос клиента: \"{user_message[:100]}\". Ответь КОНКРЕТНО на его вопрос/"
-                    "запрос, используя факты из БАЗЫ ЗНАНИЙ. Не повторяй шаблонные фразы."
+                    "запрос, используя подтвержденные факты. Не повторяй шаблонные фразы."
                 )
                 continue
 
@@ -3725,8 +4001,8 @@ class ResponseGenerator:
                     "\n\nВАЖНО: Клиент задал КОНКРЕТНЫЙ ВОПРОС: \""
                     + user_message[:120]
                     + "\". Не уклоняйся фразой 'Расскажите подробнее о вашем бизнесе'."
-                    " Ответь ПРЯМО на вопрос клиента, используя факты из базы знаний."
-                    " Если точного ответа в фактах нет — так и напиши, без передачи коллегам."
+                    " Ответь ПРЯМО на вопрос клиента, используя подтвержденные факты."
+                    " Если точного ответа не хватает — нейтрально скажи: «Я уточню этот вопрос и чуть позже отпишу вам»."
                 )
                 continue
 
@@ -3737,9 +4013,9 @@ class ResponseGenerator:
             _is_factual_turn_guard = (
                 selected_template_key == "answer_with_facts"
                 or (
-                    selected_template_key == "autonomous_respond"
+                    selected_template_key in {"autonomous_respond", "autonomous_media_only"}
                     and _is_autonomous
-                    and self._is_direct_factual_request(intent, user_message)
+                    and direct_or_media_factual_turn
                 )
             )
             if _is_factual_turn_guard:
@@ -3747,11 +4023,11 @@ class ResponseGenerator:
                 _needs_fallback = _deflective
 
                 if attempt == 0 and _needs_fallback:
-                    if selected_template_key == "autonomous_respond":
+                    if selected_template_key in {"autonomous_respond", "autonomous_media_only"}:
                         logger.info("autonomous_factual_deflection_retry", response=response[:100])
                         prompt += (
-                            "\n\nВАЖНО: Клиент задал конкретный вопрос. Ответь на него по фактам"
-                            " из БАЗЫ ЗНАНИЙ. Не уклоняйся встречным вопросом — сначала дай"
+                            "\n\nВАЖНО: Клиент задал конкретный вопрос. Ответь на него по"
+                            " доступным grounding-фактам. Не уклоняйся встречным вопросом — сначала дай"
                             " прямой ответ."
                         )
                     else:
@@ -4404,6 +4680,7 @@ class ResponseGenerator:
         self._reset_postprocess_meta()
 
         processed = response
+        raw_source_response = str(response or "")
         _is_autonomous = bool(self._flow and self._flow.name == "autonomous")
         fact_disambiguated = False
         verifier_completed = False
@@ -4448,6 +4725,28 @@ class ResponseGenerator:
             processed = after
             _track_step(rule_id, before, after, enabled=enabled, extra=extra)
 
+        def _build_boundary_context() -> Dict[str, Any]:
+            boundary_facts = str(retrieved_facts or "")
+            boundary_pain = str(context.get("_pain_context", "") or "").strip()
+            if boundary_pain:
+                boundary_facts = (
+                    f"{boundary_facts}\n\n{boundary_pain}"
+                    if boundary_facts
+                    else boundary_pain
+                )
+            return {
+                **context,
+                "retrieved_facts": boundary_facts,
+                "factual_verified_grounded": (
+                    self._last_factual_verifier_meta.get("factual_verifier_verdict") == "pass"
+                ),
+                "fact_disambiguated": fact_disambiguated,
+            }
+
+        _apply_step(
+            "limit_client_name_reuse",
+            lambda text: self._suppress_repeated_client_name(text, context),
+        )
         _apply_step("apply_diversity", lambda text: self._apply_diversity(text, context))
         _apply_step("ensure_apology", lambda text: self._ensure_apology(text, context))
 
@@ -4718,6 +5017,7 @@ class ResponseGenerator:
                 str(context.get("intent", "") or ""),
                 str(context.get("user_message", "") or ""),
             )
+            or self._is_route_aware_media_factual_turn(context)
         )
         _is_high_risk_verifier_candidate = bool(
             self._is_high_risk_factual_response(
@@ -4954,18 +5254,7 @@ class ResponseGenerator:
             bv_result = None
             try:
                 from src.response_boundary_validator import boundary_validator
-                _bv_facts = retrieved_facts
-                _bv_pain = str(context.get("_pain_context", "") or "").strip()
-                if _bv_pain:
-                    _bv_facts = f"{_bv_facts}\n\n{_bv_pain}" if _bv_facts else _bv_pain
-                bv_context = {
-                    **context,
-                    "retrieved_facts": _bv_facts,
-                    "factual_verified_grounded": (
-                        self._last_factual_verifier_meta.get("factual_verifier_verdict") == "pass"
-                    ),
-                    "fact_disambiguated": fact_disambiguated,
-                }
+                bv_context = _build_boundary_context()
                 bv_result = boundary_validator.validate_response(
                     processed, bv_context, llm=self.llm
                 )
@@ -5005,7 +5294,24 @@ class ResponseGenerator:
             )
 
         # If any semantic mutation happened after factual verifier, re-check with verify_only.
-        if verifier_completed and semantic_post_verifier_changes and grounding_facts.strip():
+        approved_unknown_fallback_after_boundary = (
+            "boundary_validator" in semantic_post_verifier_changes
+            and is_approved_unknown_kb_fallback(processed)
+        )
+        if approved_unknown_fallback_after_boundary:
+            _track_step(
+                "factual_verify_only_revert",
+                processed,
+                processed,
+                enabled=False,
+                extra={
+                    "semantic_after_verifier": True,
+                    "triggered_by": list(semantic_post_verifier_changes),
+                    "reason": "approved_unknown_fallback_after_boundary_validator",
+                    "reverted": False,
+                },
+            )
+        elif verifier_completed and semantic_post_verifier_changes and grounding_facts.strip():
             verifier = self._ensure_factual_verifier()
             verify_only_result = None
             verify_only_verdict = "not_run"
@@ -5067,6 +5373,59 @@ class ResponseGenerator:
                         "reverted": False,
                     },
                 )
+
+        followup_question_mode = self._resolve_question_mode(context)
+        followup_intent = str(context.get("intent", "") or "").lower()
+        followup_state = str(context.get("state", "") or "")
+        should_try_fallback_followup = (
+            _is_autonomous
+            and is_pure_approved_unknown_kb_fallback(processed)
+            and followup_intent != "greeting"
+            and not self._is_terminal_or_closing_state(followup_state, followup_intent)
+            and followup_question_mode != "suppress"
+        )
+        before = processed
+        if should_try_fallback_followup:
+            processed, followup_meta = self._maybe_enrich_approved_unknown_fallback(
+                safe_fallback=processed,
+                context=context,
+                raw_source_response=raw_source_response,
+                boundary_context=_build_boundary_context(),
+            )
+            validation_events.append(
+                {
+                    "stage": "approved_unknown_fallback_followup",
+                    **followup_meta,
+                }
+            )
+            _track_step(
+                "approved_unknown_fallback_followup",
+                before,
+                processed,
+                enabled=True,
+                extra=followup_meta,
+            )
+        else:
+            if not _is_autonomous:
+                followup_reason = "not_autonomous"
+            elif not is_pure_approved_unknown_kb_fallback(processed):
+                followup_reason = "not_pure_approved_unknown_fallback"
+            elif followup_intent == "greeting":
+                followup_reason = "greeting_intent"
+            elif self._is_terminal_or_closing_state(followup_state, followup_intent):
+                followup_reason = "closing_or_terminal_state"
+            else:
+                followup_reason = "question_mode_suppress"
+            _track_step(
+                "approved_unknown_fallback_followup",
+                before,
+                processed,
+                enabled=False,
+                extra={
+                    "reason": followup_reason,
+                    "question_mode": followup_question_mode,
+                },
+            )
 
         # First bot reply (non-greeting intent): prepend mandatory intro
         # before the normal model answer.
@@ -5163,6 +5522,355 @@ class ResponseGenerator:
         )
 
     @staticmethod
+    def _resolve_question_mode(context: Dict[str, Any]) -> str:
+        response_directives = context.get("response_directives")
+        if response_directives is not None:
+            return str(
+                getattr(
+                    response_directives,
+                    "question_mode",
+                    context.get("question_mode", "mandatory"),
+                )
+                or "mandatory"
+            ).lower()
+        return str(context.get("question_mode", "mandatory") or "mandatory").lower()
+
+    @staticmethod
+    def _is_terminal_or_closing_state(state: str, intent: str) -> bool:
+        state_low = str(state or "").lower()
+        intent_low = str(intent or "").lower()
+        if intent_low in {"farewell", "gratitude"}:
+            return True
+        if "closing" in state_low or "terminal" in state_low:
+            return True
+        return state_low in {
+            "payment_ready",
+            "video_call_scheduled",
+            "success",
+            "completed",
+            "done",
+            "finished",
+            "closed",
+            "ended",
+        }
+
+    @staticmethod
+    def _format_unknown_fallback_history(history: Any) -> str:
+        if not isinstance(history, list):
+            return ""
+        lines: List[str] = []
+        for entry in history[-4:]:
+            if not isinstance(entry, dict):
+                continue
+            user_text = re.sub(r"\s+", " ", str(entry.get("user", "") or "").strip())
+            bot_text = re.sub(r"\s+", " ", str(entry.get("bot", "") or "").strip())
+            if user_text:
+                lines.append(f"Клиент: {user_text[:140]}")
+            if bot_text:
+                lines.append(f"Бот: {bot_text[:140]}")
+        return "\n".join(lines)
+
+    def _build_unknown_fallback_followup_prompt(
+        self,
+        *,
+        safe_fallback: str,
+        user_message: str,
+        intent: str,
+        state: str,
+        history: Any,
+        context_collected_data: Dict[str, Any],
+        context_missing_data: List[str],
+        question_mode: str,
+        raw_source_response: str,
+    ) -> str:
+        history_block = self._format_unknown_fallback_history(history)
+        guidance = self._build_unknown_fallback_followup_guidance(
+            state=state,
+            collected_data=context_collected_data,
+            missing_data=context_missing_data,
+            history=history,
+        )
+        mode_instruction = (
+            "Если question_mode=mandatory и безопасный вопрос уместен, обычно добавляй вопрос."
+            if question_mode == "mandatory"
+            else "Если безопасный вопрос явно уместен и помогает продолжить диалог, можешь его добавить."
+        )
+        if not history_block:
+            history_block = "(пусто)"
+
+        return (
+            "Ты узкий модуль post-fallback enrichment.\n"
+            "Твоя задача: после УЖЕ одобренного safe fallback при желании добавить один короткий вопрос.\n"
+            "SAFE FALLBACK менять нельзя. Ты выбираешь только: добавить 1 вопрос или не добавлять вопрос.\n"
+            "НЕЛЬЗЯ добавлять факты, цифры, сроки, бренды, интеграции, контакты, обещания, ссылки.\n"
+            "НЕЛЬЗЯ упоминать базу знаний, данные, источники, коллег, менеджеров или повторно здороваться.\n"
+            "Если у клиента ещё не хватает discovery/qualification-контекста, обычно задай один безопасный вопрос по бизнесу клиента, текущему процессу, боли или желаемому результату.\n"
+            "Используй FOLLOWUP_GUIDANCE, AVAILABLE_QUESTIONS, DO_NOT_ASK и RECENT_BOT_QUESTIONS как основные ограничения.\n"
+            "Если безопасного и уместного вопроса нет, верни use_followup=false.\n"
+            f"{mode_instruction}\n\n"
+            "Верни только JSON по схеме:\n"
+            "{\"use_followup\": true|false, \"question\": \"...\"}\n\n"
+            f"SAFE_FALLBACK:\n{safe_fallback}\n\n"
+            f"USER_MESSAGE:\n{str(user_message or '').strip()[:500]}\n\n"
+            f"INTENT: {intent}\n"
+            f"STATE: {state}\n"
+            f"QUESTION_MODE: {question_mode}\n\n"
+            f"CLIENT_PROFILE_CARD:\n{guidance['client_profile_card']}\n\n"
+            f"MISSING_DATA:\n{guidance['missing_data']}\n\n"
+            f"FOLLOWUP_GUIDANCE:\n{guidance['followup_guidance']}\n\n"
+            f"AVAILABLE_QUESTIONS:\n{guidance['available_questions']}\n\n"
+            f"DO_NOT_ASK:\n{guidance['do_not_ask']}\n\n"
+            f"RECENT_BOT_QUESTIONS:\n{guidance['recent_bot_questions']}\n\n"
+            f"HISTORY:\n{history_block[:800]}\n\n"
+            f"RAW_SOURCE_RESPONSE:\n{str(raw_source_response or '').strip()[:500]}\n"
+        )
+
+    def _call_unknown_fallback_followup_llm(
+        self,
+        *,
+        safe_fallback: str,
+        user_message: str,
+        intent: str,
+        state: str,
+        history: Any,
+        context_collected_data: Dict[str, Any],
+        context_missing_data: List[str],
+        question_mode: str,
+        raw_source_response: str,
+    ) -> Optional[ApprovedUnknownFallbackFollowupResult]:
+        generate_structured = getattr(self.llm, "generate_structured", None)
+        if not callable(generate_structured):
+            return None
+
+        prompt = self._build_unknown_fallback_followup_prompt(
+            safe_fallback=safe_fallback,
+            user_message=user_message,
+            intent=intent,
+            state=state,
+            history=history,
+            context_collected_data=context_collected_data,
+            context_missing_data=context_missing_data,
+            question_mode=question_mode,
+            raw_source_response=raw_source_response,
+        )
+        try:
+            result = generate_structured(
+                prompt=prompt,
+                schema=ApprovedUnknownFallbackFollowupResult,
+                allow_fallback=False,
+                purpose="approved_unknown_fallback_followup",
+                temperature=0.0,
+                num_predict=120,
+            )
+        except TypeError:
+            try:
+                result = generate_structured(prompt, ApprovedUnknownFallbackFollowupResult)
+            except Exception as exc:
+                logger.warning(
+                    "approved_unknown_fallback_followup_failed",
+                    error=str(exc),
+                )
+                return None
+        except Exception as exc:
+            logger.warning(
+                "approved_unknown_fallback_followup_failed",
+                error=str(exc),
+            )
+            return None
+
+        if isinstance(result, ApprovedUnknownFallbackFollowupResult):
+            return result
+        if result is None:
+            return None
+        try:
+            return ApprovedUnknownFallbackFollowupResult.model_validate(result)
+        except Exception:
+            return None
+
+    @classmethod
+    def _is_safe_unknown_fallback_followup_question(cls, question: str) -> bool:
+        text = re.sub(r"\s+", " ", str(question or "").strip())
+        if not text or "\n" in text:
+            return False
+        if not text.endswith("?") or text.count("?") != 1:
+            return False
+        if re.search(r"[.!](?=\s|$)", text[:-1]):
+            return False
+        words = cls._FOLLOWUP_WORD_RE.findall(text)
+        if not words or len(words) > 20:
+            return False
+        if any(char.isdigit() for char in text):
+            return False
+        if any(symbol in text for symbol in ("₸", "₽", "$", "€", "@", "/", "\\")):
+            return False
+        if cls._FOLLOWUP_GREETING_RE.search(text):
+            return False
+        if cls._FOLLOWUP_LINK_RE.search(text):
+            return False
+        if cls._FOLLOWUP_PHONE_RE.search(text):
+            return False
+        if cls._FOLLOWUP_CALL_TO_ACTION_RE.search(text):
+            return False
+        if cls._FOLLOWUP_META_RE.search(text):
+            return False
+        if cls._FOLLOWUP_PROMISE_RE.search(text):
+            return False
+        if cls._FOLLOWUP_TIME_RE.search(text):
+            return False
+        if cls._FOLLOWUP_INTEGRATION_RE.search(text):
+            return False
+        return True
+
+    @staticmethod
+    def _has_collected_profile_value(value: Any) -> bool:
+        if isinstance(value, bool):
+            return True
+        if value is None:
+            return False
+        if isinstance(value, (list, tuple, set, dict)):
+            return bool(value)
+        text = str(value).strip()
+        return bool(text) and text != "0" and text != "?"
+
+    @staticmethod
+    def _resolve_unknown_fallback_followup_phase(
+        state: str,
+        collected_data: Dict[str, Any],
+        missing_data: List[str],
+    ) -> str:
+        state_text = str(state or "").lower()
+        collected = collected_data or {}
+        missing = set(missing_data or [])
+
+        def _missing_any(fields: Tuple[str, ...]) -> bool:
+            return any(
+                field in missing or not ResponseGenerator._has_collected_profile_value(collected.get(field))
+                for field in fields
+            )
+
+        if _missing_any(("company_size", "current_tools", "business_type")):
+            return "situation"
+        if _missing_any(("pain_point",)):
+            return "problem"
+        if _missing_any(("desired_outcome",)):
+            return "need_payoff"
+        if "qualification" in state_text:
+            return "problem"
+        if state_text == "greeting" or "discovery" in state_text:
+            return "situation"
+        return ""
+
+    def _build_unknown_fallback_followup_guidance(
+        self,
+        *,
+        state: str,
+        collected_data: Dict[str, Any],
+        missing_data: List[str],
+        history: Any,
+    ) -> Dict[str, str]:
+        collected = collected_data if isinstance(collected_data, dict) else {}
+        missing = missing_data if isinstance(missing_data, list) else list(missing_data or [])
+        phase = self._resolve_unknown_fallback_followup_phase(state, collected, missing)
+
+        available_questions = ""
+        do_not_ask = ""
+        followup_guidance = "Если безопасный discovery/qualification вопрос неуместен, не добавляй его."
+        if phase:
+            try:
+                dedup_context = question_dedup_engine.get_prompt_context(phase, collected, None)
+                available_questions = str(dedup_context.get("available_questions", "") or "").strip()
+                do_not_ask = str(dedup_context.get("do_not_ask", "") or "").strip()
+                followup_guidance = (
+                    f"Текущий безопасный профильный фокус: {phase}. "
+                    "Если нужен встречный вопрос, предпочти вопрос по этой цели и не повторяй уже заданное."
+                )
+            except Exception as exc:
+                logger.warning(
+                    "unknown_fallback_followup_guidance_failed",
+                    error=str(exc),
+                    phase=phase,
+                )
+
+        recent_bot_questions = self._extract_question_phrases_from_history(history or [], n_turns=4)
+        recent_block = "\n".join(f"- {item}" for item in recent_bot_questions) if recent_bot_questions else "(нет)"
+
+        return {
+            "client_profile_card": self._format_client_card(collected) if collected else "пока ничего не собрано",
+            "missing_data": ", ".join(missing) if missing else "state-machine missing_data пусто",
+            "followup_guidance": followup_guidance,
+            "available_questions": available_questions or "(нет подсказок)",
+            "do_not_ask": do_not_ask or "(нет)",
+            "recent_bot_questions": recent_block,
+        }
+
+    def _maybe_enrich_approved_unknown_fallback(
+        self,
+        *,
+        safe_fallback: str,
+        context: Dict[str, Any],
+        raw_source_response: str,
+        boundary_context: Dict[str, Any],
+    ) -> Tuple[str, Dict[str, Any]]:
+        meta: Dict[str, Any] = {
+            "attempted": False,
+            "question_added": False,
+            "reason": "not_attempted",
+            "question_mode": self._resolve_question_mode(context),
+        }
+        safe_text = str(safe_fallback or "").strip()
+        if not safe_text:
+            meta["reason"] = "empty_fallback"
+            return safe_text, meta
+
+        result = self._call_unknown_fallback_followup_llm(
+            safe_fallback=safe_text,
+            user_message=str(context.get("user_message", "") or ""),
+            intent=str(context.get("intent", "") or ""),
+            state=str(context.get("state", "") or ""),
+            history=context.get("history", []) or [],
+            context_collected_data=context.get("collected_data", {}) or {},
+            context_missing_data=context.get("missing_data", []) or [],
+            question_mode=meta["question_mode"],
+            raw_source_response=raw_source_response,
+        )
+        meta["attempted"] = True
+        if result is None:
+            meta["reason"] = "structured_output_invalid"
+            return safe_text, meta
+        if not result.use_followup:
+            meta["reason"] = "model_declined"
+            return safe_text, meta
+
+        question = re.sub(r"\s+", " ", str(result.question or "").strip())
+        if not self._is_safe_unknown_fallback_followup_question(question):
+            meta["reason"] = "question_rejected"
+            return safe_text, meta
+
+        candidate = f"{safe_text} {question}"
+        try:
+            from src.response_boundary_validator import boundary_validator
+            boundary_violations = list(
+                boundary_validator._detect_violations(candidate, boundary_context)  # noqa: SLF001
+            )
+        except Exception as exc:
+            logger.warning(
+                "approved_unknown_fallback_followup_boundary_failed",
+                error=str(exc),
+            )
+            meta["reason"] = "deterministic_boundary_error"
+            return safe_text, meta
+
+        if boundary_violations:
+            meta["reason"] = "deterministic_boundary_reject"
+            meta["boundary_violations"] = boundary_violations
+            return safe_text, meta
+
+        meta["question_added"] = True
+        meta["reason"] = "question_appended"
+        meta["question"] = question
+        return candidate, meta
+
+    @staticmethod
     def _enforce_no_contact_boundaries(text: str, context: Dict[str, Any]) -> str:
         """Remove contact-push fragments when user explicitly refused to share contacts."""
         return enforce_no_contact_boundaries(text=text, context=context)
@@ -5251,9 +5959,9 @@ class ResponseGenerator:
         mentions_tis = bool(re.search(r"\bТИС\b", response_text, re.IGNORECASE))
         has_non_tis_tariff = bool(re.search(r"\b(?:Mini|Lite|Standard|Pro)\b", response_text, re.IGNORECASE))
         has_broken_tail = bool(re.search(r"обход\w*\s+в\s*[.!?]?$", response_text, re.IGNORECASE))
-        has_vague_quote = any(
-            phrase in response_text.lower()
-            for phrase in ("уточню у коллег", "точную стоимость", "вернусь с ответом")
+        has_vague_quote = (
+            bool(self._COLLEAGUE_FALLBACK_RE.search(response_text))
+            or "точную стоимость" in response_text.lower()
         )
         if mentions_tis and has_total and not has_non_tis_tariff and not has_broken_tail and not has_vague_quote:
             return response_text
@@ -5693,7 +6401,7 @@ class ResponseGenerator:
         if len(result) > 15:
             return result
         # If stripping removed everything, return a deterministic DB-safe phrase.
-        return "По предоставленным фактам БД нет подтверждённого ответа в текущем виде. Уточните, пожалуйста, тариф или интеграцию."
+        return pick_unknown_kb_fallback()
 
     @staticmethod
     def _enforce_word_limit(text: str, max_words: int = 55) -> str:
@@ -5879,7 +6587,7 @@ class ResponseGenerator:
                 user_message=user_message,
                 retrieved_facts=facts_text,
             )
-            if grounded and not grounded.startswith("В предоставленных фактах БД нет"):
+            if grounded:
                 return grounded
 
         if intent in {"contact_provided", "callback_request", "demo_request"}:
@@ -5926,7 +6634,7 @@ class ResponseGenerator:
                 sentences.append(line)
 
         if not sentences:
-            return "В предоставленных фактах БД нет подтвержденного ответа по этому вопросу."
+            return pick_unknown_kb_fallback()
 
         query_low = str(user_message or "").lower()
         query_terms = self._fact_terms(user_message)
@@ -6019,7 +6727,7 @@ class ResponseGenerator:
         result = self._COLLEAGUE_FALLBACK_RE.sub("", result)
         result = re.sub(r"\s{2,}", " ", result).strip(" ,.;")
         if not result:
-            return "В предоставленных фактах БД нет подтвержденного ответа по этому вопросу."
+            return pick_unknown_kb_fallback()
         return self._normalize_fact_sentence(result)
 
     def _enforce_no_colleague_fallback(self, response: str, retrieved_facts: str, user_message: str) -> str:
@@ -6418,6 +7126,58 @@ class ResponseGenerator:
             state=state,
             user_message=user_message,
         )
+
+    @staticmethod
+    def _build_client_name_markers(name: str) -> Tuple[str, ...]:
+        cleaned = " ".join(str(name or "").strip().split())
+        if not cleaned:
+            return tuple()
+        markers = [cleaned.lower()]
+        first_token = cleaned.split()[0].lower()
+        if first_token and first_token not in markers:
+            markers.append(first_token)
+        return tuple(markers)
+
+    @classmethod
+    def _strip_client_name_at_start(cls, response: str, name: str) -> str:
+        markers = cls._build_client_name_markers(name)
+        cleaned = str(response or "")
+        for marker in markers:
+            pattern = r"^\s*" + re.escape(marker) + r"(?:(?:\s*[,:.!?-]\s*)|\s+)"
+            updated = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+            if updated != cleaned:
+                return updated.lstrip()
+        return cleaned
+
+    @classmethod
+    def _suppress_repeated_client_name(cls, response: str, context: Dict[str, Any]) -> str:
+        """Deterministically remove overused client-name addressing from final text."""
+        collected = context.get("collected_data", {}) or {}
+        name = collected.get("contact_name") or collected.get("client_name") or ""
+        if not name:
+            return response
+
+        cleaned = cls._strip_client_name_at_start(str(response or ""), name)
+        recent_mentions = count_name_mentions_in_history(
+            context.get("history", []) or [],
+            name,
+            recent_bot_turns=4,
+        )
+        if recent_mentions < 1:
+            return cleaned
+
+        markers = cls._build_client_name_markers(name)
+        for marker in markers:
+            if " " in marker:
+                pattern = r"(?<!\w)" + re.escape(marker).replace(r"\ ", r"\s+") + r"(?!\w)"
+            else:
+                pattern = r"(?<!\w)" + re.escape(marker) + r"(?!\w)"
+            cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+
+        cleaned = re.sub(r"\s{2,}", " ", cleaned)
+        cleaned = re.sub(r"\s+([,.!?:])", r"\1", cleaned)
+        cleaned = re.sub(r"^[,.:;!\-\s]+", "", cleaned)
+        return cleaned.strip()
 
     @staticmethod
     def _has_contact_boundary_signal(

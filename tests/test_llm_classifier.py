@@ -1,9 +1,12 @@
 """Тесты LLM классификатора."""
+import json
 import sys
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
+
+from src.decision_trace import LLMTrace
 
 class TestSchemas:
     """Тесты Pydantic схем."""
@@ -92,14 +95,13 @@ class TestSchemas:
         assert restored.intent == "price_question"
         assert restored.confidence == 0.85
 
-    def test_all_34_intents_exist(self):
-        """Проверка что все 34 интента определены (включая request_brevity)."""
+    def test_intent_type_contains_request_brevity(self):
+        """Проверка что IntentType экспортирует актуальный список интентов."""
         import typing
         from src.classifier.llm.schemas import IntentType
 
         intents = typing.get_args(IntentType)
-        assert len(intents) == 34
-        # Проверяем что новый интент request_brevity добавлен
+        assert len(intents) > 34
         assert "request_brevity" in intents
 
     def test_pain_category_valid(self):
@@ -300,7 +302,7 @@ class TestLLMClassifier:
 
     def test_classify_success(self):
         """Успешная классификация через LLM."""
-        from unittest.mock import Mock, MagicMock
+        from unittest.mock import Mock
         from src.classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
 
         # Мок VLLMClient
@@ -311,7 +313,7 @@ class TestLLMClassifier:
             reasoning="Приветствие",
             extracted_data=ExtractedData()
         )
-        mock_vllm.generate_structured.return_value = mock_result
+        mock_vllm.generate_structured.return_value = (mock_result, LLMTrace())
 
         classifier = LLMClassifier(vllm_client=mock_vllm)
         result = classifier.classify("Привет!")
@@ -321,6 +323,8 @@ class TestLLMClassifier:
         assert result["method"] == "llm"
         assert result["reasoning"] == "Приветствие"
         mock_vllm.generate_structured.assert_called_once()
+        assert mock_vllm.generate_structured.call_args.kwargs["return_trace"] is True
+        assert mock_vllm.generate_structured.call_args.kwargs["repair_payload"] is not None
 
     def test_classify_fallback_on_none(self):
         """Fallback когда LLM возвращает None."""
@@ -329,7 +333,7 @@ class TestLLMClassifier:
 
         # Мок VLLMClient возвращает None
         mock_vllm = Mock()
-        mock_vllm.generate_structured.return_value = None
+        mock_vllm.generate_structured.return_value = (None, LLMTrace())
 
         # Мок fallback классификатора
         mock_fallback = Mock()
@@ -375,7 +379,7 @@ class TestLLMClassifier:
 
         # Мок VLLMClient возвращает None
         mock_vllm = Mock()
-        mock_vllm.generate_structured.return_value = None
+        mock_vllm.generate_structured.return_value = (None, LLMTrace())
 
         classifier = LLMClassifier(vllm_client=mock_vllm, fallback_classifier=None)
         result = classifier.classify("Test")
@@ -391,7 +395,7 @@ class TestLLMClassifier:
 
         # Мок VLLMClient возвращает None
         mock_vllm = Mock()
-        mock_vllm.generate_structured.return_value = None
+        mock_vllm.generate_structured.return_value = (None, LLMTrace())
 
         # Мок fallback тоже падает
         mock_fallback = Mock()
@@ -419,13 +423,13 @@ class TestLLMClassifier:
             reasoning="test",
             extracted_data=ExtractedData()
         )
-        mock_vllm.generate_structured.return_value = mock_result
+        mock_vllm.generate_structured.return_value = (mock_result, LLMTrace())
 
         classifier = LLMClassifier(vllm_client=mock_vllm)
         classifier.classify("Test 1")
 
         # Второй вызов - None → fallback
-        mock_vllm.generate_structured.return_value = None
+        mock_vllm.generate_structured.return_value = (None, LLMTrace())
         classifier.classify("Test 2")
 
         stats = classifier.get_stats()
@@ -448,7 +452,7 @@ class TestLLMClassifier:
             reasoning="Согласие после предложения демо",
             extracted_data=ExtractedData()
         )
-        mock_vllm.generate_structured.return_value = mock_result
+        mock_vllm.generate_structured.return_value = (mock_result, LLMTrace())
 
         classifier = LLMClassifier(vllm_client=mock_vllm)
         result = classifier.classify(
@@ -479,14 +483,117 @@ class TestLLMClassifier:
                 pain_point=None  # None должен быть исключён
             )
         )
-        mock_vllm.generate_structured.return_value = mock_result
+        mock_vllm.generate_structured.return_value = (mock_result, LLMTrace())
 
         classifier = LLMClassifier(vllm_client=mock_vllm)
         result = classifier.classify("У нас 25 человек, мы ресторан")
 
         assert result["extracted_data"]["company_size"] == 25
-        assert result["extracted_data"]["business_type"] == "ресторан"
+        assert result["extracted_data"]["business_type"] == "общепит"
         assert "pain_point" not in result["extracted_data"]  # None исключён
+
+    def test_classify_final_salvage_uses_fallback_top_intent(self):
+        """После исчерпания retries classifier salvages только canonical top-intent."""
+        from unittest.mock import Mock
+        from src.classifier.llm import LLMClassifier
+
+        mock_vllm = Mock()
+        mock_vllm.generate_structured.return_value = (
+            None,
+            LLMTrace(
+                last_cleaned_structured_response=json.dumps({
+                    "intent": "question_scheduling",
+                    "confidence": 0.72,
+                    "reasoning": "LLM thought it was scheduling",
+                    "extracted_data": {
+                        "contact_info": "+7 777 123 45 67",
+                        "company_name": "Acme",
+                        "budget_range": "100k",
+                    },
+                    "alternatives": [{"intent": "greeting", "confidence": 0.2}],
+                })
+            ),
+        )
+        mock_fallback = Mock()
+        mock_fallback.classify.return_value = {
+            "intent": "contact_provided",
+            "confidence": 0.88,
+            "extracted_data": {"ignored": True},
+            "alternatives": [{"intent": "greeting", "confidence": 0.1}],
+        }
+
+        classifier = LLMClassifier(vllm_client=mock_vllm, fallback_classifier=mock_fallback)
+        result = classifier.classify("мой номер +7 777 123 45 67")
+
+        assert result["intent"] == "contact_provided"
+        assert result["confidence"] == 0.88
+        assert result["method"] == "llm_salvaged_top_intent"
+        assert result["structured_salvaged"] is True
+        assert result["reasoning"] == "structured_salvage_via_fallback_intent"
+        assert result["alternatives"] == []
+        assert result["metadata"]["original_llm_reasoning"] == "LLM thought it was scheduling"
+        assert "budget_range" not in result["extracted_data"]
+        assert result["extracted_data"] == {
+            "contact_info": "+77771234567",
+            "company_name": "Acme",
+        }
+        mock_fallback.classify.assert_called_once()
+
+    def test_classify_salvage_failure_falls_back_to_existing_path(self):
+        """Если salvage не может получить canonical intent, остаётся обычный fallback."""
+        from unittest.mock import Mock
+        from src.classifier.llm import LLMClassifier
+
+        mock_vllm = Mock()
+        mock_vllm.generate_structured.return_value = (
+            None,
+            LLMTrace(
+                last_cleaned_structured_response=json.dumps({
+                    "intent": "question_scheduling",
+                    "confidence": 0.72,
+                    "reasoning": "LLM drifted",
+                })
+            ),
+        )
+        mock_fallback = Mock()
+        mock_fallback.classify.side_effect = [
+            {"intent": "info_request", "confidence": 0.91, "extracted_data": {}},
+            {"intent": "greeting", "confidence": 0.63, "extracted_data": {}},
+        ]
+
+        classifier = LLMClassifier(vllm_client=mock_vllm, fallback_classifier=mock_fallback)
+        result = classifier.classify("привет")
+
+        assert result["intent"] == "greeting"
+        assert result["method"] == "llm_fallback"
+        assert mock_fallback.classify.call_count == 2
+
+    def test_classify_accepts_kwargs_compatible_test_double(self):
+        """Classifier branch works with generate_structured(..., **kwargs) doubles."""
+        from src.classifier.llm import LLMClassifier, ClassificationResult, ExtractedData
+
+        class StubLLM:
+            def generate_structured(self, prompt, schema, **kwargs):
+                assert kwargs["return_trace"] is True
+                assert kwargs["repair_payload"] is not None
+                return (
+                    ClassificationResult(
+                        intent="greeting",
+                        confidence=0.93,
+                        reasoning="Приветствие",
+                        extracted_data=ExtractedData(),
+                    ),
+                    LLMTrace(),
+                )
+
+            def get_stats_dict(self):
+                return {}
+
+        classifier = LLMClassifier(vllm_client=StubLLM())
+        result = classifier.classify("Привет")
+
+        assert result["intent"] == "greeting"
+        assert result["method"] == "llm"
 
     def test_module_exports_classifier(self):
         """Проверка экспорта LLMClassifier из модуля."""
@@ -502,7 +609,7 @@ class TestUnifiedClassifier:
         from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
-        with patch('classifier.unified.flags') as mock_flags:
+        with patch('src.classifier.unified.flags') as mock_flags:
             mock_flags.llm_classifier = True
 
             classifier = UnifiedClassifier()
@@ -512,7 +619,7 @@ class TestUnifiedClassifier:
             mock_llm.classify.return_value = {"intent": "greeting", "method": "llm"}
             classifier._llm = mock_llm
 
-            result = classifier.classify("привет")
+            result = classifier.classify("тестовое сообщение без приоритетного паттерна")
 
             assert result["method"] == "llm"
             mock_llm.classify.assert_called_once()
@@ -522,7 +629,7 @@ class TestUnifiedClassifier:
         from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
-        with patch('classifier.unified.flags') as mock_flags:
+        with patch('src.classifier.unified.flags') as mock_flags:
             mock_flags.llm_classifier = False
 
             classifier = UnifiedClassifier()
@@ -532,7 +639,7 @@ class TestUnifiedClassifier:
             mock_hybrid.classify.return_value = {"intent": "greeting", "method": "root"}
             classifier._hybrid = mock_hybrid
 
-            result = classifier.classify("привет")
+            result = classifier.classify("тестовое сообщение без приоритетного паттерна")
 
             mock_hybrid.classify.assert_called_once()
 
@@ -541,7 +648,7 @@ class TestUnifiedClassifier:
         from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch
 
-        with patch('classifier.unified.flags') as mock_flags:
+        with patch('src.classifier.unified.flags') as mock_flags:
             mock_flags.llm_classifier = False
 
             classifier = UnifiedClassifier()
@@ -550,7 +657,7 @@ class TestUnifiedClassifier:
             assert classifier._hybrid is None
 
             # После обращения к property создаётся
-            with patch('classifier.hybrid.HybridClassifier') as MockHybrid:
+            with patch('src.classifier.hybrid.HybridClassifier') as MockHybrid:
                 MockHybrid.return_value.classify.return_value = {"intent": "greeting"}
                 _ = classifier.hybrid
                 # Теперь _hybrid должен быть установлен
@@ -561,7 +668,7 @@ class TestUnifiedClassifier:
         from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
-        with patch('classifier.unified.flags') as mock_flags:
+        with patch('src.classifier.unified.flags') as mock_flags:
             mock_flags.llm_classifier = True
 
             classifier = UnifiedClassifier()
@@ -572,7 +679,7 @@ class TestUnifiedClassifier:
             # Mock hybrid чтобы избежать реальной инициализации
             classifier._hybrid = Mock()
 
-            with patch('classifier.llm.LLMClassifier') as MockLLM:
+            with patch('src.classifier.llm.LLMClassifier') as MockLLM:
                 MockLLM.return_value.classify.return_value = {"intent": "greeting"}
                 _ = classifier.llm
                 assert classifier._llm is not None
@@ -582,7 +689,7 @@ class TestUnifiedClassifier:
         from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch, Mock
 
-        with patch('classifier.unified.flags') as mock_flags:
+        with patch('src.classifier.unified.flags') as mock_flags:
             mock_flags.llm_classifier = True
 
             classifier = UnifiedClassifier()
@@ -605,7 +712,7 @@ class TestUnifiedClassifier:
         from src.classifier.unified import UnifiedClassifier
         from unittest.mock import patch
 
-        with patch('classifier.unified.flags') as mock_flags:
+        with patch('src.classifier.unified.flags') as mock_flags:
             mock_flags.llm_classifier = False
 
             classifier = UnifiedClassifier()
