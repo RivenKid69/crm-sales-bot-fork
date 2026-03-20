@@ -136,7 +136,8 @@ def test_ungrounded_quant_sanitizer_does_not_leave_orphaned_callback_time_fragme
 
     assert "вам с 9" not in sanitized.lower()
     assert "до 18" not in sanitized.lower()
-    assert "номер телефона" in sanitized.lower()
+    assert "номер телефона" not in sanitized.lower()
+    assert "в чате" in sanitized.lower()
 
 
 def test_validate_response_repairs_callback_time_fragment_after_retry():
@@ -162,4 +163,70 @@ def test_validate_response_repairs_callback_time_fragment_after_retry():
 
     assert "вам с 9" not in result.response.lower()
     assert "до 18" not in result.response.lower()
-    assert "номер телефона" in result.response.lower()
+    assert "номер телефона" not in result.response.lower()
+    assert "email" not in result.response.lower()
+
+
+def test_hallucination_fallback_keeps_autonomous_callback_in_chat():
+    validator = ResponseBoundaryValidator()
+    fallback = validator._hallucination_fallback(
+        {
+            "intent": "callback_request",
+            "state": "autonomous_closing",
+            "user_message": "Перезвоните мне позже",
+            "collected_data": {},
+            "violations": ["ungrounded_quant_claim"],
+        }
+    )
+
+    low = fallback.lower()
+    assert "email" not in low
+    assert "почт" not in low
+    assert "номер телефона" not in low
+    assert "в чате" in low
+
+
+def test_sanitize_demo_without_contact_keeps_autonomous_flow_in_chat():
+    validator = ResponseBoundaryValidator()
+    sanitized = validator._sanitize_demo_without_contact(
+        "Проведу демо без контактных данных.",
+        context={
+            "state": "autonomous_closing",
+            "selected_template": "autonomous_respond",
+            "user_message": "Пока без звонка, просто расскажите.",
+        },
+    )
+    low = sanitized.lower()
+    assert "номер телефона" not in low
+    assert "email" not in low
+    assert "в чате" in low
+
+
+def test_payment_ready_fallback_confirms_purchase_intent():
+    validator = ResponseBoundaryValidator()
+    fallback = validator._hallucination_fallback(
+        {
+            "state": "payment_ready",
+            "intent": "request_invoice",
+            "user_message": "Да, хочу оплатить",
+            "violations": ["ungrounded_quant_claim"],
+        }
+    )
+    low = fallback.lower()
+    assert "готовы к оплате" in low
+    assert "завершить покупку" in low
+
+
+def test_video_call_terminal_fallback_confirms_call_intent():
+    validator = ResponseBoundaryValidator()
+    fallback = validator._hallucination_fallback(
+        {
+            "state": "video_call_scheduled",
+            "intent": "demo_request",
+            "user_message": "Да, хочу видеозвонок",
+            "violations": ["ungrounded_quant_claim"],
+        }
+    )
+    low = fallback.lower()
+    assert "видеозвонок нужен" in low
+    assert "согласовать время" in low

@@ -238,7 +238,7 @@ class TestTier4Exit:
         handler = FallbackHandler()
 
         # Check multiple messages
-        contact_keywords = ["почту", "контакт", "связ", "информацию", "прислать"]
+        contact_keywords = ["номер", "телефон", "связ", "информацию", "позвон"]
         found_contact_offer = False
 
         for _ in range(10):
@@ -249,6 +249,16 @@ class TestTier4Exit:
                 break
 
         assert found_contact_offer, "Tier 4 messages should offer contact options"
+
+    def test_tier_4_message_does_not_offer_email(self):
+        handler = FallbackHandler()
+
+        for _ in range(10):
+            handler.reset()
+            response = handler.get_fallback("soft_close", "state")
+            low = response.message.lower()
+            assert "email" not in low
+            assert "почт" not in low
 
 class TestStatistics:
     """Tests for statistics tracking"""

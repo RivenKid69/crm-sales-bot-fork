@@ -928,6 +928,18 @@ def test_fast_track_contact_disabled_when_client_defers_contact():
     assert builder._should_fast_track_contact() is False
 
 
+def test_fast_track_contact_disabled_in_autonomous_closing_even_without_refusal():
+    envelope = ContextEnvelope(
+        tone="rushed",
+        total_turns=5,
+        state="autonomous_closing",
+        collected_data={},
+        last_user_message="Сколько стоит Lite для магазина?",
+    )
+    builder = ResponseDirectivesBuilder(envelope)
+    assert builder._should_fast_track_contact() is False
+
+
 def test_no_contact_boundary_strips_email_request_phrase():
     raw = "Если нужна таблица, пришлите почту, отправлю за 15 минут."
     ctx = {
@@ -1015,6 +1027,32 @@ def test_boundary_sanitizes_contact_pressure_after_refusal():
     low = sanitized.lower()
     assert "оставьте номер" not in low
     assert "без контактов" in low
+
+
+def test_contact_request_channel_is_normalized_to_phone_only():
+    sanitized = ResponseGenerator._normalize_contact_request_channel(
+        "Оставьте телефон или email для связи."
+    )
+    low = sanitized.lower()
+    assert "email" not in low
+    assert "почт" not in low
+    assert "номер телефона" in low
+
+
+def test_autonomous_contact_request_is_removed_from_final_text():
+    sanitized = ResponseGenerator._suppress_autonomous_contact_requests(
+        "Подходит по задачам. Оставьте телефон или email для связи.",
+        {
+            "state": "autonomous_closing",
+            "selected_template": "autonomous_respond",
+            "intent": "price_question",
+            "user_message": "Сколько стоит Lite?",
+        },
+    )
+    low = sanitized.lower()
+    assert "телефон" not in low
+    assert "email" not in low
+    assert "подходит по задачам" in low
 
 
 def test_boundary_does_not_use_deterministic_vertical_assumption_detector():

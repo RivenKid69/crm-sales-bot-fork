@@ -316,7 +316,7 @@ class TestFastTrackContact:
         from src.response_directives import ResponseDirectives
         d = ResponseDirectives(prioritize_contact=True)
         instruction = d.get_instruction()
-        assert "контактные данные" in instruction
+        assert "запроси номер телефона" in instruction.lower()
         assert "торопится" in instruction
 
     def test_prioritize_contact_rushed_lowercase(self):
@@ -328,6 +328,7 @@ class TestFastTrackContact:
             tone="rushed",
             collected_data={},
             total_turns=6,
+            state="close",
         )
         builder = ResponseDirectivesBuilder(envelope, config={
             "tone_thresholds": {"empathetic_frustration": 5, "validate_frustration": 4}
@@ -425,6 +426,7 @@ class TestFastTrackContact:
             tone="rushed",
             collected_data={},
             total_turns=4,
+            state="close",
         )
         builder = ResponseDirectivesBuilder(envelope, config={
             "tone_thresholds": {"empathetic_frustration": 5, "validate_frustration": 4}

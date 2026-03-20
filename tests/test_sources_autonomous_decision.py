@@ -798,22 +798,14 @@ class TestClosingDeterministicCompletion:
     """Regression tests for deterministic completion in autonomous_closing."""
 
     @patch("src.feature_flags.flags")
-    def test_payment_context_does_not_autofinish_video_call_without_iin(self, mock_flags):
+    def test_payment_context_autofinishes_payment_ready_without_contact_collection(self, mock_flags):
         """
-        If client is in invoice/payment context and only shared phone,
-        source must stay in autonomous_closing (collect IIN first), not auto video_call.
+        If client is in invoice/payment context, source should finalize payment_ready
+        based on intent, without waiting for repeated contact collection.
         """
         mock_flags.is_enabled.return_value = True
 
-        llm = make_llm(
-            AutonomousDecision(
-                next_state="autonomous_closing",
-                action="autonomous_respond",
-                reasoning="need missing payment fields",
-                should_transition=False,
-            )
-        )
-        source = AutonomousDecisionSource(llm=llm)
+        source = AutonomousDecisionSource(llm=Mock())
 
         envelope = SimpleNamespace(
             consecutive_same_state=1,
@@ -828,14 +820,14 @@ class TestClosingDeterministicCompletion:
             "max_turns_in_state": 6,
             "terminal_states": ["payment_ready", "video_call_scheduled"],
             "terminal_state_requirements": {
-                "payment_ready": ["kaspi_phone", "iin"],
-                "video_call_scheduled": ["contact_info"],
+                "payment_ready": [],
+                "video_call_scheduled": [],
             },
         }
         bb = make_blackboard(
             state="autonomous_closing",
-            intent="contact_provided",
-            user_message="Телефон: +77015551234",
+            intent="request_invoice",
+            user_message="Да, хочу оплатить. Выставляйте счёт.",
             state_config=state_config,
             context_envelope=envelope,
         )
@@ -844,12 +836,12 @@ class TestClosingDeterministicCompletion:
 
         assert len(bb._transition_proposals) == 1
         tp = bb._transition_proposals[0]
-        assert tp["next_state"] == "autonomous_closing"
-        assert "stay" in tp["reason_code"]
+        assert tp["next_state"] == "payment_ready"
+        assert tp["reason_code"] == "autonomous_terminal_payment_ready"
 
     @patch("src.feature_flags.flags")
-    def test_video_call_autofinish_when_no_payment_context(self, mock_flags):
-        """Without payment/invoice intent, contact-only path can auto-finish video_call."""
+    def test_video_call_autofinish_when_requested_without_contact_collection(self, mock_flags):
+        """Without payment/invoice intent, explicit video-call request auto-finishes video_call."""
         mock_flags.is_enabled.return_value = True
 
         source = AutonomousDecisionSource(llm=Mock())
@@ -866,14 +858,14 @@ class TestClosingDeterministicCompletion:
             "max_turns_in_state": 6,
             "terminal_states": ["payment_ready", "video_call_scheduled"],
             "terminal_state_requirements": {
-                "payment_ready": ["kaspi_phone", "iin"],
-                "video_call_scheduled": ["contact_info"],
+                "payment_ready": [],
+                "video_call_scheduled": [],
             },
         }
         bb = make_blackboard(
             state="autonomous_closing",
-            intent="contact_provided",
-            user_message="Мой телефон +77073334455",
+            intent="demo_request",
+            user_message="Да, хочу видеозвонок, давайте созвонимся.",
             state_config=state_config,
             context_envelope=envelope,
         )
@@ -891,7 +883,7 @@ class TestMergedContactFastPath:
 
     @patch("src.feature_flags.flags")
     def test_merged_fastpath_keeps_payment_guard_without_iin(self, mock_flags):
-        """Merged fastpath must not bypass payment-context IIN guard."""
+        """Merged fastpath should enter payment_ready once purchase intent is already active."""
         mock_flags.is_enabled.return_value = True
 
         llm = make_llm(
@@ -932,14 +924,14 @@ class TestMergedContactFastPath:
 
         assert len(bb._transition_proposals) == 1
         tp = bb._transition_proposals[0]
-        assert tp["next_state"] == "autonomous_closing"
+        assert tp["next_state"] == "payment_ready"
         llm.generate_structured.assert_called_once()
 
     @patch("src.feature_flags.flags")
-    def test_contact_provided_redirect_keeps_closing_when_payment_missing_iin(self, mock_flags):
+    def test_contact_provided_redirect_enters_payment_ready_when_payment_intent_active(self, mock_flags):
         """
-        LLM may suggest autonomous_closing on contact_provided.
-        In payment context, redirect must not skip to video_call_scheduled without IIN.
+        If payment intent is already active, redirect from contact_provided may
+        finalize into payment_ready without waiting for repeated field collection.
         """
         mock_flags.is_enabled.return_value = True
 
@@ -952,6 +944,12 @@ class TestMergedContactFastPath:
             )
         )
         source = AutonomousDecisionSource(llm=llm)
+        states = {
+            "autonomous_discovery": {"phase": "discovery", "goal": "Понять контекст"},
+            "autonomous_closing": {"phase": "closing", "goal": "Закрыть сделку"},
+            "payment_ready": {"phase": "terminal", "goal": "Оплата"},
+            "video_call_scheduled": {"phase": "terminal", "goal": "Видеозвонок"},
+        }
         envelope = SimpleNamespace(
             consecutive_same_state=0,
             intent_history=["request_invoice"],
@@ -968,6 +966,7 @@ class TestMergedContactFastPath:
             state="autonomous_discovery",
             intent="contact_provided",
             user_message="Телефон: +77015551234",
+            states=states,
             state_config=state_config,
             context_envelope=envelope,
         )
@@ -976,13 +975,13 @@ class TestMergedContactFastPath:
 
         assert len(bb._transition_proposals) == 1
         tp = bb._transition_proposals[0]
-        assert tp["next_state"] == "autonomous_closing"
+        assert tp["next_state"] == "payment_ready"
 
     @patch("src.feature_flags.flags")
-    def test_video_call_allowed_after_recent_iin_refusal(self, mock_flags):
+    def test_video_call_request_from_negotiation_routes_into_autonomous_closing(self, mock_flags):
         """
-        If payment context existed but client recently refused/deferred IIN,
-        contact-only path should auto-finish into video_call_scheduled.
+        If client asks for a video call from negotiation stage, merged fastpath
+        should route into autonomous_closing; terminal selection happens there.
         """
         mock_flags.is_enabled.return_value = True
 
@@ -1000,14 +999,14 @@ class TestMergedContactFastPath:
             "max_turns_in_state": 6,
             "terminal_states": ["payment_ready", "video_call_scheduled"],
             "terminal_state_requirements": {
-                "payment_ready": ["kaspi_phone", "iin"],
-                "video_call_scheduled": ["contact_info"],
+                "payment_ready": [],
+                "video_call_scheduled": [],
             },
         }
         bb = make_blackboard(
             state="autonomous_closing",
-            intent="contact_provided",
-            user_message="Ок, тогда видеозвонок: founder@example.com",
+            intent="demo_request",
+            user_message="Ок, тогда лучше видеозвонок.",
             state_config=state_config,
             context_envelope=envelope,
         )
@@ -1016,5 +1015,4 @@ class TestMergedContactFastPath:
 
         assert len(bb._transition_proposals) == 1
         tp = bb._transition_proposals[0]
-        assert tp["next_state"] == "video_call_scheduled"
-        assert tp["reason_code"] == "autonomous_terminal_video_call"
+        assert tp["next_state"] == "autonomous_closing"

@@ -175,6 +175,20 @@ def build_state_gated_rules(
             "подтверди фразой «ИИН получен». Если клиент ИИН не давал — не придумывай и не подтверждай выдуманные цифры."
         ))
 
+    if state_value == "payment_ready":
+        rules.append((1,
+            "⚠️ TERMINAL PAYMENT_READY: коротко подтверди, что клиент готов к оплате. "
+            "Скажи, что в ближайшее время коллега позвонит, чтобы завершить покупку. "
+            "Не проси номер телефона, email, ИИН или точное время звонка."
+        ))
+
+    if state_value == "video_call_scheduled":
+        rules.append((1,
+            "⚠️ TERMINAL VIDEO_CALL: коротко подтверди, что клиент хочет видеозвонок. "
+            "Скажи, что в ближайшее время коллега позвонит, чтобы точно согласовать время. "
+            "Не проси номер телефона, email и не называй конкретное время самостоятельно."
+        ))
+
     # Discovery: don't jump to tariff recommendation before learning about client's pain
     if state_value == "autonomous_discovery" and intent_value in {
         "situation_provided", "problem_technical", "problem_revealed",

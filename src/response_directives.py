@@ -236,7 +236,7 @@ class ResponseDirectives:
 
         if self.prioritize_contact:
             parts.append(
-                "Клиент торопится. Запроси контактные данные (телефон или email) "
+                "Клиент торопится. Запроси номер телефона "
                 "для продолжения разговора. Встрой запрос естественно в ответ."
             )
 
@@ -596,9 +596,12 @@ class ResponseDirectivesBuilder:
         if envelope.total_turns < 4:
             return False
 
-        # Keep contact push context-aware: only in closing-like stages.
         state = str(getattr(envelope, "state", "") or "")
-        if not (state.startswith("autonomous_closing") or state in {"close", "soft_close"}):
+        if state.startswith("autonomous_"):
+            return False
+
+        # Keep contact push context-aware: only in closing-like stages.
+        if state not in {"close", "soft_close"}:
             return False
 
         return True

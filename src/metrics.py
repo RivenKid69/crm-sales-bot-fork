@@ -24,8 +24,8 @@ class ConversationOutcome(Enum):
     """Возможные исходы диалога"""
     SUCCESS = "success"           # Контакт получен
     DEMO_SCHEDULED = "demo_scheduled"  # Демо запланировано
-    PAYMENT_READY = "payment_ready"          # Клиент готов к оплате (Kaspi + ИИН)
-    VIDEO_CALL_SCHEDULED = "video_call_scheduled"  # Видеозвонок назначен
+    PAYMENT_READY = "payment_ready"          # Клиент подтвердил намерение оплатить
+    VIDEO_CALL_SCHEDULED = "video_call_scheduled"  # Клиент подтвердил желание на видеозвонок
     SOFT_CLOSE = "soft_close"     # Мягкое завершение
     REJECTED = "rejected"         # Отказ
     ABANDONED = "abandoned"       # Диалог не завершён

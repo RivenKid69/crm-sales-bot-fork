@@ -3460,7 +3460,7 @@ class ResponseGenerator:
 
         # Human-readable labels for terminal data fields (used in closing_data_request).
         _FIELD_LABELS: dict = {
-            "contact_info": "контакт (телефон или email)",
+            "contact_info": "номер телефона",
             "kaspi_phone": "номер Kaspi (для Kaspi Pay)",
             "iin": "ИИН",
             "preferred_call_time": "удобное время для созвона",
@@ -3482,7 +3482,7 @@ class ResponseGenerator:
             and not (_hard_no_contact or _deferred_contact)
         ):
             # Anti-contact-hallucination: if we don't have contact_info yet, warn LLM
-            # not to fabricate a phone number or email (e.g. "+77751234567")
+            # not to fabricate a phone number.
             _has_contact = (
                 collected.get("contact_info")
                 or collected.get("kaspi_phone")
@@ -3491,10 +3491,11 @@ class ResponseGenerator:
             )
             if not _has_contact:
                 _no_contact_hint = (
-                    "⚠️ КОНТАКТ НЕ ПОЛУЧЕН: клиент ещё не давал телефон или email.\n"
+                    "⚠️ КОНТАКТ НЕ ПОЛУЧЕН: клиент ещё не давал номер телефона.\n"
                     "   КАТЕГОРИЧЕСКИ НЕЛЬЗЯ называть, угадывать или подтверждать "
-                    "выдуманный номер телефона или email. Не пиши никаких контактных данных.\n"
-                    "   Просто попроси: 'Оставьте, пожалуйста, телефон или email.'"
+                    "выдуманный номер телефона. Не пиши никаких контактных данных.\n"
+                    "   Не проси номер телефона или email в автономном режиме. "
+                    "Продолжай консультацию в чате, пока клиент сам не предложит контакт."
                 )
                 _existing_dna = variables.get("do_not_ask", "")
                 variables["do_not_ask"] = f"{_existing_dna}\n{_no_contact_hint}" if _existing_dna else _no_contact_hint
@@ -3566,13 +3567,22 @@ class ResponseGenerator:
                             "   Затем мягко предложи вернуться к оформлению позже, "
                             "без требования ИИН/телефона в этом же сообщении.\n"
                         )
+                    elif (
+                        target_terminal == "video_call_scheduled"
+                        and set(urgent_fields) <= {"contact_info", "preferred_call_time"}
+                        and not self._is_payment_closing_signal(intent, user_message)
+                    ):
+                        variables["closing_data_request"] = (
+                            "⚠️ Автономный режим: не запрашивай номер телефона, email или другой контакт.\n"
+                            "   Ответь по сути и оставь нейтральный следующий шаг без созвона.\n"
+                        )
                     else:
                         readable_fields = ", ".join(_field_label(f) for f in urgent_fields)
                         variables["closing_data_request"] = (
                             "⚠️ ОБЯЗАТЕЛЬНО: твой ответ ДОЛЖЕН содержать вопрос про "
                             + readable_fields + ".\n"
                             "   Это единственный способ продвинуться к оформлению.\n"
-                            "   Попроси кратко и естественно. Пример: '...Оставьте, пожалуйста, телефон или email.'\n"
+                            "   Попроси кратко и естественно. Пример: '...Оставьте, пожалуйста, номер телефона.'\n"
                         )
                 elif urgent_fields and reachable:
                     # SOFT: at least one terminal reachable — suggest upgrade without forcing
@@ -3581,6 +3591,11 @@ class ResponseGenerator:
                             "💡 Клиент в напряжении: не форсируй сбор данных.\n"
                             "   При уместности кратко предложи вернуться к оформлению, когда будет удобно.\n"
                         )
+                    elif (
+                        set(urgent_fields) <= {"contact_info", "preferred_call_time"}
+                        and not self._is_payment_closing_signal(intent, user_message)
+                    ):
+                        variables["closing_data_request"] = ""
                     else:
                         readable_fields = ", ".join(_field_label(f) for f in urgent_fields)
                         variables["closing_data_request"] = (
@@ -3595,7 +3610,7 @@ class ResponseGenerator:
             and (_hard_no_contact or _deferred_contact)
         ):
             variables["closing_data_request"] = (
-                "⚠️ Клиент не готов к передаче контактов сейчас: НЕ собирай телефон/email/ИИН в этом сообщении. "
+                "⚠️ Клиент не готов к передаче контактов сейчас: НЕ собирай номер телефона/ИИН в этом сообщении. "
                 "Дай полезный ответ по запросу и оставь нейтральный следующий шаг без давления."
             )
 
@@ -3696,7 +3711,7 @@ class ResponseGenerator:
                     or "уже получен"
                 )
                 contact_warning = (
-                    "⚠️ НЕ СПРАШИВАЙ контактные данные (телефон/email) — "
+                    "⚠️ НЕ СПРАШИВАЙ номер телефона повторно — "
                     f"уже известно: {contact_val}."
                 )
                 existing = variables.get("do_not_ask", "")
@@ -5144,7 +5159,27 @@ class ResponseGenerator:
                 extra={"reason": "not_autonomous", "semantic_after_verifier": True},
             )
 
+        if _is_autonomous:
+            _apply_step(
+                "normalize_contact_request_channel",
+                self._normalize_contact_request_channel,
+                extra={"semantic_after_verifier": True},
+            )
+        else:
+            _track_step(
+                "normalize_contact_request_channel",
+                processed,
+                processed,
+                enabled=False,
+                extra={"reason": "not_autonomous", "semantic_after_verifier": True},
+            )
+
         if _is_autonomous and not fact_disambiguated:
+            _apply_step(
+                "suppress_autonomous_contact_requests",
+                lambda text: self._suppress_autonomous_contact_requests(text, context),
+                extra={"semantic_after_verifier": True},
+            )
             _apply_step(
                 "simplify_or_questions",
                 self._simplify_or_questions,
@@ -5875,6 +5910,46 @@ class ResponseGenerator:
         """Remove contact-push fragments when user explicitly refused to share contacts."""
         return enforce_no_contact_boundaries(text=text, context=context)
 
+    @staticmethod
+    def _suppress_autonomous_contact_requests(text: str, context: Dict[str, Any]) -> str:
+        """Strip proactive contact requests from autonomous replies outside payment path."""
+        state = str(context.get("state", "") or "").lower()
+        selected_template = str(context.get("selected_template", "") or "").lower()
+        if not (
+            state.startswith("autonomous_")
+            or selected_template in {"autonomous_respond", "continue_current_goal", "autonomous_media_only"}
+        ):
+            return text
+
+        intent = str(context.get("intent", "") or "").lower()
+        user_message = str(context.get("user_message", "") or "")
+        if ResponseGenerator._is_payment_closing_signal(intent, user_message):
+            return text
+
+        contact_re = re.compile(
+            r"(?iu)(?:остав(?:ьте|ь|ите)|подскаж(?:ите)?|скаж(?:ите)?|уточн(?:ите)?|"
+            r"напиш(?:ите)?|пришл(?:ите)?|какой|куда)\b[^.!?]{0,80}"
+            r"(?:телефон|номер(?:\s+телефона)?|email|e-?mail|почт\w+|контакт)"
+        )
+        cleaned_sentences: List[str] = []
+        changed = False
+        for sentence in re.split(r'(?<=[.!?])\s+', str(text or "").strip()):
+            stripped = sentence.strip()
+            if not stripped:
+                continue
+            low = stripped.lower()
+            if contact_re.search(stripped) and "kaspi" not in low and "иин" not in low:
+                changed = True
+                continue
+            cleaned_sentences.append(stripped)
+
+        if not changed:
+            return text
+
+        cleaned = " ".join(cleaned_sentences).strip()
+        cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+        return cleaned or "Могу продолжить консультацию здесь в чате."
+
     def _compress_repeated_price_response(self, response: str, context: Dict[str, Any]) -> str:
         """
         Keep repeated price answers concise to avoid long loop-like responses.
@@ -6459,6 +6534,60 @@ class ResponseGenerator:
         # Collapse multiple spaces
         result = re.sub(r'\s{2,}', ' ', result)
         return result.strip()
+
+    @staticmethod
+    def _normalize_contact_request_channel(text: str) -> str:
+        """Normalize contact requests to phone-only phrasing."""
+        result = str(text or "")
+
+        replacements = [
+            (
+                r'(?iu)\bостав(?:ьте|ь|ите)(?:,\s*пожалуйста)?\s+'
+                r'(?:телефон|номер(?:\s+телефона)?|контакт)(?:\s+или\s+(?:email|e-?mail|почт\w+))',
+                'Оставьте номер телефона',
+            ),
+            (
+                r'(?iu)\bскажите\s+(?:телефон|номер(?:\s+телефона)?|контакт)(?:\s+или\s+(?:email|e-?mail|почт\w+))',
+                'Скажите номер телефона',
+            ),
+            (
+                r'(?iu)\bподскажите\s+(?:удобный\s+)?(?:номер|контакт)(?:\s+или\s+(?:email|e-?mail|почт\w+))',
+                'Подскажите номер телефона',
+            ),
+            (
+                r'(?iu)\bуточните\s+(?:телефон|номер(?:\s+телефона)?|контакт)(?:\s+или\s+(?:email|e-?mail|почт\w+))',
+                'Уточните номер телефона',
+            ),
+            (
+                r'(?iu)\bкакой\s+(?:номер|контакт)(?:\s+или\s+(?:почта|email|e-?mail))\s+удобн\w*',
+                'какой номер телефона удобен',
+            ),
+            (
+                r'(?iu)\bкакой\s+контакт\s+для\s+связи\s+удобн\w*',
+                'какой номер телефона для связи удобен',
+            ),
+            (
+                r'(?iu)\bна\s+какой\s+(?:email|e-?mail|почт\w+)\s+прислать\s+информаци\w*\??',
+                'На какой номер телефона вам удобно принять звонок?',
+            ),
+            (
+                r'(?iu)\bна\s+какую\s+почт\w+\s+прислать\??',
+                'На какой номер телефона вам удобно принять звонок?',
+            ),
+            (
+                r'(?iu)\bкуда\s+прислать\s+информаци\w*\??',
+                'Подскажите номер телефона для связи.',
+            ),
+        ]
+
+        for pattern, replacement in replacements:
+            result = re.sub(pattern, replacement, result)
+
+        result = re.sub(r'(?iu)\bномер\s+или\s+почта\b', 'номер телефона', result)
+        result = re.sub(r'(?iu)\bтелефон\s+или\s+email\b', 'номер телефона', result)
+        result = re.sub(r'(?iu)\bтелефон\s+или\s+почт\w+\b', 'номер телефона', result)
+        result = re.sub(r'\s{2,}', ' ', result).strip()
+        return result
 
     # Kazakh-specific characters (not present in standard Russian Cyrillic)
     _KZ_CHARS = set('әғқңөүһіӘҒҚҢӨҮҺІ')

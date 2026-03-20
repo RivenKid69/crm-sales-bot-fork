@@ -413,7 +413,9 @@ class TestDirectCTA:
         cta = generator.get_direct_cta("contact")
 
         assert cta is not None
-        assert any(word in cta.lower() for word in ["контакт", "почту", "прислать"])
+        assert "email" not in cta.lower()
+        assert "почт" not in cta.lower()
+        assert "номер" in cta.lower() or "телефон" in cta.lower()
 
     def test_get_direct_cta_unknown_type(self):
         """Неизвестный тип — None"""
@@ -509,7 +511,9 @@ class TestCTAContent:
 
         cta = generator.get_cta("close")
         if cta:
-            assert any(word in cta.lower() for word in ["контакт", "email", "когда", "почту"])
+            assert "email" not in cta.lower()
+            assert "почт" not in cta.lower()
+            assert any(word in cta.lower() for word in ["номер", "телефон", "когда"])
 
     def test_handle_objection_ctas_reassuring(self):
         """CTA для handle_objection успокаивающие"""

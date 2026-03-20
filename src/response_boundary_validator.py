@@ -760,6 +760,17 @@ class ResponseBoundaryValidator:
         history_user = self._history_user_text(ctx)
         return self._has_payment_marker(f"{user_msg} {history_user}")
 
+    def _is_autonomous_no_contact_context(self, context: Optional[Dict[str, Any]]) -> bool:
+        ctx = context or {}
+        state = str(ctx.get("state", "") or "").lower()
+        template = str(ctx.get("selected_template", "") or "").lower()
+        is_autonomous = state.startswith("autonomous_") or template in {
+            "autonomous_respond",
+            "continue_current_goal",
+            "autonomous_media_only",
+        }
+        return is_autonomous and not self._is_payment_context(ctx)
+
     def _is_technical_query_context(self, context: Optional[Dict[str, Any]]) -> bool:
         ctx = context or {}
         intent = str(ctx.get("intent", "") or "").lower()
@@ -1245,7 +1256,7 @@ class ResponseBoundaryValidator:
         sanitized = self._sanitize_invoice_without_iin(sanitized, context)
         sanitized = self._sanitize_iin_refusal_reask(sanitized, context)
         sanitized = self._sanitize_contact_pressure_after_refusal(sanitized, context)
-        sanitized = self._sanitize_demo_without_contact(sanitized)
+        sanitized = self._sanitize_demo_without_contact(sanitized, context)
         sanitized = self._sanitize_ungrounded_quant_claim(sanitized, context)
         if self._is_pricing_context(context):
             sanitized = self._sanitize_currency_locale(sanitized)
@@ -1380,8 +1391,13 @@ class ResponseBoundaryValidator:
             )
         return response
 
-    def _sanitize_demo_without_contact(self, response: str) -> str:
+    def _sanitize_demo_without_contact(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
         if self.DEMO_WITHOUT_CONTACT_PATTERN.search(response):
+            if self._is_autonomous_no_contact_context(context):
+                return (
+                    "Могу кратко ответить на вопросы здесь в чате. "
+                    "Если захотите, разберём ваш кейс по шагам без передачи контактов."
+                )
             return (
                 "Для подробной консультации нужен контакт, чтобы менеджер согласовал удобное время. "
                 "Если контакт пока не готовы дать, могу кратко ответить на вопросы здесь."
@@ -1460,7 +1476,7 @@ class ResponseBoundaryValidator:
         return response
 
     def _sanitize_ungrounded_quant_claim(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
-        callback_time_sanitized = self._sanitize_callback_time_window(response)
+        callback_time_sanitized = self._sanitize_callback_time_window(response, context)
         if callback_time_sanitized != response:
             return callback_time_sanitized
 
@@ -1495,7 +1511,7 @@ class ResponseBoundaryValidator:
             )
         return response
 
-    def _sanitize_callback_time_window(self, response: str) -> str:
+    def _sanitize_callback_time_window(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
         if not self.CALLBACK_TIME_RANGE_PATTERN.search(response):
             return response
 
@@ -1511,6 +1527,11 @@ class ResponseBoundaryValidator:
                 continue
 
             low = stripped.lower()
+            if self._is_autonomous_no_contact_context(context) and self.CONTACT_REASK_PATTERN.search(stripped):
+                sanitized_sentences.append("Могу продолжить консультацию здесь в чате.")
+                changed = True
+                continue
+
             has_callback_marker = any(
                 marker in low
                 for marker in (
@@ -1527,7 +1548,10 @@ class ResponseBoundaryValidator:
             if has_callback_marker and self.CALLBACK_TIME_RANGE_PATTERN.search(stripped):
                 replacement = "Коллега позвонит вам в удобное время."
                 if self.CONTACT_REASK_PATTERN.search(stripped):
-                    replacement = "Напишите, пожалуйста, ваш номер телефона для связи."
+                    if self._is_autonomous_no_contact_context(context):
+                        replacement = "Могу продолжить консультацию здесь в чате."
+                    else:
+                        replacement = "Напишите, пожалуйста, ваш номер телефона для связи."
                 sanitized_sentences.append(replacement)
                 changed = True
                 continue
@@ -1692,17 +1716,37 @@ class ResponseBoundaryValidator:
             )
         if "hallucinated_iin" in violations:
             return with_unknown_kb_fallback("ИИН здесь не отображаю")
+        if state == "payment_ready":
+            return (
+                "Подтверждаю, вы готовы к оплате. "
+                "В ближайшее время коллега позвонит вам, чтобы завершить покупку."
+            )
+        if state == "video_call_scheduled":
+            return (
+                "Подтверждаю, видеозвонок нужен. "
+                "В ближайшее время коллега позвонит вам, чтобы точно согласовать время."
+            )
         if intent == "contact_provided" and state == "payment_ready":
             return (
-                "Спасибо за данные! Коллега позвонит вам "
-                "для подтверждения оплаты."
+                "Подтверждаю, вы готовы к оплате. "
+                "В ближайшее время коллега позвонит вам, чтобы завершить покупку."
             )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
+            if self._is_autonomous_no_contact_context(ctx):
+                if not has_contact_now:
+                    return (
+                        "Могу продолжить консультацию здесь в чате. "
+                        "Напишите, какой вопрос хотите закрыть следующим."
+                    )
+                return (
+                    "Спасибо! Продолжу консультацию здесь в чате, "
+                    "если захотите уточнить детали."
+                )
             if not has_contact_now:
                 # Check if client asked about free trial vs scheduling demo
                 return (
                     "Отлично, давайте организуем. "
-                    "Оставьте телефон или email — мой коллега позвонит и подберёт оптимальный тариф."
+                    "Оставьте номер телефона — мой коллега позвонит и подберёт оптимальный тариф."
                 )
             return (
                 "Спасибо! Мой коллега позвонит вам "
@@ -1775,27 +1819,17 @@ class ResponseBoundaryValidator:
             if intent in ("price_question", "pricing_details"):
                 return (
                     "Тарифы от 5 000 ₸/мес до 500 000 ₸/год — зависит от задач. "
-                    "Оставьте телефон или email — коллега позвонит и рассчитает точную стоимость."
+                    "Могу помочь сузить вариант прямо здесь в чате."
                 )
             if intent in ("question_features", "question_customization"):
                 return (
-                    "Подробности по функционалу расскажет коллега — "
-                    "он подберёт решение под ваши задачи. Оставьте телефон или email."
+                    "Подробности по функционалу могу разобрать здесь в чате. "
+                    "Напишите, какой сценарий или функция важнее всего."
                 )
-            # Vary generic closing fallback
-            import hashlib
-            _hash = int(hashlib.md5(user_message.encode()).hexdigest()[:8], 16) % 4
-            _closing_variants = [
-                "Чтобы подобрать оптимальное решение, оставьте телефон или email — "
-                "мой коллега позвонит и ответит на все вопросы.",
-                "Для индивидуального расчёта оставьте контакт — "
-                "коллега позвонит в удобное время.",
-                "Готова помочь с подключением. "
-                "Оставьте телефон или email — коллега позвонит для уточнения деталей.",
-                "Передам вашу заявку коллеге. "
-                "Скажите телефон или email — он позвонит и всё расскажет.",
-            ]
-            return _closing_variants[_hash]
+            return (
+                "Могу продолжить консультацию здесь в чате. "
+                "Если хотите, разберём следующий шаг без созвона."
+            )
         # Greeting: proper greeting fallback
         if intent == "greeting" or state == "greeting":
             return "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?"
@@ -1876,7 +1910,7 @@ class ResponseBoundaryValidator:
             )
         if "closing" in state:
             return (
-                "Чтобы продолжить оформление, оставьте телефон или email — "
+                "Чтобы продолжить оформление, оставьте номер телефона — "
                 "коллега позвонит и согласует удобное время."
             )
         if "negotiation" in state:
@@ -2067,7 +2101,18 @@ class ResponseBoundaryValidator:
 
     def _deterministic_fallback(self, context: Dict[str, Any]) -> str:
         intent = str(context.get("intent", "")).lower()
+        state = str(context.get("state", "")).lower()
         refusal_source = f"{context.get('user_message', '')} {self._history_user_text(context)}"
+        if state == "payment_ready":
+            return (
+                "Подтверждаю, вы готовы к оплате. "
+                "В ближайшее время коллега позвонит вам, чтобы завершить покупку."
+            )
+        if state == "video_call_scheduled":
+            return (
+                "Подтверждаю, видеозвонок нужен. "
+                "В ближайшее время коллега позвонит вам, чтобы точно согласовать время."
+            )
         if intent == "request_brevity":
             return (
                 "Коротко: внутренние настройки не раскрываю. "

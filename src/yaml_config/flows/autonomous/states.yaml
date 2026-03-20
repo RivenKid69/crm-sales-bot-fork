@@ -158,8 +158,8 @@ states:
     autonomous: true
     goal: |
       Закрыть сделку. Два терминальных стейта:
-      payment_ready — клиент хочет оплатить (нужны kaspi_phone + ИИН).
-      video_call_scheduled — все остальные случаи (нужен контакт: телефон или email).
+      payment_ready — клиент явно готов оплачивать; нужно подтвердить намерение и сказать, что в ближайшее время позвонят завершить покупку.
+      video_call_scheduled — клиент хочет видеозвонок; нужно подтвердить это и сказать, что в ближайшее время позвонят согласовать точное время.
       Конкретное время звонка уточнит коллега.
     phase: closing
     kb_categories:
@@ -188,11 +188,8 @@ states:
     transitions:
       data_complete: soft_close  # YAML required for infra test; runtime blocked by autonomous guard in DataCollectorSource
     terminal_state_requirements:
-      payment_ready:
-        - kaspi_phone
-        - iin
-      video_call_scheduled:
-        - contact_info  # preferred_call_time желателен, но не блокирует
+      payment_ready: []
+      video_call_scheduled: []
     terminal_states:
       - payment_ready
       - video_call_scheduled

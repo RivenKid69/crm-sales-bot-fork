@@ -306,6 +306,28 @@ class AutonomousDecisionSource(KnowledgeSource):
         return any(marker in text for marker in buy_markers)
 
     @staticmethod
+    def _looks_like_video_call_request(user_message: str) -> bool:
+        """Detect explicit request for a video/callback coordination step."""
+        text = str(user_message or "").lower()
+        markers = (
+            "видеозвон",
+            "видео звон",
+            "видеозвонок",
+            "созвон",
+            "созвониться",
+            "перезвоните",
+            "перезвонить",
+            "позвоните",
+            "позвонить",
+            "связаться",
+            "свяжитесь",
+            "консультацию",
+            "консультация",
+            "демо",
+        )
+        return any(marker in text for marker in markers)
+
+    @staticmethod
     def _is_policy_attack_message(user_message: str) -> bool:
         """Detect prompt-exfiltration/policy-disclosure attempts."""
         text = str(user_message or "").lower()
@@ -393,14 +415,27 @@ class AutonomousDecisionSource(KnowledgeSource):
         """
         Detect payment/invoice context from current turn + recent intent history.
 
-        Used to prevent premature auto-finish into video_call_scheduled when
-        client clearly asked to buy/invoice and payment path is still incomplete.
+        Used to preserve buy/invoice context across follow-up turns, including
+        contact-sharing turns that happen after an explicit purchase signal.
         """
         # NOTE: "agreement" is too broad and often means soft acknowledgement
         # ("понял", "ок"), not a true payment signal.
         payment_intents = {"ready_to_buy", "request_invoice", "request_contract", "payment_confirmation"}
         if current_intent in payment_intents:
             return True
+
+        history = list(decision_history or [])
+        for record in reversed(history[-3:]):
+            if not record:
+                continue
+            if str(getattr(record, "intent", "") or "") in payment_intents:
+                return True
+            if bool(getattr(record, "explicit_ready_to_buy", False)):
+                return True
+            if str(getattr(record, "next_state", "") or "") in {"autonomous_closing", "payment_ready"}:
+                reasoning = str(getattr(record, "reasoning", "") or "").lower()
+                if any(marker in reasoning for marker in ("buy", "invoice", "contract", "payment", "оплат", "счёт", "договор", "оформ")):
+                    return True
 
         intents = list(getattr(envelope, "intent_history", []) or []) if envelope else []
         if any(i in payment_intents for i in intents[-3:]):
@@ -967,30 +1002,21 @@ class AutonomousDecisionSource(KnowledgeSource):
         # if required terminal data is already present (including in current user turn),
         # finalize transition without waiting for another LLM decision cycle.
         if state == "autonomous_closing" and terminal_names:
-            has_contact = (
-                self._has_required_field(collected_data, "contact_info")
-                or self._message_has_contact_info(user_message)
-            )
-            has_kaspi_phone = (
-                self._has_required_field(collected_data, "kaspi_phone")
-                or self._message_has_phone(user_message)
-            )
-            has_iin = (
-                self._has_required_field(collected_data, "iin")
-                or self._message_has_iin(user_message)
-            )
-            iin_refusal_or_deferral = self._has_recent_iin_refusal_or_deferral(
-                envelope=envelope,
-                user_message=user_message,
-                current_intent=intent,
-            )
             payment_intent_active = self._has_recent_payment_intent(
                 envelope=envelope,
                 current_intent=intent,
                 user_message=user_message,
                 decision_history=self._decision_history,
             )
-            if "payment_ready" in terminal_names and has_kaspi_phone and has_iin:
+            explicit_payment_now = (
+                intent in {"ready_to_buy", "request_invoice", "request_contract", "payment_confirmation"}
+                or self._looks_like_ready_to_buy_message(user_message)
+            )
+            wants_video_call = (
+                intent in {"demo_request", "callback_request", "consultation_request"}
+                or self._looks_like_video_call_request(user_message)
+            )
+            if "payment_ready" in terminal_names and (explicit_payment_now or (payment_intent_active and not wants_video_call)):
                 blackboard.propose_action(
                     action="autonomous_respond",
                     priority=Priority.HIGH,
@@ -1018,18 +1044,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                     )
                 )
                 return
-            # Contact-only path:
-            # - Always allowed when client refused/deferred IIN (fallback from payment path)
-            # - In active payment context, require IIN unless client explicitly refused/deferred it
-            if (
-                "video_call_scheduled" in terminal_names
-                and has_contact
-                and (
-                    not payment_intent_active
-                    or has_iin
-                    or iin_refusal_or_deferral
-                )
-            ):
+            if "video_call_scheduled" in terminal_names and wants_video_call and not payment_intent_active:
                 blackboard.propose_action(
                     action="autonomous_respond",
                     priority=Priority.HIGH,
@@ -1219,42 +1234,19 @@ class AutonomousDecisionSource(KnowledgeSource):
                     target = "soft_close"
 
             # If LLM already decided to move into autonomous_closing and client
-            # provided terminal data in the same turn, finalize directly.
+            # expressed terminal intent in the same turn, finalize directly.
             if target == "autonomous_closing" and intent == "contact_provided":
-                has_contact = (
-                    self._has_required_field(collected_data, "contact_info")
-                    or self._message_has_contact_info(user_message)
-                )
-                has_kaspi_phone = (
-                    self._has_required_field(collected_data, "kaspi_phone")
-                    or self._message_has_phone(user_message)
-                )
-                has_iin = (
-                    self._has_required_field(collected_data, "iin")
-                    or self._message_has_iin(user_message)
-                )
-                iin_refusal_or_deferral = self._has_recent_iin_refusal_or_deferral(
-                    envelope=envelope,
-                    user_message=user_message,
-                    current_intent=intent,
-                )
                 payment_intent_active = self._has_recent_payment_intent(
                     envelope=envelope,
                     current_intent=intent,
                     user_message=user_message,
                     decision_history=self._decision_history,
                 )
-                if "payment_ready" in all_states and has_kaspi_phone and has_iin:
+                explicit_payment_now = self._looks_like_ready_to_buy_message(user_message)
+                wants_video_call = self._looks_like_video_call_request(user_message)
+                if "payment_ready" in all_states and (explicit_payment_now or (payment_intent_active and not wants_video_call)):
                     target = "payment_ready"
-                elif (
-                    "video_call_scheduled" in all_states
-                    and has_contact
-                    and (
-                        not payment_intent_active
-                        or has_iin
-                        or iin_refusal_or_deferral
-                    )
-                ):
+                elif "video_call_scheduled" in all_states and wants_video_call and not payment_intent_active:
                     target = "video_call_scheduled"
 
             # Hard gate: block premature terminal transition if required data is missing
@@ -1521,7 +1513,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         if payment_intent_active and state == "autonomous_closing":
             signal_lines.append(
                 "- Активен контекст покупки/счёта. "
-                "Для payment_ready нужны ИИН и Kaspi-телефон."
+                "Если клиент подтверждает покупку, можно завершать в payment_ready."
             )
 
         if intent.startswith("objection_"):
@@ -1718,7 +1710,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         return f"""Ты — контроллер sales-диалога. Реши нужно ли перейти к следующему этапу.
 
 СХЕМА ПРОДАЖ (SPIN-воронка):
-discovery (узнать бизнес клиента) → qualification (потребности, бюджет) → presentation (представить решение) → objection_handling (работа с сомнениями) → negotiation (условия, скидки) → closing (сбор контактов, оформление) → payment_ready / video_call_scheduled.
+discovery (узнать бизнес клиента) → qualification (потребности, бюджет) → presentation (представить решение) → objection_handling (работа с сомнениями) → negotiation (условия, скидки) → closing (следующий шаг, оформление) → payment_ready / video_call_scheduled.
 
 Группы интентов клиента:
 - ПОКУПКА: ready_to_buy, request_invoice, request_contract, payment_confirmation, agreement + покупательские фразы ("оформим","купим","подключим") — клиент хочет оформить
