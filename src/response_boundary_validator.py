@@ -656,6 +656,11 @@ class ResponseBoundaryValidator:
         r'(?iu)\b(\d{1,3}(?:[.,]\d+)?)\s*(%|процент(?:а|ов)?|раз(?:а)?|'
         r'минут(?:ы)?|час(?:а|ов)?|дн(?:я|ей)?|недел(?:и|ь)|месяц(?:а|ев)?)(?=\s|$|[.,;:!?])'
     )
+    CALLBACK_TIME_RANGE_PATTERN = re.compile(
+        r'(?iu)\b(?:с|от)\s*\d{1,2}(?::\d{2})?\s*'
+        r'(?:до|и|—|–|-)\s*\d{1,2}(?::\d{2})?\s*'
+        r'(?:час(?:а|ов)?|ч\b)?'
+    )
     VERTICAL_ASSUMPTION_TERMS = (
         "аптек", "кафе", "ресторан", "салон",
         "общепит", "кофейн", "барбер", "фастфуд",
@@ -1455,6 +1460,10 @@ class ResponseBoundaryValidator:
         return response
 
     def _sanitize_ungrounded_quant_claim(self, response: str, context: Optional[Dict[str, Any]] = None) -> str:
+        callback_time_sanitized = self._sanitize_callback_time_window(response)
+        if callback_time_sanitized != response:
+            return callback_time_sanitized
+
         if self.QUANT_CLAIM_PATTERN.search(response):
             # Remove only ungrounded numeric KPI/time chunks to preserve useful content.
             cleaned = re.sub(
@@ -1485,6 +1494,52 @@ class ResponseBoundaryValidator:
                 "а точные метрики уточним по вашему кейсу."
             )
         return response
+
+    def _sanitize_callback_time_window(self, response: str) -> str:
+        if not self.CALLBACK_TIME_RANGE_PATTERN.search(response):
+            return response
+
+        sentences = re.split(r'(?<=[.!?])\s+', response.strip())
+        if not sentences:
+            return response
+
+        sanitized_sentences: List[str] = []
+        changed = False
+        for sentence in sentences:
+            stripped = sentence.strip()
+            if not stripped:
+                continue
+
+            low = stripped.lower()
+            has_callback_marker = any(
+                marker in low
+                for marker in (
+                    "позвон",
+                    "перезвон",
+                    "свяж",
+                    "коллег",
+                    "менедж",
+                    "специалист",
+                    "в удобное время",
+                    "вам с ",
+                )
+            )
+            if has_callback_marker and self.CALLBACK_TIME_RANGE_PATTERN.search(stripped):
+                replacement = "Коллега позвонит вам в удобное время."
+                if self.CONTACT_REASK_PATTERN.search(stripped):
+                    replacement = "Напишите, пожалуйста, ваш номер телефона для связи."
+                sanitized_sentences.append(replacement)
+                changed = True
+                continue
+
+            sanitized_sentences.append(stripped)
+
+        if not changed:
+            return response
+
+        cleaned = " ".join(sanitized_sentences).strip()
+        cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+        return cleaned or response
 
     def _sanitize_ungrounded_guarantee(self, response: str) -> str:
         if not self.UNGROUNDED_GUARANTEE_PATTERN.search(response):

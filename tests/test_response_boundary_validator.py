@@ -119,3 +119,47 @@ def test_unknown_source_leak_does_not_flag_grounded_product_fact_about_item_base
     )
     assert result.response == "Лимит номенклатуры в Wipon — ограничений по количеству товаров в базе нет."
     assert "unknown_source_leak" not in result.violations
+
+
+def test_ungrounded_quant_sanitizer_does_not_leave_orphaned_callback_time_fragment():
+    validator = ResponseBoundaryValidator()
+    sanitized = validator._sanitize_ungrounded_quant_claim(
+        "вам с 9 до 18 часов в удобное время. Напишите, пожалуйста, ваш номер телефона для связи",
+        context={
+            "intent": "callback_request",
+            "state": "autonomous_closing",
+            "user_message": "Хорошо, можете перезвонить позже",
+            "action": "continue_current_goal",
+            "selected_template": "autonomous_respond",
+        },
+    )
+
+    assert "вам с 9" not in sanitized.lower()
+    assert "до 18" not in sanitized.lower()
+    assert "номер телефона" in sanitized.lower()
+
+
+def test_validate_response_repairs_callback_time_fragment_after_retry():
+    validator = ResponseBoundaryValidator()
+    llm = Mock()
+    llm.generate.return_value = (
+        "вам с 9 до 18 часов в удобное время. "
+        "Напишите, пожалуйста, ваш номер телефона для связи"
+    )
+
+    result = validator.validate_response(
+        "Коллега позвонит вам с 9 до 18 часов в удобное время. "
+        "Напишите, пожалуйста, ваш номер телефона для связи",
+        context={
+            "intent": "callback_request",
+            "state": "autonomous_closing",
+            "user_message": "Хорошо, можете перезвонить позже",
+            "action": "continue_current_goal",
+            "selected_template": "autonomous_respond",
+        },
+        llm=llm,
+    )
+
+    assert "вам с 9" not in result.response.lower()
+    assert "до 18" not in result.response.lower()
+    assert "номер телефона" in result.response.lower()
