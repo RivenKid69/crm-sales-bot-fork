@@ -1,5 +1,6 @@
 """Regression tests for autonomous sales hardening fixes."""
 
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 from src.blackboard.sources.autonomous_decision import AutonomousDecisionRecord
@@ -117,6 +118,51 @@ def test_payment_context_reads_last_intent_when_history_empty():
         user_message="телефон: +77070001122",
         decision_history=[],
     ) is True
+
+
+def test_autonomous_closing_prompt_does_not_force_contact_request(monkeypatch):
+    llm = Mock()
+    llm.generate.return_value = "Продолжим в чате."
+
+    flow = SimpleNamespace(
+        name="autonomous",
+        get_template=lambda key: "{closing_data_request}",
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = None
+
+    monkeypatch.setattr(
+        "src.generator.get_retriever",
+        lambda: SimpleNamespace(
+            kb=SimpleNamespace(
+                company_name="Wipon",
+                company_description="Retail automation",
+            )
+        ),
+    )
+
+    generator.generate(
+        "autonomous_respond",
+        {
+            "intent": "callback_request",
+            "state": "autonomous_closing",
+            "user_message": "Что дальше по подключению?",
+            "history": [],
+            "collected_data": {},
+            "missing_data": [],
+            "goal": "Закрыть сделку",
+            "spin_phase": "closing",
+            "terminal_state_requirements": {"video_call_scheduled": ["contact_info"]},
+            "_skip_retrieval": True,
+            "retrieved_facts": "",
+        },
+    )
+
+    prompt = llm.generate.call_args_list[-1].args[0]
+    low = prompt.lower()
+    assert "обязательно: твой ответ должен содержать вопрос про номер телефона" not in low
+    assert "оставьте, пожалуйста, номер телефона" not in low
+    assert "автономный режим: не запрашивай номер телефона, email или другой контакт" in low
 
 
 def test_autonomous_decision_record_roundtrip_dict():

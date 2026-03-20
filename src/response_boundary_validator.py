@@ -760,16 +760,22 @@ class ResponseBoundaryValidator:
         history_user = self._history_user_text(ctx)
         return self._has_payment_marker(f"{user_msg} {history_user}")
 
-    def _is_autonomous_no_contact_context(self, context: Optional[Dict[str, Any]]) -> bool:
+    def _is_autonomous_flow_context(self, context: Optional[Dict[str, Any]]) -> bool:
         ctx = context or {}
         state = str(ctx.get("state", "") or "").lower()
         template = str(ctx.get("selected_template", "") or "").lower()
-        is_autonomous = state.startswith("autonomous_") or template in {
+        return state.startswith("autonomous_") or state in {
+            "payment_ready",
+            "video_call_scheduled",
+        } or template in {
             "autonomous_respond",
             "continue_current_goal",
             "autonomous_media_only",
         }
-        return is_autonomous and not self._is_payment_context(ctx)
+
+    def _is_autonomous_no_contact_context(self, context: Optional[Dict[str, Any]]) -> bool:
+        ctx = context or {}
+        return self._is_autonomous_flow_context(ctx) and not self._is_payment_context(ctx)
 
     def _is_technical_query_context(self, context: Optional[Dict[str, Any]]) -> bool:
         ctx = context or {}
@@ -1380,6 +1386,11 @@ class ResponseBoundaryValidator:
                     "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
                 )
             if self._is_payment_context(ctx):
+                if self._is_autonomous_flow_context(ctx):
+                    return (
+                        "Счёт без ИИН оформить нельзя. "
+                        "Можем продолжить консультацию в чате и вернуться к оформлению, когда будете готовы."
+                    )
                 return (
                     "Для выставления счёта нужен ИИН и номер телефона Kaspi. "
                     "Если сейчас неудобно, можем вернуться к оформлению позже."
@@ -1419,6 +1430,11 @@ class ResponseBoundaryValidator:
         has_iin = bool(isinstance(collected, dict) and collected.get("iin")) or bool(self.IIN_PATTERN.search(user_msg))
         if self.IIN_CONFIRMED_PATTERN.search(response) and not has_iin:
             if self._is_payment_context(context):
+                if self._is_autonomous_flow_context(context):
+                    return (
+                        "ИИН пока не фиксирую. "
+                        "Продолжим консультацию в чате и вернёмся к оформлению, когда будете готовы."
+                    )
                 return (
                     "ИИН пока не фиксирую. "
                     "Для выставления счёта нужен ИИН и номер телефона Kaspi."
@@ -1435,6 +1451,11 @@ class ResponseBoundaryValidator:
         has_iin = bool(isinstance(collected, dict) and collected.get("iin")) or bool(self.IIN_PATTERN.search(user_msg))
         if self.INVOICE_READY_PATTERN.search(response) and not has_iin:
             if self._is_payment_context(context):
+                if self._is_autonomous_flow_context(context):
+                    return (
+                        "Счёт ещё не оформлен. "
+                        "Продолжим консультацию в чате и вернёмся к оформлению, когда будете готовы."
+                    )
                 return (
                     "Счёт ещё не оформлен: сначала нужен ИИН и номер телефона Kaspi. "
                     "Если ИИН пока не готовы дать, продолжим консультацию в чате."
@@ -1527,7 +1548,7 @@ class ResponseBoundaryValidator:
                 continue
 
             low = stripped.lower()
-            if self._is_autonomous_no_contact_context(context) and self.CONTACT_REASK_PATTERN.search(stripped):
+            if self._is_autonomous_flow_context(context) and self.CONTACT_REASK_PATTERN.search(stripped):
                 sanitized_sentences.append("Могу продолжить консультацию здесь в чате.")
                 changed = True
                 continue
@@ -1548,7 +1569,7 @@ class ResponseBoundaryValidator:
             if has_callback_marker and self.CALLBACK_TIME_RANGE_PATTERN.search(stripped):
                 replacement = "Коллега позвонит вам в удобное время."
                 if self.CONTACT_REASK_PATTERN.search(stripped):
-                    if self._is_autonomous_no_contact_context(context):
+                    if self._is_autonomous_flow_context(context):
                         replacement = "Могу продолжить консультацию здесь в чате."
                     else:
                         replacement = "Напишите, пожалуйста, ваш номер телефона для связи."
@@ -1732,15 +1753,15 @@ class ResponseBoundaryValidator:
                 "В ближайшее время коллега позвонит вам, чтобы завершить покупку."
             )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
-            if self._is_autonomous_no_contact_context(ctx):
+            if self._is_autonomous_flow_context(ctx):
                 if not has_contact_now:
                     return (
                         "Могу продолжить консультацию здесь в чате. "
                         "Напишите, какой вопрос хотите закрыть следующим."
                     )
                 return (
-                    "Спасибо! Продолжу консультацию здесь в чате, "
-                    "если захотите уточнить детали."
+                    "Спасибо! В ближайшее время коллега свяжется с вами, "
+                    "если захотите перейти к следующему шагу."
                 )
             if not has_contact_now:
                 # Check if client asked about free trial vs scheduling demo
@@ -1800,6 +1821,11 @@ class ResponseBoundaryValidator:
             state == "autonomous_closing"
             and has_payment_marker
         ):
+            if self._is_autonomous_flow_context(ctx):
+                return (
+                    "Подтверждаю, можно переходить к оформлению. "
+                    "В ближайшее время коллега подскажет следующий шаг по оплате."
+                )
             return (
                 "Для оплаты через Kaspi нужны ваш ИИН и номер Kaspi. "
                 "Пожалуйста, укажите их — и мы сразу оформим подписку."

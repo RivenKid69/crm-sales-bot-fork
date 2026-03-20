@@ -3470,6 +3470,14 @@ class ResponseGenerator:
         def _field_label(f: str) -> str:
             return _FIELD_LABELS.get(f, f)
 
+        _AUTONOMOUS_BLOCKED_CONTACT_FIELDS = {
+            "contact_info",
+            "phone",
+            "email",
+            "kaspi_phone",
+            "contact",
+        }
+
         # === Autonomous closing: inject data-collection instruction ===
         # Reads terminal_state_requirements from YAML (via context) — no hardcoded field names.
         # Tiered urgency:
@@ -3541,13 +3549,27 @@ class ResponseGenerator:
                     f for f in (terminal_reqs.get(target_terminal, []) if target_terminal else [])
                     if not collected.get(f)
                 ]
+                blocked_contact_fields = [
+                    f for f in urgent_fields
+                    if f in _AUTONOMOUS_BLOCKED_CONTACT_FIELDS
+                ]
+                if blocked_contact_fields:
+                    urgent_fields = [
+                        f for f in urgent_fields
+                        if f not in _AUTONOMOUS_BLOCKED_CONTACT_FIELDS
+                    ]
 
                 # Snapshot isolation guard: if client JUST provided payment data in
                 # this turn's message, don't ask for it again — DataExtractor will
                 # extract it after response. Acknowledge receipt instead.
                 _just_provided_payment_data = self._client_just_provided_payment_data(user_message)
 
-                if urgent_fields and not reachable:
+                if blocked_contact_fields and not urgent_fields:
+                    variables["closing_data_request"] = (
+                        "⚠️ Автономный режим: не запрашивай номер телефона, email или другой контакт.\n"
+                        "   Ответь по сути и оставь нейтральный следующий шаг без созвона.\n"
+                    )
+                elif urgent_fields and not reachable:
                     if _just_provided_payment_data:
                         # Client provided IIN+phone in this message — acknowledge, don't re-ask
                         variables["closing_data_request"] = (

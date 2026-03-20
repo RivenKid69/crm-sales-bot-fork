@@ -230,3 +230,21 @@ def test_video_call_terminal_fallback_confirms_call_intent():
     low = fallback.lower()
     assert "видеозвонок нужен" in low
     assert "согласовать время" in low
+
+
+def test_autonomous_payment_fallback_does_not_request_phone_or_email():
+    validator = ResponseBoundaryValidator()
+    fallback = validator._hallucination_fallback(
+        {
+            "state": "autonomous_closing",
+            "intent": "payment_confirmation",
+            "user_message": "Да, хочу оплатить",
+            "selected_template": "autonomous_respond",
+            "violations": ["ungrounded_quant_claim"],
+        }
+    )
+
+    low = fallback.lower()
+    assert "номер" not in low
+    assert "email" not in low
+    assert "оплат" in low
