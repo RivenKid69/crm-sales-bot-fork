@@ -98,7 +98,7 @@ def run_audit(args):
 
     # ── Initialize ──
     print("\n[INIT] Loading components...")
-    llm = OllamaLLM(model="ministral-3:14b-instruct-2512-q8_0", base_url="http://localhost:11434", timeout=120)
+    llm = OllamaLLM(model="ministral-3:14b-instruct-2512-q8_0", base_url="http://localhost:11434", timeout=600)
     assert llm.health_check(), "Ollama not running! Run: ollama serve"
 
     loader = ConfigLoader()

@@ -204,7 +204,7 @@ def run_e2e_mode(args):
                         "stream": False,
                         "options": {"num_predict": 10}
                     },
-                    timeout=120
+                    timeout=settings.llm.timeout
                 )
                 if response.status_code == 200:
                     warmup_success = True
@@ -424,7 +424,7 @@ def main():
                         "stream": False,
                         "options": {"num_predict": 10}
                     },
-                    timeout=120
+                    timeout=settings.llm.timeout
                 )
                 if response.status_code == 200:
                     warmup_success = True

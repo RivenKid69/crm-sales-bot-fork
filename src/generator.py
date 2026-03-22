@@ -38,6 +38,7 @@ from src.generator_autonomous import (
     has_address_question_in_history,
     build_language_instruction,
     build_stress_instruction,
+    looks_like_explicit_product_request,
     has_contact_boundary_signal,
     has_hard_no_contact_signal,
     has_deferred_contact_signal,
@@ -2123,6 +2124,8 @@ class ResponseGenerator:
             "consultation_request",
         }:
             return True
+        if looks_like_explicit_product_request(msg):
+            return True
 
         # Generic direct-question signals without domain hardcoding.
         if "?" in msg_low:
@@ -2147,6 +2150,9 @@ class ResponseGenerator:
             "перечисл",
             "назов",
             "сравн",
+            "посовет",
+            "подбер",
+            "выбрат",
         )
         return any(marker in msg_low for marker in request_markers)
 
@@ -4698,6 +4704,107 @@ class ResponseGenerator:
         from src.apology_ssot import has_apology
         return has_apology(response)
 
+    @staticmethod
+    def _response_has_self_intro(response: str) -> bool:
+        """Return True when response contains bot self-introduction markers."""
+        text = re.sub(r"\s+", " ", str(response or "").strip()).lower()
+        if not text:
+            return False
+        markers = (
+            "меня зовут айбота",
+            "я айбота",
+            "консультант wipon",
+            "ваш консультант wipon",
+            "ваш персональный консультант wipon",
+        )
+        return any(marker in text for marker in markers)
+
+    @classmethod
+    def _history_contains_self_intro(cls, history: Any) -> bool:
+        """Return True if bot has already introduced itself earlier in the dialog."""
+        if not isinstance(history, list):
+            return False
+        for turn in history:
+            if not isinstance(turn, dict):
+                continue
+            bot_text = turn.get("bot")
+            if bot_text is None:
+                bot_text = turn.get("bot_response")
+            if cls._response_has_self_intro(str(bot_text or "")):
+                return True
+        return False
+
+    @staticmethod
+    def _is_bot_name_request(user_message: str) -> bool:
+        """Detect explicit requests for bot name/introduction."""
+        text = str(user_message or "").strip().lower()
+        if not text:
+            return False
+        return bool(re.search(
+            r"(?:как\s+(?:тебя|вас)\s+зовут|тв[оё]е\s+имя|ваше\s+имя|"
+            r"кто\s+ты|ты\s+кто|представ(?:ься|ьтесь))",
+            text,
+            re.IGNORECASE,
+        ))
+
+    @classmethod
+    def _strip_repeated_self_intro_prefix(cls, response: str) -> str:
+        """Strip repeated greeting/self-intro prefix while preserving the answer body."""
+        text = str(response or "").strip()
+        if not text:
+            return text
+
+        patterns = (
+            r"^\s*Здравствуйте[!.,\s]*Меня\s+зовут\s+Айбота,\s*я\s+ваш(?:\s+персональный)?\s+консультант\s+Wipon\.\s*Чем\s+я\s+могу\s+вам\s+помочь\?\s*",
+            r"^\s*Здравствуйте[!.,\s]*Меня\s+зовут\s+Айбота,\s*я\s+ваш(?:\s+персональный)?\s+консультант\s+Wipon[.!]?\s*",
+            r"^\s*Меня\s+зовут\s+Айбота,\s*я\s+ваш(?:\s+персональный)?\s+консультант\s+Wipon[.!]?\s*",
+            r"^\s*Я\s+Айбота,\s*(?:ваш(?:\s+персональный)?\s+)?консультант\s+Wipon[.!]?\s*",
+            r"^\s*Айбота,\s*(?:ваш(?:\s+персональный)?\s+)?консультант\s+Wipon[.!]?\s*",
+            r"^\s*Я\s+ваш(?:\s+персональный)?\s+консультант\s+Wipon[.!]?\s*",
+        )
+
+        stripped = text
+        for pattern in patterns:
+            stripped = re.sub(pattern, "", stripped, flags=re.IGNORECASE)
+
+        if stripped != text:
+            stripped = re.sub(
+                r"^\s*(?:Здравствуйте|Добрый\s+(?:день|вечер)|Доброе\s+утро)[!.,\s]*",
+                "",
+                stripped,
+                flags=re.IGNORECASE,
+            )
+
+        stripped = re.sub(r"^[\s,.;:!?-]+", "", stripped)
+        return stripped.strip()
+
+    @classmethod
+    def _suppress_repeated_self_intro(
+        cls,
+        response: str,
+        context: Dict[str, Any],
+        *,
+        is_greeting_turn: bool,
+    ) -> str:
+        """Enforce invariant: self-introduction is allowed only once per conversation."""
+        history = context.get("history", []) or []
+        is_first_bot_reply = bool(context.get("is_first_bot_reply", False))
+        if is_first_bot_reply:
+            return response
+        if not cls._history_contains_self_intro(history):
+            return response
+        if cls._is_bot_name_request(str(context.get("user_message", "") or "")):
+            return response
+        if not cls._response_has_self_intro(response):
+            return response
+
+        stripped = cls._strip_repeated_self_intro_prefix(response)
+        if stripped:
+            return stripped
+        if is_greeting_turn:
+            return "Чем могу помочь?"
+        return "Чем могу помочь?"
+
     def _post_process_response(
         self,
         response: str,
@@ -5497,6 +5604,11 @@ class ResponseGenerator:
         if is_first_bot_reply and not is_greeting_turn:
             before = processed
             body = str(processed or "").strip()
+            body_had_self_intro = self._response_has_self_intro(body)
+            if body_had_self_intro:
+                stripped_body = self._strip_repeated_self_intro_prefix(body)
+                if stripped_body:
+                    body = stripped_body
             normalized = re.sub(r"\s+", " ", body).lower()
             intro_already_present = mandatory_intro.lower() in normalized
             if not intro_already_present:
@@ -5513,6 +5625,7 @@ class ResponseGenerator:
                 extra={
                     "is_first_bot_reply": True,
                     "intro_already_present": intro_already_present,
+                    "body_had_self_intro": body_had_self_intro,
                 },
             )
         else:
@@ -5552,6 +5665,29 @@ class ResponseGenerator:
                 enabled=False,
                 extra={"reason": "not_greeting_turn"},
             )
+
+        before = processed
+        processed = self._suppress_repeated_self_intro(
+            processed,
+            context,
+            is_greeting_turn=is_greeting_turn,
+        )
+        _track_step(
+            "suppress_repeated_self_intro",
+            before,
+            processed,
+            enabled=True,
+            extra={
+                "history_contains_intro": self._history_contains_self_intro(
+                    context.get("history", []) or []
+                ),
+                "is_first_bot_reply": bool(context.get("is_first_bot_reply", False)),
+                "user_asked_name": self._is_bot_name_request(
+                    str(context.get("user_message", "") or "")
+                ),
+                "is_greeting_turn": is_greeting_turn,
+            },
+        )
 
         self._last_postprocess_meta = {
             "postprocess_trace": postprocess_trace,

@@ -5,6 +5,7 @@ import re
 
 # Hallucination guard: intents requiring KB facts (prefix-based + explicit)
 KB_GUARD_FACTUAL_INTENTS_EXPLICIT: set = {
+    "question_specific_product",
     "price_question", "pricing_details", "cost_inquiry",
     "pricing_comparison", "comparison",
     "request_proposal", "request_invoice", "request_contract",
@@ -111,6 +112,50 @@ _OBJECTION_4P_INTENTS = {
     "objection_price", "objection_competitor", "objection_no_time",
     "objection_timing", "objection_complexity",
 }
+
+
+_EXPLICIT_PRODUCT_PATTERN = re.compile(
+    r"(?:\bкомплект\b|\bтариф\w*\b|\bmini\b|\blite\b|\bstandard(?:\s*\+)?\b|\bpro\b|"
+    r"\bмини\b|\bлайт\b|\bстандарт\s*\+?\b|\bпро\b)",
+    re.IGNORECASE,
+)
+_EXPLICIT_PRODUCT_VERB_PATTERN = re.compile(
+    r"(?:мне\s+нужен|мне\s+нужна|мне\s+нужно|нужен|нужна|нужно|хочу|беру|возьму|выбираю|"
+    r"хотим|берем|берём|возьмем|возьмём|планирую\s+взять)",
+    re.IGNORECASE,
+)
+_EXPLICIT_PRODUCT_NEXT_STEP_PATTERN = re.compile(
+    r"(?:что\s+дальше|как\s+дальше|что\s+нужно\s+дальше|как\s+оформить|как\s+подключить|"
+    r"как\s+подключиться|как\s+купить|как\s+оплатить|какой\s+следующий\s+шаг|что\s+нужно\s+для\s+оформления)",
+    re.IGNORECASE,
+)
+
+
+def has_named_product_reference(user_message: str) -> bool:
+    """Return True when the message names a concrete product, tariff, or bundle."""
+    return bool(_EXPLICIT_PRODUCT_PATTERN.search(str(user_message or "")))
+
+
+def looks_like_explicit_product_request(user_message: str) -> bool:
+    """Detect declarative named-product requests without changing overall LLM-driven flow."""
+    message = str(user_message or "")
+    if not message:
+        return False
+    return bool(
+        has_named_product_reference(message)
+        and (
+            _EXPLICIT_PRODUCT_VERB_PATTERN.search(message)
+            or _EXPLICIT_PRODUCT_NEXT_STEP_PATTERN.search(message)
+        )
+    )
+
+
+def has_product_next_step_signal(user_message: str) -> bool:
+    """Return True when a named-product request also asks for the next step."""
+    message = str(user_message or "")
+    return bool(
+        has_named_product_reference(message) and _EXPLICIT_PRODUCT_NEXT_STEP_PATTERN.search(message)
+    )
 
 
 def build_autonomous_objection_instructions(intent: str) -> str:
@@ -242,6 +287,10 @@ def build_state_gated_rules(
         "оформим",
         "оформляйте",
     )
+    explicit_product_requested = (
+        intent_value == "question_specific_product"
+        or looks_like_explicit_product_request(user_message)
+    )
     if (
         is_autonomous_context
         and state_value != "autonomous_closing"
@@ -251,6 +300,18 @@ def build_state_gated_rules(
             "⚠️ КЛИЕНТ ГОТОВ ПОКУПАТЬ: не возвращайся в discovery/квалификацию. "
             "Подтверди готовность, коротко опиши следующий шаг и мягко переведи к оформлению "
             "(контакт/счёт), без лишних вопросов о бизнесе или боли."
+        ))
+    elif is_autonomous_context and has_product_next_step_signal(user_message):
+        rules.append((1,
+            "⚠️ PRODUCT + NEXT STEP: клиент уже назвал конкретный продукт и просит следующий шаг. "
+            "Сначала коротко подтверди именно этот продукт, затем сразу объясни ближайший следующий шаг "
+            "по оформлению/подключению. Не уходи в общую квалификацию и не задавай discovery-вопрос."
+        ))
+    elif is_autonomous_context and explicit_product_requested:
+        rules.append((1,
+            "⚠️ EXPLICIT PRODUCT REQUEST: клиент уже назвал конкретный продукт/тариф/комплект. "
+            "В первой же фразе признай именно этот объект и ответь по нему. "
+            "Не уходи в общее знакомство, не задавай вопрос про имя, не игнорируй названный продукт."
         ))
 
     hard_no_contact = (
@@ -518,6 +579,7 @@ def build_address_instruction(
         "request_brevity",
         "price_question",
         "pricing_details",
+        "question_specific_product",
         "rejection",
         "rejection_soft",
         "no_need",
@@ -527,6 +589,8 @@ def build_address_instruction(
     if (
         frustration_level >= 3
         or intent in stressful_intents
+        or looks_like_explicit_product_request(user_message)
+        or intent.startswith("question_")
         or intent.startswith("objection_")
         or str(state).startswith("autonomous_closing")
     ):
@@ -629,7 +693,7 @@ def build_stress_instruction(intent: str, frustration_level: int, user_message: 
     instructions: List[str] = []
     if (
         int(frustration_level or 0) >= 3
-        or intent in {"request_brevity", "price_question", "pricing_details"}
+        or intent in {"request_brevity", "price_question", "pricing_details", "question_specific_product"}
         or any(m in text for m in direct_markers)
     ):
         instructions.append(

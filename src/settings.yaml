@@ -25,7 +25,7 @@ llm:
   api_format: "ollama"
 
   # Таймаут запроса в секундах
-  timeout: 120
+  timeout: 600
 
   # Режим стриминга (false для structured output)
   stream: false

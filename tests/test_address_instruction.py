@@ -69,3 +69,31 @@ def test_suppress_repeated_client_name_strips_leading_name_even_on_first_allowed
     cleaned = ResponseGenerator._suppress_repeated_client_name(response, context)
 
     assert cleaned == "тариф Mini стоит 5 000 тенге в месяц."
+
+
+def test_build_address_instruction_skips_name_question_for_specific_product_request() -> None:
+    instruction = build_address_instruction(
+        collected={},
+        history=[],
+        state="greeting",
+        intent="question_specific_product",
+        user_message="Мне нужен комплект Standard+ в Алматы",
+    )
+
+    low = instruction.lower()
+    assert "не спрашивай имя" in low
+    assert "как к вам обращаться" not in low
+
+
+def test_build_address_instruction_skips_name_question_for_named_product_even_if_intent_generic() -> None:
+    instruction = build_address_instruction(
+        collected={},
+        history=[],
+        state="greeting",
+        intent="situation_provided",
+        user_message="Здравствуйте, хочу тариф Lite для одного магазина",
+    )
+
+    low = instruction.lower()
+    assert "не спрашивай имя" in low
+    assert "как к вам обращаться" not in low

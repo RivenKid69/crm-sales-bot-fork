@@ -1063,6 +1063,14 @@ intent_taxonomy:
     fallback_transition: close
     priority: high
 
+  question_specific_product:
+    category: question
+    super_category: user_input
+    semantic_domain: product
+    fallback_action: answer_with_facts
+    priority: high
+    bypass_disambiguation: true
+
   # =================================================================
   # META INTENTS (dialogue control)
   # =================================================================

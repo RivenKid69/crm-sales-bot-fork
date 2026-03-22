@@ -470,6 +470,43 @@ def test_first_bot_reply_prepends_mandatory_intro_for_non_greeting():
         flags.clear_all_overrides()
 
 
+def test_first_bot_reply_normalizes_body_self_intro_to_single_intro():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", True)
+
+        output, _ = generator.post_process_only(
+            response=(
+                "Я Айбота, консультант Wipon. "
+                "Комплект Standard+ стоит 219 000 ₸."
+            ),
+            context={
+                "intent": "question_specific_product",
+                "user_message": "Мне нужен Standard+",
+                "history": [],
+                "is_first_bot_reply": True,
+            },
+            requested_action="autonomous_respond",
+            selected_template_key="autonomous_respond",
+            retrieved_facts="",
+        )
+
+        low = output.lower()
+        assert low.count("айбота") == 1
+        assert output.startswith(
+            "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon."
+        )
+        assert "Комплект Standard+ стоит 219 000" in output
+    finally:
+        flags.clear_all_overrides()
+
+
 def test_first_bot_reply_keeps_canonical_greeting_policy_for_greeting_intent():
     class _AutonomousFlow:
         name = "autonomous"
@@ -498,6 +535,111 @@ def test_first_bot_reply_keeps_canonical_greeting_policy_for_greeting_intent():
             "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. "
             "Чем я могу вам помочь?"
         )
+    finally:
+        flags.clear_all_overrides()
+
+
+def test_repeated_self_intro_is_stripped_on_non_first_reply():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", True)
+
+        output, _ = generator.post_process_only(
+            response=(
+                "Здравствуйте, меня зовут Айбота, я ваш персональный консультант Wipon. "
+                "Комплект Standard+ стоит 219 000 ₸."
+            ),
+            context={
+                "intent": "pricing_details",
+                "user_message": "Сколько стоит Standard+?",
+                "history": [
+                    {
+                        "user": "Здравствуйте",
+                        "bot": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+                    }
+                ],
+                "is_first_bot_reply": False,
+            },
+            requested_action="autonomous_respond",
+            selected_template_key="autonomous_respond",
+            retrieved_facts="",
+        )
+
+        assert output == "Комплект Standard+ стоит 219 000 ₸."
+    finally:
+        flags.clear_all_overrides()
+
+
+def test_non_first_greeting_turn_does_not_repeat_intro():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", True)
+
+        output, _ = generator.post_process_only(
+            response="Любой вариант от LLM.",
+            context={
+                "intent": "greeting",
+                "user_message": "Здравствуйте ещё раз",
+                "history": [
+                    {
+                        "user": "Здравствуйте",
+                        "bot": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+                    }
+                ],
+                "is_first_bot_reply": False,
+            },
+            requested_action="greet_back",
+            selected_template_key="greet_back",
+            retrieved_facts="",
+        )
+
+        assert output == "Чем могу помочь?"
+    finally:
+        flags.clear_all_overrides()
+
+
+def test_explicit_name_request_keeps_name_answer_after_intro():
+    class _AutonomousFlow:
+        name = "autonomous"
+
+    generator = ResponseGenerator(llm=Mock(), flow=_AutonomousFlow())
+    try:
+        flags.set_override("response_diversity", False)
+        flags.set_override("apology_system", False)
+        flags.set_override("response_boundary_validator", False)
+        flags.set_override("postprocess_semantic_mutations_after_verifier", True)
+
+        output, _ = generator.post_process_only(
+            response="Меня зовут Айбота, я ваш консультант Wipon.",
+            context={
+                "intent": "company_info_question",
+                "user_message": "Как тебя зовут?",
+                "history": [
+                    {
+                        "user": "Здравствуйте",
+                        "bot": "Здравствуйте! Меня зовут Айбота, я ваш консультант Wipon. Чем я могу вам помочь?",
+                    }
+                ],
+                "is_first_bot_reply": False,
+            },
+            requested_action="autonomous_respond",
+            selected_template_key="autonomous_respond",
+            retrieved_facts="",
+        )
+
+        assert output == "Меня зовут Айбота, я ваш консультант Wipon."
     finally:
         flags.clear_all_overrides()
 

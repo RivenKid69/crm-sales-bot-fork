@@ -13,6 +13,7 @@ INTENT_LABELS: Dict[str, str] = {
     # ВОПРОСЫ О ПРОДУКТЕ (14)
     # =================================================================
     "price_question": "Узнать стоимость",
+    "question_specific_product": "Выбрать конкретный продукт",
     "question_features": "Узнать о функциях",
     "question_integrations": "Узнать об интеграциях",
     "pricing_details": "Детали по ценам",

@@ -239,6 +239,13 @@ class TestPrompts:
         assert "задал вопрос" in prompt
         assert "greeting" in prompt
 
+    def test_system_prompt_describes_question_specific_product(self):
+        from src.classifier.llm.prompts import SYSTEM_PROMPT
+
+        assert "question_specific_product" in SYSTEM_PROMPT
+        assert "concrete Wipon product" in SYSTEM_PROMPT
+        assert "беру Standard" in SYSTEM_PROMPT
+
 class TestFewShot:
     """Тесты few-shot примеров."""
 
@@ -296,6 +303,16 @@ class TestFewShot:
         assert "situation_provided" in intents
         assert "problem_revealed" in intents
         assert "contact_provided" in intents
+        assert "question_specific_product" in intents
+
+    def test_few_shot_has_multiple_named_product_anchors(self):
+        from src.classifier.llm.few_shot import FEW_SHOT_EXAMPLES
+
+        messages = {ex["message"] for ex in FEW_SHOT_EXAMPLES if ex["result"]["intent"] == "question_specific_product"}
+
+        assert "Здравствуйте! Мне нужен Комплект Standard+ в Алматы" in messages
+        assert "Здравствуйте, хочу тариф Lite для одного магазина" in messages
+        assert "Добрый день. Беру Standard для магазина у дома, что дальше?" in messages
 
 class TestLLMClassifier:
     """Тесты LLMClassifier."""

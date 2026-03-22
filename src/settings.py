@@ -22,7 +22,7 @@ DEFAULTS = {
         "model": "ministral-3:14b-instruct-2512-q8_0",  # Ollama model (Ministral 3 14B Q8_0)
         "base_url": "http://localhost:11434",  # Ollama native API
         "api_format": "ollama",  # "ollama" or "openai" (llama-server, vLLM)
-        "timeout": 120,  # Increased for larger model
+        "timeout": 600,  # Increased for larger structured-output calls
         "stream": False,
     },
     "retriever": {

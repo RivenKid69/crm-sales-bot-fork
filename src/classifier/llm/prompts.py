@@ -16,6 +16,7 @@ Always provide exactly 2 alternatives in descending confidence order.
 Allowed intents:
 - greeting: Greeting or conversation opening.
 - situation_provided: User gives business context, current setup, or high-level situation without a concrete request.
+- question_specific_product: User explicitly names a concrete Wipon product, tariff, or equipment bundle they want, need, choose, or plan to buy, so the reply must focus on that named option first.
 - question_features: Question about product capabilities, modules, or what the system can do.
 - question_security: Question about security, data safety, compliance, or protection of information.
 - price_question: Direct pricing, tariff, cost, or commercial price inquiry.
@@ -66,6 +67,10 @@ Important boundary rules:
 - If the user is asking before purchase about support, delivery, training, or product possibilities, use the normal sales intent that best matches the question instead of any misroute intent.
 - Use info_provided when the message is mainly factual data or an answer to a prior question.
 - Use situation_provided when the user is mainly describing their business or current setup without a direct request.
+- Use question_specific_product when the user already named a concrete product/tariff/bundle (for example Mini, Lite, Standard, Pro, Standard+, комплект Standard+) and expects the dialog to focus on that named option rather than a generic consultation opening.
+- If the message combines a greeting with a concrete product choice/request (for example "Здравствуйте, мне нужен Standard+" or "Добрый день, хочу Lite"), classify it as question_specific_product, not greeting.
+- If the message says want/need/take/choose a named product or tariff (for example "беру Standard", "хочу тариф Lite", "нужен комплект Standard+"), classify it as question_specific_product, not situation_provided.
+- If the message names a concrete product and asks what to do next (for example "беру Standard, что дальше?" or "хочу Lite, как оформить?"), keep question_specific_product as the main intent.
 - Use problem_revealed when the user describes a business or operational pain, unless it is a clear misroute support/training/delivery case covered by a misroute intent.
 """
 

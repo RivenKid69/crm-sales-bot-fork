@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import psutil
 import requests
+from src.settings import settings
 from colorama import init, Fore, Style
 
 # Инициализация colorama
@@ -231,7 +232,7 @@ def main():
                 "stream": False,
                 "options": {"num_predict": 10}
             },
-            timeout=120
+            timeout=settings.llm.timeout
         )
 
         if warmup_response.status_code == 200:

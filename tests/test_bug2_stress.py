@@ -104,6 +104,7 @@ class TestIsDirectFactualRequest:
         "А ОФД есть?",
         "Маркировка поддерживается?",
         "1С интеграция есть?",
+        "Мне нужен комплект Standard+ в Алматы",
     ])
     def test_textual_factual_triggers(self, msg):
         assert self._fn("situation_provided", msg) is True, f"Should be True for: {msg!r}"

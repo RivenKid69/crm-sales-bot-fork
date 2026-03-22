@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 IntentType = Literal[
     "greeting",
     "situation_provided",
+    "question_specific_product",
     "question_features",
     "question_security",
     "price_question",
@@ -55,6 +56,10 @@ VALID_INTENTS = frozenset(get_args(IntentType))
 
 # Canonical aliases that the model tends to invent when prompt/schema drift appears.
 INTENT_ALIASES = {
+    "explicit_product_request": "question_specific_product",
+    "named_product_request": "question_specific_product",
+    "specific_product_request": "question_specific_product",
+    "product_selection_request": "question_specific_product",
     "question_compliance": "compliance_question",
     "question_tax": "question_retail_tax_general",
     "question_taxes": "question_retail_tax_general",

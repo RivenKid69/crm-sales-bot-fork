@@ -71,6 +71,104 @@ FEW_SHOT_EXAMPLES = [
     },
 
     # ─────────────────────────────────────────────
+    # idx 2b: Явно назван конкретный продукт — anchor
+    # ─────────────────────────────────────────────
+    {
+        "message": "Здравствуйте! Мне нужен Комплект Standard+ в Алматы",
+        "context": {},
+        "result": {
+            "intent": "question_specific_product",
+            "confidence": 0.97,
+            "reasoning": "Клиент уже назвал конкретный комплект и ожидает ответ по нему, а не общее открытие диалога",
+            "extracted_data": {
+                "city": "Алматы",
+            },
+            "alternatives": [
+                {"intent": "pricing_details", "confidence": 0.35},
+                {"intent": "consultation_request", "confidence": 0.22}
+            ]
+        },
+        "priority": 1,
+        "require_context": {},
+    },
+
+    # ─────────────────────────────────────────────
+    # idx 2c: Явно назван тариф через "хочу" — high-value
+    # ─────────────────────────────────────────────
+    {
+        "message": "Здравствуйте, хочу тариф Lite для одного магазина",
+        "context": {},
+        "result": {
+            "intent": "question_specific_product",
+            "confidence": 0.96,
+            "reasoning": "Клиент уже выбрал конкретный тариф и ждёт ответ по нему, а не общий сбор ситуации",
+            "alternatives": [
+                {"intent": "pricing_details", "confidence": 0.34},
+                {"intent": "situation_provided", "confidence": 0.20}
+            ]
+        },
+        "priority": 2,
+        "require_context": {},
+    },
+
+    # ─────────────────────────────────────────────
+    # idx 2d: Named product + next step — high-value
+    # ─────────────────────────────────────────────
+    {
+        "message": "Добрый день. Беру Standard для магазина у дома, что дальше?",
+        "context": {},
+        "result": {
+            "intent": "question_specific_product",
+            "confidence": 0.97,
+            "reasoning": "Клиент уже назвал выбранный тариф и просит следующий шаг по нему",
+            "alternatives": [
+                {"intent": "consultation_request", "confidence": 0.28},
+                {"intent": "pricing_details", "confidence": 0.18}
+            ]
+        },
+        "priority": 2,
+        "require_context": {},
+    },
+
+    # ─────────────────────────────────────────────
+    # idx 2e: Named tariff with need marker — high-value
+    # ─────────────────────────────────────────────
+    {
+        "message": "Нужен Mini для одной точки",
+        "context": {},
+        "result": {
+            "intent": "question_specific_product",
+            "confidence": 0.95,
+            "reasoning": "Есть явное намерение взять конкретный тариф Mini",
+            "alternatives": [
+                {"intent": "pricing_details", "confidence": 0.32},
+                {"intent": "consultation_request", "confidence": 0.16}
+            ]
+        },
+        "priority": 2,
+        "require_context": {},
+    },
+
+    # ─────────────────────────────────────────────
+    # idx 2f: Named tariff with buy intent — high-value
+    # ─────────────────────────────────────────────
+    {
+        "message": "Возьму Pro на 5 точек",
+        "context": {},
+        "result": {
+            "intent": "question_specific_product",
+            "confidence": 0.95,
+            "reasoning": "Клиент выбрал конкретный тариф Pro и обозначил сценарий использования",
+            "alternatives": [
+                {"intent": "pricing_details", "confidence": 0.30},
+                {"intent": "situation_provided", "confidence": 0.18}
+            ]
+        },
+        "priority": 2,
+        "require_context": {},
+    },
+
+    # ─────────────────────────────────────────────
     # idx 3: "Да" после предложения демо — high-value, context-matched
     # ─────────────────────────────────────────────
     {
