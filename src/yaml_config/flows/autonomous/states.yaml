@@ -188,8 +188,28 @@ states:
     transitions:
       data_complete: soft_close  # YAML required for infra test; runtime blocked by autonomous guard in DataCollectorSource
     terminal_state_requirements:
-      payment_ready: []
-      video_call_scheduled: []
+      payment_ready:
+        required_any:
+          - contact_name
+          - client_name
+        required_all:
+          - business_type
+          - city
+          - automation_before
+        required_if_true:
+          automation_before:
+            - current_tools
+      video_call_scheduled:
+        required_any:
+          - contact_name
+          - client_name
+        required_all:
+          - business_type
+          - city
+          - automation_before
+        required_if_true:
+          automation_before:
+            - current_tools
     terminal_states:
       - payment_ready
       - video_call_scheduled

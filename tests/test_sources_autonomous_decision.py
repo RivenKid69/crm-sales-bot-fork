@@ -27,6 +27,20 @@ from src.blackboard.sources.autonomous_decision import (
 from src.blackboard.enums import Priority
 
 
+CLOSING_TERMINAL_REQUIREMENTS = {
+    "payment_ready": {
+        "required_any": ["contact_name", "client_name"],
+        "required_all": ["business_type", "city", "automation_before"],
+        "required_if_true": {"automation_before": ["current_tools"]},
+    },
+    "video_call_scheduled": {
+        "required_any": ["contact_name", "client_name"],
+        "required_all": ["business_type", "city", "automation_before"],
+        "required_if_true": {"automation_before": ["current_tools"]},
+    },
+}
+
+
 # =============================================================================
 # Mock Helpers
 # =============================================================================
@@ -798,10 +812,10 @@ class TestClosingDeterministicCompletion:
     """Regression tests for deterministic completion in autonomous_closing."""
 
     @patch("src.feature_flags.flags")
-    def test_payment_context_autofinishes_payment_ready_without_contact_collection(self, mock_flags):
+    def test_payment_context_does_not_autofinish_payment_ready_without_required_profile(self, mock_flags):
         """
-        If client is in invoice/payment context, source should finalize payment_ready
-        based on intent, without waiting for repeated contact collection.
+        Payment fastpath must be blocked until profile data required by terminal gate
+        is already collected.
         """
         mock_flags.is_enabled.return_value = True
 
@@ -819,10 +833,7 @@ class TestClosingDeterministicCompletion:
             "goal": "Закрытие сделки",
             "max_turns_in_state": 6,
             "terminal_states": ["payment_ready", "video_call_scheduled"],
-            "terminal_state_requirements": {
-                "payment_ready": [],
-                "video_call_scheduled": [],
-            },
+            "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
         }
         bb = make_blackboard(
             state="autonomous_closing",
@@ -836,12 +847,54 @@ class TestClosingDeterministicCompletion:
 
         assert len(bb._transition_proposals) == 1
         tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_closing"
+        assert tp["reason_code"] == "autonomous_stay_llm_fallback"
+
+    @patch("src.feature_flags.flags")
+    def test_payment_context_autofinishes_payment_ready_with_required_profile(self, mock_flags):
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+
+        envelope = SimpleNamespace(
+            consecutive_same_state=1,
+            intent_history=["request_invoice"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery", "autonomous_closing"],
+        )
+        state_config = {
+            "phase": "closing",
+            "goal": "Закрытие сделки",
+            "max_turns_in_state": 6,
+            "terminal_states": ["payment_ready", "video_call_scheduled"],
+            "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
+        }
+        bb = make_blackboard(
+            state="autonomous_closing",
+            intent="request_invoice",
+            user_message="Да, хочу оплатить. Выставляйте счёт.",
+            state_config=state_config,
+            context_envelope=envelope,
+            collected_data={
+                "contact_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": True,
+                "current_tools": "Excel",
+            },
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
         assert tp["next_state"] == "payment_ready"
         assert tp["reason_code"] == "autonomous_terminal_payment_ready"
 
     @patch("src.feature_flags.flags")
-    def test_video_call_autofinish_when_requested_without_contact_collection(self, mock_flags):
-        """Without payment/invoice intent, explicit video-call request auto-finishes video_call."""
+    def test_video_call_does_not_autofinish_without_required_profile(self, mock_flags):
+        """Video-call fastpath must also respect terminal profile requirements."""
         mock_flags.is_enabled.return_value = True
 
         source = AutonomousDecisionSource(llm=Mock())
@@ -857,10 +910,7 @@ class TestClosingDeterministicCompletion:
             "goal": "Закрытие сделки",
             "max_turns_in_state": 6,
             "terminal_states": ["payment_ready", "video_call_scheduled"],
-            "terminal_state_requirements": {
-                "payment_ready": [],
-                "video_call_scheduled": [],
-            },
+            "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
         }
         bb = make_blackboard(
             state="autonomous_closing",
@@ -868,6 +918,46 @@ class TestClosingDeterministicCompletion:
             user_message="Да, хочу видеозвонок, давайте созвонимся.",
             state_config=state_config,
             context_envelope=envelope,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_closing"
+        assert tp["reason_code"] == "autonomous_stay_llm_fallback"
+
+    @patch("src.feature_flags.flags")
+    def test_video_call_autofinish_when_requested_with_required_profile(self, mock_flags):
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        envelope = SimpleNamespace(
+            consecutive_same_state=1,
+            intent_history=["question_features"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery", "autonomous_closing"],
+        )
+        state_config = {
+            "phase": "closing",
+            "goal": "Закрытие сделки",
+            "max_turns_in_state": 6,
+            "terminal_states": ["payment_ready", "video_call_scheduled"],
+            "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
+        }
+        bb = make_blackboard(
+            state="autonomous_closing",
+            intent="demo_request",
+            user_message="Да, хочу видеозвонок, давайте созвонимся.",
+            state_config=state_config,
+            context_envelope=envelope,
+            collected_data={
+                "client_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": False,
+            },
         )
 
         source.contribute(bb)
@@ -882,8 +972,8 @@ class TestMergedContactFastPath:
     """Merged-mode regression guards for contact_provided handling."""
 
     @patch("src.feature_flags.flags")
-    def test_merged_fastpath_keeps_payment_guard_without_iin(self, mock_flags):
-        """Merged fastpath should enter payment_ready once purchase intent is already active."""
+    def test_merged_fastpath_falls_back_to_autonomous_closing_without_required_profile(self, mock_flags):
+        """Cross-state terminal upgrade must not bypass closing profile requirements."""
         mock_flags.is_enabled.return_value = True
 
         llm = make_llm(
@@ -897,7 +987,12 @@ class TestMergedContactFastPath:
         source = AutonomousDecisionSource(llm=llm)
         states = {
             "autonomous_negotiation": {"phase": "negotiation", "goal": "Обсудить условия"},
-            "autonomous_closing": {"phase": "closing", "goal": "Закрыть сделку"},
+            "autonomous_closing": {
+                "phase": "closing",
+                "goal": "Закрыть сделку",
+                "terminal_states": ["payment_ready", "video_call_scheduled"],
+                "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
+            },
             "payment_ready": {"phase": "terminal", "goal": "Оплата"},
             "video_call_scheduled": {"phase": "terminal", "goal": "Видеозвонок"},
         }
@@ -924,14 +1019,14 @@ class TestMergedContactFastPath:
 
         assert len(bb._transition_proposals) == 1
         tp = bb._transition_proposals[0]
-        assert tp["next_state"] == "payment_ready"
+        assert tp["next_state"] == "autonomous_closing"
         llm.generate_structured.assert_called_once()
 
     @patch("src.feature_flags.flags")
-    def test_contact_provided_redirect_enters_payment_ready_when_payment_intent_active(self, mock_flags):
+    def test_contact_provided_redirect_keeps_autonomous_closing_without_required_profile(self, mock_flags):
         """
-        If payment intent is already active, redirect from contact_provided may
-        finalize into payment_ready without waiting for repeated field collection.
+        Redirect into terminal state must fall back to autonomous_closing until
+        the required profile is complete.
         """
         mock_flags.is_enabled.return_value = True
 
@@ -946,7 +1041,12 @@ class TestMergedContactFastPath:
         source = AutonomousDecisionSource(llm=llm)
         states = {
             "autonomous_discovery": {"phase": "discovery", "goal": "Понять контекст"},
-            "autonomous_closing": {"phase": "closing", "goal": "Закрыть сделку"},
+            "autonomous_closing": {
+                "phase": "closing",
+                "goal": "Закрыть сделку",
+                "terminal_states": ["payment_ready", "video_call_scheduled"],
+                "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
+            },
             "payment_ready": {"phase": "terminal", "goal": "Оплата"},
             "video_call_scheduled": {"phase": "terminal", "goal": "Видеозвонок"},
         }
@@ -969,6 +1069,63 @@ class TestMergedContactFastPath:
             states=states,
             state_config=state_config,
             context_envelope=envelope,
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "autonomous_closing"
+
+    @patch("src.feature_flags.flags")
+    def test_contact_provided_redirect_enters_payment_ready_with_required_profile(self, mock_flags):
+        mock_flags.is_enabled.return_value = True
+
+        llm = make_llm(
+            AutonomousDecision(
+                next_state="autonomous_closing",
+                action="autonomous_respond",
+                reasoning="move to closing",
+                should_transition=True,
+            )
+        )
+        source = AutonomousDecisionSource(llm=llm)
+        states = {
+            "autonomous_discovery": {"phase": "discovery", "goal": "Понять контекст"},
+            "autonomous_closing": {
+                "phase": "closing",
+                "goal": "Закрыть сделку",
+                "terminal_states": ["payment_ready", "video_call_scheduled"],
+                "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
+            },
+            "payment_ready": {"phase": "terminal", "goal": "Оплата"},
+            "video_call_scheduled": {"phase": "terminal", "goal": "Видеозвонок"},
+        }
+        envelope = SimpleNamespace(
+            consecutive_same_state=0,
+            intent_history=["request_invoice"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery"],
+        )
+        bb = make_blackboard(
+            state="autonomous_discovery",
+            intent="contact_provided",
+            user_message="Телефон: +77015551234",
+            states=states,
+            state_config={
+                "phase": "discovery",
+                "goal": "Понять контекст",
+                "max_turns_in_state": 6,
+            },
+            context_envelope=envelope,
+            collected_data={
+                "contact_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": True,
+                "current_tools": "Excel",
+            },
         )
 
         source.contribute(bb)
@@ -998,10 +1155,7 @@ class TestMergedContactFastPath:
             "goal": "Закрытие сделки",
             "max_turns_in_state": 6,
             "terminal_states": ["payment_ready", "video_call_scheduled"],
-            "terminal_state_requirements": {
-                "payment_ready": [],
-                "video_call_scheduled": [],
-            },
+            "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
         }
         bb = make_blackboard(
             state="autonomous_closing",

@@ -19,6 +19,7 @@ from src.logger import logger
 from src.feature_flags import flags
 from src.response_diversity import diversity_engine
 from src.question_dedup import question_dedup_engine
+from src.terminal_requirements import missing_terminal_fields, terminal_requirements_satisfied
 from src.generator_autonomous import (
     SAFETY_RULES_V2 as AUTONOMOUS_SAFETY_RULES_V2,
     HARD_NO_CONTACT_MARKERS as AUTONOMOUS_HARD_NO_CONTACT_MARKERS,
@@ -3471,6 +3472,12 @@ class ResponseGenerator:
             "iin": "ИИН",
             "preferred_call_time": "удобное время для созвона",
             "company_name": "название компании",
+            "contact_name": "имя клиента",
+            "client_name": "имя клиента",
+            "business_type": "сфера деятельности",
+            "city": "город",
+            "automation_before": "была ли раньше автоматизация",
+            "current_tools": "какая была автоматизация",
         }
 
         def _field_label(f: str) -> str:
@@ -3525,6 +3532,9 @@ class ResponseGenerator:
                 variables["do_not_ask"] = f"{_existing_dna}\n{_no_iin_hint}" if _existing_dna else _no_iin_hint
             terminal_reqs: dict = context.get("terminal_state_requirements", {})
             if terminal_reqs:
+                def _has_terminal_field(field: str) -> bool:
+                    return bool(collected.get(field))
+
                 soften_closing_request = self._should_soften_closing_request(
                     intent=intent,
                     frustration_level=context.get("frustration_level", 0),
@@ -3532,15 +3542,27 @@ class ResponseGenerator:
                 )
                 # Evaluate each terminal: reachable = all required fields present in collected_data
                 reachable = [
-                    t for t, fields in terminal_reqs.items()
-                    if all(collected.get(f) for f in fields)
+                    t for t, spec in terminal_reqs.items()
+                    if terminal_requirements_satisfied(
+                        spec,
+                        has_field=_has_terminal_field,
+                        get_value=collected.get,
+                    )
                 ]
                 not_reachable = [t for t in terminal_reqs if t not in reachable]
 
                 # Iterate easiest terminal first (fewest required fields) so the
                 # bot asks for the simplest blocking fields before harder ones.
                 # e.g. video_call_scheduled (1 field) before payment_ready (2 fields).
-                not_reachable.sort(key=lambda t: len(terminal_reqs.get(t, [])))
+                not_reachable.sort(
+                    key=lambda t: len(
+                        missing_terminal_fields(
+                            terminal_reqs.get(t, []),
+                            has_field=_has_terminal_field,
+                            get_value=collected.get,
+                        )
+                    )
+                )
 
                 # Ask only for one target terminal at a time.
                 # Default = easiest terminal (usually video_call_scheduled/contact).
@@ -3551,10 +3573,11 @@ class ResponseGenerator:
                     and "payment_ready" in not_reachable
                 ):
                     target_terminal = "payment_ready"
-                urgent_fields = [
-                    f for f in (terminal_reqs.get(target_terminal, []) if target_terminal else [])
-                    if not collected.get(f)
-                ]
+                urgent_fields = missing_terminal_fields(
+                    terminal_reqs.get(target_terminal, []) if target_terminal else [],
+                    has_field=_has_terminal_field,
+                    get_value=collected.get,
+                )
                 blocked_contact_fields = [
                     f for f in urgent_fields
                     if f in _AUTONOMOUS_BLOCKED_CONTACT_FIELDS

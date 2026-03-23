@@ -233,7 +233,8 @@ class TestContentRepetitionGuardShouldContribute:
         return ContentRepetitionGuardSource(name="ContentRepetitionGuardSource")
 
     def _make_blackboard(self, count=0, last_action=None, repeated_question=None,
-                          current_intent=None, last_intent=None):
+                          current_intent=None, last_intent=None,
+                          state_config=None, collected_data=None):
         bb = MagicMock()
         envelope = Mock()
         envelope.content_repeat_count = count
@@ -244,6 +245,8 @@ class TestContentRepetitionGuardShouldContribute:
 
         ctx = Mock()
         ctx.context_envelope = envelope
+        ctx.state_config = state_config or {}
+        ctx.collected_data = collected_data or {}
         bb.get_context.return_value = ctx
         return bb
 
@@ -300,6 +303,31 @@ class TestContentRepetitionGuardShouldContribute:
             count=3,
             last_action="escalate_repeated_content",
             repeated_question="price_question",
+        )
+        assert source.should_contribute(bb) is False
+
+    def test_terminal_requirements_with_structured_spec_disable_guard_when_complete(self):
+        source = self._make_source()
+        bb = self._make_blackboard(
+            count=3,
+            repeated_question="price_question",
+            state_config={
+                "autonomous": True,
+                "terminal_state_requirements": {
+                    "payment_ready": {
+                        "required_any": ["contact_name", "client_name"],
+                        "required_all": ["business_type", "city", "automation_before"],
+                        "required_if_true": {"automation_before": ["current_tools"]},
+                    }
+                },
+            },
+            collected_data={
+                "contact_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": True,
+                "current_tools": "Excel",
+            },
         )
         assert source.should_contribute(bb) is False
 

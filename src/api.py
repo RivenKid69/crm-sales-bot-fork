@@ -32,6 +32,7 @@ from src.bot import SalesBot
 from src.feature_flags import flags
 from src.llm import OllamaLLM
 from src.media_preprocessor import prepare_autonomous_incoming_message, prepare_incoming_message
+from src.session_manager import SessionManager
 from src.media_turn_context import (
     freeze_media_turn_context,
     redact_media_text,
@@ -53,8 +54,17 @@ DEPENDENCY_HEALTH_TIMEOUT_SECONDS = float(
 STARTUP_WARMUP_ENABLED = os.environ.get("STARTUP_WARMUP_ENABLED", "1") == "1"
 STARTUP_WARMUP_ATTEMPTS = int(os.environ.get("STARTUP_WARMUP_ATTEMPTS", "3"))
 STARTUP_WARMUP_DELAY_SECONDS = float(os.environ.get("STARTUP_WARMUP_DELAY_SECONDS", "2"))
+ACTIVE_SESSION_FINAL_IDLE_SECONDS = int(
+    os.environ.get("ACTIVE_SESSION_FINAL_IDLE_SECONDS", "3600")
+)
+ACTIVE_SESSION_SWEEP_INTERVAL_SECONDS = float(
+    os.environ.get("ACTIVE_SESSION_SWEEP_INTERVAL_SECONDS", "60")
+)
 
 _llm = None
+_session_manager: SessionManager | None = None
+_session_sweeper_thread: threading.Thread | None = None
+_session_sweeper_stop: threading.Event | None = None
 _startup_warmup_state = {
     "status": "pending",
     "started_at": None,
@@ -189,6 +199,20 @@ def _load_snapshot(session_id: str, user_id: str) -> dict | None:
     return json.loads(row[0]) if row and row[0] else None
 
 
+def _split_storage_session_id(storage_session_id: str) -> tuple[str, str]:
+    raw = str(storage_session_id or "")
+    sep = SessionManager.STORAGE_KEY_SEPARATOR
+    if sep in raw:
+        client_id, session_id = raw.split(sep, 1)
+        return session_id, client_id
+    return raw, ""
+
+
+def _load_storage_snapshot(storage_session_id: str) -> dict | None:
+    session_id, user_id = _split_storage_session_id(storage_session_id)
+    return _load_snapshot(session_id, user_id)
+
+
 def _save_snapshot(session_id: str, user_id: str, snapshot: dict):
     conn = _db_connect()
     _save_snapshot_conn(
@@ -200,6 +224,11 @@ def _save_snapshot(session_id: str, user_id: str, snapshot: dict):
     )
     conn.commit()
     conn.close()
+
+
+def _save_storage_snapshot(storage_session_id: str, snapshot: dict) -> None:
+    session_id, user_id = _split_storage_session_id(storage_session_id)
+    _save_snapshot(session_id, user_id, snapshot)
 
 
 def _save_snapshot_conn(
@@ -523,6 +552,41 @@ def _persist_bot_state(session_id: str, user_id: str, bot: SalesBot) -> None:
         conn.close()
 
 
+def _save_media_knowledge(session_id: str, user_id: str, bot: SalesBot) -> None:
+    """Persist media-derived knowledge from bot memory."""
+    conn = _db_connect()
+    try:
+        _save_media_knowledge_conn(
+            conn,
+            session_id=session_id,
+            user_id=user_id,
+            bot=bot,
+            updated_at=time.time(),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _run_session_sweeper(stop_event: threading.Event) -> None:
+    while not stop_event.wait(ACTIVE_SESSION_SWEEP_INTERVAL_SECONDS):
+        manager = _session_manager
+        if manager is None:
+            continue
+        try:
+            serialized = manager.serialize_inactive_final_sessions(
+                ACTIVE_SESSION_FINAL_IDLE_SECONDS
+            )
+            if serialized:
+                logger.info(
+                    "Serialized inactive final sessions",
+                    count=serialized,
+                    idle_seconds=ACTIVE_SESSION_FINAL_IDLE_SECONDS,
+                )
+        except Exception:
+            logger.exception("Session sweeper failed")
+
+
 def _bootstrap_bot_memory(bot: SalesBot, *, user_id: str) -> None:
     try:
         profile_data = _merge_user_profiles(user_id)
@@ -671,15 +735,42 @@ def _start_startup_warmup() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _llm
+    global _llm, _session_manager, _session_sweeper_thread, _session_sweeper_stop
     _setup_production_flags()
     if API_KEY == "change-me-in-production":
         logger.warning("API_KEY is set to insecure default value")
     _init_db()
     _llm = OllamaLLM()
+    _session_manager = SessionManager(
+        load_snapshot=_load_storage_snapshot,
+        save_snapshot=_save_storage_snapshot,
+        require_client_id=True,
+    )
+    _session_sweeper_stop = threading.Event()
+    _session_sweeper_thread = threading.Thread(
+        target=_run_session_sweeper,
+        args=(_session_sweeper_stop,),
+        name="crm-sales-bot-session-sweeper",
+        daemon=True,
+    )
+    _session_sweeper_thread.start()
     _start_startup_warmup()
     logger.info("LLM client initialized, DB ready, autonomous flags set")
     yield
+    if _session_sweeper_stop is not None:
+        _session_sweeper_stop.set()
+    if _session_sweeper_thread is not None:
+        _session_sweeper_thread.join(timeout=2)
+    if _session_manager is not None:
+        try:
+            closed = _session_manager.close_all_sessions()
+            if closed:
+                logger.info("Serialized sessions on shutdown", count=closed)
+        except Exception:
+            logger.exception("Failed to serialize sessions on shutdown")
+    _session_sweeper_stop = None
+    _session_sweeper_thread = None
+    _session_manager = None
     _llm = None
 
 
@@ -817,7 +908,6 @@ def _process_message_request(req: ProcessRequest) -> dict:
         raise APIError(400, "BAD_REQUEST", "message.text must not be empty when attachments are absent")
 
     start = time.time()
-    snapshot = _load_snapshot(req.session_id, req.user_id)
     prepared_message = prepare_autonomous_incoming_message(
         user_text=req.message.text,
         attachments=[item.model_dump(exclude_none=True) for item in req.message.attachments],
@@ -826,21 +916,29 @@ def _process_message_request(req: ProcessRequest) -> dict:
     if not prepared_message.text.strip() and not prepared_message.media_used:
         raise APIError(400, "BAD_REQUEST", "message must contain text or a supported attachment")
 
-    if snapshot:
-        history_tail = [
-            {"user": t["user_message"], "bot": t["bot_response"]}
-            for t in snapshot.get("context_window", [])
-            if "user_message" in t and "bot_response" in t
-        ]
-        bot = SalesBot.from_snapshot(
-            snapshot, llm=_llm, history_tail=history_tail,
-            enable_tracing=True,
+    if _session_manager is None:
+        raise APIError(503, "SERVICE_UNAVAILABLE", "Session manager is not initialized")
+
+    serialized = _session_manager.serialize_inactive_final_sessions(
+        ACTIVE_SESSION_FINAL_IDLE_SECONDS
+    )
+    if serialized:
+        logger.info(
+            "Serialized inactive final sessions on request path",
+            count=serialized,
+            idle_seconds=ACTIVE_SESSION_FINAL_IDLE_SECONDS,
         )
-    else:
-        bot = SalesBot(
-            _llm, flow_name="autonomous", config_name="default",
-            enable_tracing=True,
-        )
+
+    acquire = _session_manager.get_or_create_with_status(
+        req.session_id,
+        llm=_llm,
+        client_id=req.user_id,
+        flow_name="autonomous",
+        config_name="default",
+        enable_tracing=True,
+    )
+    bot = acquire.bot
+    if acquire.source == "new":
         _bootstrap_bot_memory(bot, user_id=req.user_id)
 
     media_turn_context = prepared_message.media_turn_context
@@ -858,9 +956,13 @@ def _process_message_request(req: ProcessRequest) -> dict:
         media_turn_context=media_turn_context,
     )
     processing_ms = int((time.time() - start) * 1000)
-
-    # Persist snapshot + structured user profile
-    _persist_bot_state(req.session_id, req.user_id, bot)
+    _session_manager.touch(
+        req.session_id,
+        client_id=req.user_id,
+        is_final=bot.state_machine.is_final(),
+    )
+    _save_user_profile(req.session_id, req.user_id, bot)
+    _save_media_knowledge(req.session_id, req.user_id, bot)
 
     # kb_used: check KB results in traces
     trace = result.get("decision_trace") or {}

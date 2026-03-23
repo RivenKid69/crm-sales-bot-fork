@@ -29,6 +29,11 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
 from src.settings import settings as _global_settings
+from src.terminal_requirements import (
+    missing_terminal_fields,
+    normalize_terminal_requirement_spec,
+    terminal_requirements_satisfied,
+)
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
@@ -997,6 +1002,17 @@ class AutonomousDecisionSource(KnowledgeSource):
         # Read optional_data and terminal requirements from state config
         optional_data = state_config.get("optional_data", [])
         terminal_requirements = state_config.get("terminal_state_requirements", {})
+        closing_state_config = all_states.get("autonomous_closing", {}) if isinstance(all_states, dict) else {}
+        terminal_gate_names = list(terminal_names or [])
+        if state != "autonomous_closing" and isinstance(closing_state_config, dict):
+            for terminal_name in closing_state_config.get("terminal_states", []) or []:
+                if terminal_name not in terminal_gate_names:
+                    terminal_gate_names.append(terminal_name)
+            if not terminal_requirements:
+                terminal_requirements = closing_state_config.get("terminal_state_requirements", {}) or {}
+
+        def _terminal_field_available(field: str) -> bool:
+            return self._has_required_field(collected_data, field)
 
         # Deterministic terminal completion in autonomous_closing only:
         # if required terminal data is already present (including in current user turn),
@@ -1017,61 +1033,95 @@ class AutonomousDecisionSource(KnowledgeSource):
                 or self._looks_like_video_call_request(user_message)
             )
             if "payment_ready" in terminal_names and (explicit_payment_now or (payment_intent_active and not wants_video_call)):
-                blackboard.propose_action(
-                    action="autonomous_respond",
-                    priority=Priority.HIGH,
-                    priority_rank=0,
-                    reason_code="autonomous_terminal_payment_ready",
-                    source_name=self.name,
-                    metadata=self._default_route_metadata(reasoning="terminal_data_ready_payment"),
-                )
-                blackboard.propose_transition(
-                    next_state="payment_ready",
-                    priority=Priority.HIGH,
-                    priority_rank=0,
-                    reason_code="autonomous_terminal_payment_ready",
-                    source_name=self.name,
-                )
-                self._decision_history.append(
-                    AutonomousDecisionRecord(
-                        turn_in_state=turn_in_state,
-                        intent=intent,
-                        state=state,
-                        should_transition=True,
+                payment_requirements = terminal_requirements.get("payment_ready", [])
+                if not terminal_requirements_satisfied(
+                    payment_requirements,
+                    has_field=_terminal_field_available,
+                    get_value=collected_data.get,
+                ):
+                    payment_missing = missing_terminal_fields(
+                        payment_requirements,
+                        has_field=_terminal_field_available,
+                        get_value=collected_data.get,
+                    )
+                    logger.info(
+                        "AutonomousDecision: deterministic payment fastpath skipped "
+                        "(missing required fields: %s)",
+                        payment_missing,
+                    )
+                else:
+                    blackboard.propose_action(
+                        action="autonomous_respond",
+                        priority=Priority.HIGH,
+                        priority_rank=0,
+                        reason_code="autonomous_terminal_payment_ready",
+                        source_name=self.name,
+                        metadata=self._default_route_metadata(reasoning="terminal_data_ready_payment"),
+                    )
+                    blackboard.propose_transition(
                         next_state="payment_ready",
-                        reasoning="terminal_data_ready_payment",
-                        explicit_ready_to_buy=self._looks_like_ready_to_buy_message(user_message),
+                        priority=Priority.HIGH,
+                        priority_rank=0,
+                        reason_code="autonomous_terminal_payment_ready",
+                        source_name=self.name,
                     )
-                )
-                return
+                    self._decision_history.append(
+                        AutonomousDecisionRecord(
+                            turn_in_state=turn_in_state,
+                            intent=intent,
+                            state=state,
+                            should_transition=True,
+                            next_state="payment_ready",
+                            reasoning="terminal_data_ready_payment",
+                            explicit_ready_to_buy=self._looks_like_ready_to_buy_message(user_message),
+                        )
+                    )
+                    return
             if "video_call_scheduled" in terminal_names and wants_video_call and not payment_intent_active:
-                blackboard.propose_action(
-                    action="autonomous_respond",
-                    priority=Priority.HIGH,
-                    priority_rank=0,
-                    reason_code="autonomous_terminal_video_call",
-                    source_name=self.name,
-                    metadata=self._default_route_metadata(reasoning="terminal_data_ready_video_call"),
-                )
-                blackboard.propose_transition(
-                    next_state="video_call_scheduled",
-                    priority=Priority.HIGH,
-                    priority_rank=0,
-                    reason_code="autonomous_terminal_video_call",
-                    source_name=self.name,
-                )
-                self._decision_history.append(
-                    AutonomousDecisionRecord(
-                        turn_in_state=turn_in_state,
-                        intent=intent,
-                        state=state,
-                        should_transition=True,
-                        next_state="video_call_scheduled",
-                        reasoning="terminal_data_ready_video_call",
-                        explicit_ready_to_buy=self._looks_like_ready_to_buy_message(user_message),
+                video_call_requirements = terminal_requirements.get("video_call_scheduled", [])
+                if not terminal_requirements_satisfied(
+                    video_call_requirements,
+                    has_field=_terminal_field_available,
+                    get_value=collected_data.get,
+                ):
+                    video_missing = missing_terminal_fields(
+                        video_call_requirements,
+                        has_field=_terminal_field_available,
+                        get_value=collected_data.get,
                     )
-                )
-                return
+                    logger.info(
+                        "AutonomousDecision: deterministic video-call fastpath skipped "
+                        "(missing required fields: %s)",
+                        video_missing,
+                    )
+                else:
+                    blackboard.propose_action(
+                        action="autonomous_respond",
+                        priority=Priority.HIGH,
+                        priority_rank=0,
+                        reason_code="autonomous_terminal_video_call",
+                        source_name=self.name,
+                        metadata=self._default_route_metadata(reasoning="terminal_data_ready_video_call"),
+                    )
+                    blackboard.propose_transition(
+                        next_state="video_call_scheduled",
+                        priority=Priority.HIGH,
+                        priority_rank=0,
+                        reason_code="autonomous_terminal_video_call",
+                        source_name=self.name,
+                    )
+                    self._decision_history.append(
+                        AutonomousDecisionRecord(
+                            turn_in_state=turn_in_state,
+                            intent=intent,
+                            state=state,
+                            should_transition=True,
+                            next_state="video_call_scheduled",
+                            reasoning="terminal_data_ready_video_call",
+                            explicit_ready_to_buy=self._looks_like_ready_to_buy_message(user_message),
+                        )
+                    )
+                    return
 
         # Build prompt for LLM decision with context signals from prior sources.
         context_signals = blackboard.get_context_signals()
@@ -1221,6 +1271,7 @@ class AutonomousDecisionSource(KnowledgeSource):
 
         # Propose transition — ALWAYS propose to win over inherited mixin transitions
         terminal_gate_blocked = False
+        terminal_gate_fallback_state = state
         if decision.should_transition and decision.next_state:
             target = decision.next_state
             # Intercept: LLM выбрал close из autonomous стейта — redirect
@@ -1245,8 +1296,10 @@ class AutonomousDecisionSource(KnowledgeSource):
                 explicit_payment_now = self._looks_like_ready_to_buy_message(user_message)
                 wants_video_call = self._looks_like_video_call_request(user_message)
                 if "payment_ready" in all_states and (explicit_payment_now or (payment_intent_active and not wants_video_call)):
+                    terminal_gate_fallback_state = "autonomous_closing"
                     target = "payment_ready"
                 elif "video_call_scheduled" in all_states and wants_video_call and not payment_intent_active:
+                    terminal_gate_fallback_state = "autonomous_closing"
                     target = "video_call_scheduled"
 
             # Hard gate: block premature terminal transition if required data is missing
@@ -1257,12 +1310,14 @@ class AutonomousDecisionSource(KnowledgeSource):
             if intent == "contact_provided":
                 gate_overrides.add("contact_info")
 
-            if target in terminal_names and terminal_requirements.get(target):
+            if target in terminal_gate_names and terminal_requirements.get(target):
                 reqs = terminal_requirements[target]
-                missing_for_terminal = [
-                    f for f in reqs
-                    if f not in gate_overrides and not self._has_required_field(collected_data, f)
-                ]
+                missing_for_terminal = missing_terminal_fields(
+                    reqs,
+                    has_field=_terminal_field_available,
+                    get_value=collected_data.get,
+                    satisfied_overrides=gate_overrides,
+                )
                 if missing_for_terminal:
                     logger.warning(
                         "AutonomousDecision: terminal gate — blocked %s → %s "
@@ -1302,7 +1357,7 @@ class AutonomousDecisionSource(KnowledgeSource):
 
             if terminal_gate_blocked:
                 blackboard.propose_transition(
-                    next_state=state,
+                    next_state=terminal_gate_fallback_state,
                     priority=Priority.NORMAL,
                     priority_rank=0,
                     reason_code="autonomous_stay_terminal_gate",
@@ -1600,9 +1655,31 @@ class AutonomousDecisionSource(KnowledgeSource):
                 status_lines = []
                 for t in terminal_names:
                     reqs = terminal_requirements.get(t, [])
-                    if reqs:
-                        missing_t = [f for f in reqs if not _field_available(f)]
-                        present_t = [f for f in reqs if _field_available(f)]
+                    normalized_reqs = normalize_terminal_requirement_spec(reqs)
+                    if (
+                        normalized_reqs["required_any"]
+                        or normalized_reqs["required_all"]
+                        or normalized_reqs["required_if_true"]
+                    ):
+                        missing_t = missing_terminal_fields(
+                            reqs,
+                            has_field=_field_available,
+                            get_value=collected_data.get,
+                            satisfied_overrides=snapshot_overrides,
+                        )
+                        present_t = [
+                            field
+                            for field in (
+                                list(normalized_reqs["required_any"])
+                                + list(normalized_reqs["required_all"])
+                                + [
+                                    dep
+                                    for deps in normalized_reqs["required_if_true"].values()
+                                    for dep in deps
+                                ]
+                            )
+                            if field not in missing_t
+                        ]
                         if missing_t:
                             status_lines.append(
                                 f"  ⛔ {t}: НЕ ГОТОВО — нужно собрать: {', '.join(missing_t)}"
@@ -1622,8 +1699,18 @@ class AutonomousDecisionSource(KnowledgeSource):
                 missing_instructions = []
                 for t in terminal_names:
                     reqs = terminal_requirements.get(t, [])
-                    if reqs:
-                        missing_t = [f for f in reqs if not _field_available(f)]
+                    normalized_reqs = normalize_terminal_requirement_spec(reqs)
+                    if (
+                        normalized_reqs["required_any"]
+                        or normalized_reqs["required_all"]
+                        or normalized_reqs["required_if_true"]
+                    ):
+                        missing_t = missing_terminal_fields(
+                            reqs,
+                            has_field=_field_available,
+                            get_value=collected_data.get,
+                            satisfied_overrides=snapshot_overrides,
+                        )
                         if missing_t:
                             missing_instructions.append(
                                 f"   → {t}: не собраны: {', '.join(missing_t)}"

@@ -1,6 +1,7 @@
 """Tests for snapshot serialization/deserialization."""
 
 import time
+from types import SimpleNamespace
 
 from src.state_machine import StateMachine, CircularFlowManager
 from src.conversation_guard import ConversationGuard
@@ -158,6 +159,90 @@ class TestSalesBotSnapshot:
         snapshot = bot.to_snapshot(compact_history=True, history_tail_size=4)
         assert "history_compact" in snapshot
         assert snapshot["history"] == []
+
+    def test_snapshot_contains_history_tail(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        bot.history = [
+            {"user": "u1", "bot": "b1"},
+            {"user": "u2", "bot": "b2"},
+            {"user": "u3", "bot": "b3"},
+            {"user": "u4", "bot": "b4"},
+            {"user": "u5", "bot": "b5"},
+        ]
+
+        snapshot = bot.to_snapshot(compact_history=True, history_tail_size=4)
+        assert snapshot["history_tail"] == bot.history[-4:]
+
+    def test_restore_uses_snapshot_history_tail_when_not_provided_explicitly(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        bot.history = [
+            {"user": "u1", "bot": "b1"},
+            {"user": "u2", "bot": "b2"},
+            {"user": "u3", "bot": "b3"},
+            {"user": "u4", "bot": "b4"},
+            {"user": "u5", "bot": "b5"},
+        ]
+
+        snapshot = bot.to_snapshot(compact_history=True, history_tail_size=4)
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm)
+
+        assert restored.history == bot.history[-4:]
+
+    def test_generator_response_history_survives_snapshot_restore(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        bot.generator._response_history = ["r1", "r2", "r3"]
+
+        snapshot = bot.to_snapshot()
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm, history_tail=[])
+
+        assert restored.generator._response_history == ["r1", "r2", "r3"]
+
+    def test_snapshot_defaults_generation_meta_when_generator_has_no_method(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        bot.generator = SimpleNamespace(_response_history=["r1"])
+
+        snapshot = bot.to_snapshot()
+
+        assert snapshot["generator_last_generation_meta"] == {}
+
+    def test_snapshot_serializes_autonomous_decision_history_records(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+
+        class _DecisionRecord:
+            def to_dict(self):
+                return {"decision": "payment_ready"}
+
+        fake_source = SimpleNamespace(decision_history=[object(), _DecisionRecord()])
+        bot._orchestrator = SimpleNamespace(get_source=lambda _name: fake_source)
+
+        snapshot = bot.to_snapshot()
+
+        assert snapshot["autonomous_decision_history"] == [{"decision": "payment_ready"}]
+
+    def test_restore_falls_back_to_context_window_when_snapshot_has_no_history_tail(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        snapshot = bot.to_snapshot()
+        snapshot.pop("history_tail", None)
+        snapshot["context_window"] = [
+            {"user_message": "u1", "bot_response": "b1"},
+            {"user_message": "u2", "bot_response": "b2"},
+        ]
+
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm)
+
+        assert restored.history == [
+            {"user": "u1", "bot": "b1"},
+            {"user": "u2", "bot": "b2"},
+        ]
+
+    def test_generator_last_generation_meta_survives_snapshot_restore(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        bot.generator._last_generation_meta = {"route": "native-memory"}
+
+        snapshot = bot.to_snapshot()
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm, history_tail=[])
+
+        assert restored.generator._last_generation_meta == {"route": "native-memory"}
 
 class TestSerializationContract:
     """

@@ -23,6 +23,10 @@ import logging
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
+from src.terminal_requirements import (
+    normalize_terminal_requirement_spec,
+    terminal_requirements_satisfied,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +76,18 @@ class ContentRepetitionGuardSource(KnowledgeSource):
         if terminal_reqs:
             collected = ctx.collected_data or {}
             for reqs in terminal_reqs.values():
-                if reqs and all(collected.get(f) for f in reqs):
+                normalized = normalize_terminal_requirement_spec(reqs)
+                if not (
+                    normalized["required_any"]
+                    or normalized["required_all"]
+                    or normalized["required_if_true"]
+                ):
+                    continue
+                if terminal_requirements_satisfied(
+                    reqs,
+                    has_field=lambda field: bool(collected.get(field)),
+                    get_value=collected.get,
+                ):
                     return False
 
         count = getattr(envelope, 'content_repeat_count', 0) if envelope else 0

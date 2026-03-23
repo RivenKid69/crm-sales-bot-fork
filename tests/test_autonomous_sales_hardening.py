@@ -165,6 +165,57 @@ def test_autonomous_closing_prompt_does_not_force_contact_request(monkeypatch):
     assert "автономный режим: не запрашивай номер телефона, email или другой контакт" in low
 
 
+def test_autonomous_closing_prompt_understands_structured_terminal_requirements(monkeypatch):
+    llm = Mock()
+    llm.generate.return_value = "Уточню пару деталей."
+
+    flow = SimpleNamespace(
+        name="autonomous",
+        get_template=lambda key: "{closing_data_request}",
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = None
+
+    monkeypatch.setattr(
+        "src.generator.get_retriever",
+        lambda: SimpleNamespace(
+            kb=SimpleNamespace(
+                company_name="Wipon",
+                company_description="Retail automation",
+            )
+        ),
+    )
+
+    generator.generate(
+        "autonomous_respond",
+        {
+            "intent": "question_features",
+            "state": "autonomous_closing",
+            "user_message": "Хорошо, давайте дальше.",
+            "history": [],
+            "collected_data": {"business_type": "магазин"},
+            "missing_data": [],
+            "goal": "Закрыть сделку",
+            "spin_phase": "closing",
+            "terminal_state_requirements": {
+                "payment_ready": {
+                    "required_any": ["contact_name", "client_name"],
+                    "required_all": ["business_type", "city", "automation_before"],
+                    "required_if_true": {"automation_before": ["current_tools"]},
+                }
+            },
+            "_skip_retrieval": True,
+            "retrieved_facts": "У нас есть онлайн-касса и мобильное приложение.",
+        },
+    )
+
+    prompt = llm.generate.call_args_list[-1].args[0]
+    low = prompt.lower()
+    assert "имя клиента" in low
+    assert "город" in low
+    assert "была ли раньше автоматизация" in low
+
+
 def test_autonomous_decision_record_roundtrip_dict():
     record = AutonomousDecisionRecord(
         turn_in_state=2,

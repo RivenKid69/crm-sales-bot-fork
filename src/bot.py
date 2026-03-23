@@ -3470,11 +3470,18 @@ class SalesBot:
             "_context_window_full": context_payload.get("_context_window_full"),
 
             "history": [],
+            "history_tail": list(self.history[-max(0, history_tail_size):]) if history_tail_size > 0 else [],
             "history_compact": history_compact,
             "history_compact_meta": history_compact_meta,
             "last_action": self.last_action,
             "last_intent": self.last_intent,
             "last_bot_message": self.last_bot_message,
+            "generator_response_history": list(getattr(self.generator, "_response_history", []) or []),
+            "generator_last_generation_meta": (
+                self.generator.get_last_generation_meta()
+                if hasattr(self.generator, "get_last_generation_meta")
+                else {}
+            ),
         }
 
         source = self._orchestrator.get_source("AutonomousDecisionSource")
@@ -3541,12 +3548,27 @@ class SalesBot:
         )
         bot._merge_flow_state_order()  # Re-merge after snapshot restore
 
-        bot.history = history_tail or []
+        restored_history = history_tail
+        if restored_history is None:
+            stored_tail = snapshot.get("history_tail")
+            if isinstance(stored_tail, list):
+                restored_history = list(stored_tail)
+            else:
+                restored_history = [
+                    {"user": t["user_message"], "bot": t["bot_response"]}
+                    for t in snapshot.get("context_window", [])
+                    if isinstance(t, dict) and "user_message" in t and "bot_response" in t
+                ]
+        bot.history = restored_history or []
         bot.history_compact = snapshot.get("history_compact")
         bot.history_compact_meta = snapshot.get("history_compact_meta")
         bot.last_action = snapshot.get("last_action")
         bot.last_intent = snapshot.get("last_intent")
         bot.last_bot_message = snapshot.get("last_bot_message")
+        bot.generator._response_history = list(snapshot.get("generator_response_history", []) or [])
+        bot.generator._last_generation_meta = dict(
+            snapshot.get("generator_last_generation_meta", {}) or {}
+        )
 
         # Sync: bot.last_action is authoritative — it reflects the actual template
         # used after potential fallback remapping (bot.py lines 1416-1426).

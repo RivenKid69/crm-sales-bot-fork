@@ -8,6 +8,7 @@ Sessions are closed explicitly via close_session() call from the server.
 from __future__ import annotations
 
 import time
+import threading
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -22,6 +23,13 @@ class SessionEntry:
     bot: SalesBot
     last_activity: float
     created_at: float
+    final_since: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class SessionAcquireResult:
+    bot: SalesBot
+    source: str
 
 
 class SessionManager:
@@ -37,6 +45,7 @@ class SessionManager:
         time_provider: Optional[Callable[[], time.struct_time]] = None,
         lock_manager: Optional[SessionLockManager] = None,
         require_client_id: bool = True,
+        now_provider: Optional[Callable[[], float]] = None,
     ):
         self._sessions: Dict[Tuple[str, str], SessionEntry] = {}
         self._load_snapshot = load_snapshot
@@ -45,8 +54,10 @@ class SessionManager:
         self._buffer = snapshot_buffer or LocalSnapshotBuffer()
         self._flush_hour = flush_hour
         self._time_provider = time_provider or time.localtime
+        self._now = now_provider or time.time
         self._lock = lock_manager or SessionLockManager()
         self._require_client_id = require_client_id
+        self._cache_lock = threading.RLock()
 
     def _normalize_client_id(self, client_id: Optional[str]) -> str:
         if client_id is None:
@@ -159,35 +170,44 @@ class SessionManager:
         self,
         snapshot: Dict,
         session_id: str,
+        client_id: Optional[str] = None,
         llm=None,
         flow_name: Optional[str] = None,
         config_name: Optional[str] = None,
+        enable_tracing: bool = False,
     ) -> SalesBot:
-        history_tail = (
-            self._load_history_tail(session_id, 4)
-            if self._load_history_tail
-            else []
-        )
+        history_tail = None
+        if self._load_history_tail:
+            loaded_tail = self._load_history_tail(session_id, 4)
+            if loaded_tail:
+                history_tail = loaded_tail
         snapshot = self._override_snapshot_flow_config(
             snapshot, flow_name=flow_name, config_name=config_name
         )
-        return SalesBot.from_snapshot(snapshot, llm=llm, history_tail=history_tail)
+        return SalesBot.from_snapshot(
+            snapshot,
+            llm=llm,
+            history_tail=history_tail,
+            enable_tracing=enable_tracing,
+        )
 
-    def get_or_create(
+    def get_or_create_with_status(
         self,
         session_id: str,
         llm=None,
         client_id: Optional[str] = None,
         flow_name: Optional[str] = None,
         config_name: Optional[str] = None,
-    ) -> SalesBot:
+        enable_tracing: bool = False,
+    ) -> SessionAcquireResult:
         """
-        Flow:
-        1. First request after flush_hour triggers batch flush.
-        2. Cache hit -> return.
-        3. Local buffer -> restore (and delete on success).
-        4. External snapshot -> restore.
-        5. Otherwise -> new bot.
+        Same as get_or_create(), but also returns the source of the session.
+
+        source:
+        - cache
+        - local_buffer
+        - external_snapshot
+        - new
         """
         self._ensure_client_id(client_id, session_id)
         normalized_client_id = self._normalize_client_id(client_id) or None
@@ -196,12 +216,11 @@ class SessionManager:
 
         with self._lock.lock(lock_key):
             self._maybe_flush_batch()
-            now = time.time()
+            now = self._now()
 
-            # 1. Cache
-            if cache_key in self._sessions:
-                entry = self._sessions[cache_key]
-                # Optional live switch of flow/config for active session
+            with self._cache_lock:
+                entry = self._sessions.get(cache_key)
+            if entry is not None:
                 if flow_name or config_name:
                     current_flow = getattr(entry.bot, "_flow", None)
                     current_flow_name = current_flow.name if current_flow else None
@@ -231,10 +250,10 @@ class SessionManager:
                     session_id=session_id,
                     client_id=normalized_client_id,
                 )
-                return entry.bot
+                return SessionAcquireResult(bot=entry.bot, source="cache")
 
-            # 2. Local buffer
             bot = None
+            source = "new"
             local_snapshot = self._buffer.get(session_id, client_id=normalized_client_id)
             if local_snapshot:
                 if self._snapshot_matches_client(local_snapshot, client_id):
@@ -242,11 +261,14 @@ class SessionManager:
                         bot = self._restore_from_snapshot(
                             local_snapshot,
                             session_id=session_id,
+                            client_id=normalized_client_id,
                             llm=llm,
                             flow_name=flow_name,
                             config_name=config_name,
+                            enable_tracing=enable_tracing,
                         )
                         self._buffer.delete(session_id, client_id=normalized_client_id)
+                        source = "local_buffer"
                         logger.info(
                             "Session restored from local snapshot buffer",
                             session_id=session_id,
@@ -262,7 +284,6 @@ class SessionManager:
                         snapshot_client_id=local_snapshot.get("client_id"),
                     )
 
-            # 3. External snapshot
             if bot is None and self._load_snapshot:
                 for external_session_id in self._load_external_snapshot_candidates(
                     session_id=session_id,
@@ -275,10 +296,13 @@ class SessionManager:
                         bot = self._restore_from_snapshot(
                             snapshot,
                             session_id=session_id,
+                            client_id=normalized_client_id,
                             llm=llm,
                             flow_name=flow_name,
                             config_name=config_name,
+                            enable_tracing=enable_tracing,
                         )
+                        source = "external_snapshot"
                         logger.info(
                             "Session restored from external snapshot",
                             session_id=session_id,
@@ -295,13 +319,13 @@ class SessionManager:
                         storage_session_id=external_session_id,
                     )
 
-            # 4. New
             if bot is None:
                 bot = SalesBot(
                     llm=llm,
                     flow_name=flow_name,
                     client_id=normalized_client_id,
                     config_name=config_name,
+                    enable_tracing=enable_tracing,
                 )
                 bot.conversation_id = session_id
                 logger.info(
@@ -310,12 +334,96 @@ class SessionManager:
                     client_id=normalized_client_id,
                 )
 
-            self._sessions[cache_key] = SessionEntry(
+            entry = SessionEntry(
                 bot=bot,
                 last_activity=now,
                 created_at=now,
+                final_since=now if bot.state_machine.is_final() else None,
             )
-            return bot
+            with self._cache_lock:
+                self._sessions[cache_key] = entry
+            return SessionAcquireResult(bot=bot, source=source)
+
+    def get_or_create(
+        self,
+        session_id: str,
+        llm=None,
+        client_id: Optional[str] = None,
+        flow_name: Optional[str] = None,
+        config_name: Optional[str] = None,
+        enable_tracing: bool = False,
+    ) -> SalesBot:
+        """
+        Flow:
+        1. First request after flush_hour triggers batch flush.
+        2. Cache hit -> return.
+        3. Local buffer -> restore (and delete on success).
+        4. External snapshot -> restore.
+        5. Otherwise -> new bot.
+        """
+        return self.get_or_create_with_status(
+            session_id=session_id,
+            llm=llm,
+            client_id=client_id,
+            flow_name=flow_name,
+            config_name=config_name,
+            enable_tracing=enable_tracing,
+        ).bot
+
+    def touch(
+        self,
+        session_id: str,
+        *,
+        client_id: Optional[str] = None,
+        is_final: Optional[bool] = None,
+    ) -> bool:
+        """Update last_activity and optional final-state timing for a cached session."""
+        self._ensure_client_id(client_id, session_id)
+        normalized_client_id = self._normalize_client_id(client_id) or None
+        cache_key = self._cache_key(session_id, normalized_client_id)
+        now = self._now()
+        with self._cache_lock:
+            entry = self._sessions.get(cache_key)
+            if entry is None:
+                return False
+            entry.last_activity = now
+            if is_final is None:
+                return True
+            if is_final:
+                entry.final_since = entry.final_since or now
+            else:
+                entry.final_since = None
+            return True
+
+    def serialize_inactive_final_sessions(self, max_idle_seconds: float) -> int:
+        """
+        Serialize and remove sessions that have stayed in a final state longer
+        than max_idle_seconds.
+        """
+        cutoff = self._now() - float(max_idle_seconds)
+        with self._cache_lock:
+            targets = [
+                (client_id, session_id)
+                for (client_id, session_id), entry in self._sessions.items()
+                if entry.final_since is not None and entry.final_since <= cutoff
+            ]
+
+        serialized = 0
+        for client_id, session_id in targets:
+            if self.close_session(session_id, client_id=client_id or None):
+                serialized += 1
+        return serialized
+
+    def close_all_sessions(self) -> int:
+        """Serialize and remove all cached sessions."""
+        with self._cache_lock:
+            targets = list(self._sessions.keys())
+
+        closed = 0
+        for client_id, session_id in targets:
+            if self.close_session(session_id, client_id=client_id or None):
+                closed += 1
+        return closed
 
     def save(self, session_id: str, client_id: Optional[str] = None) -> None:
         """Save session snapshot to local buffer (with compaction)."""
@@ -323,14 +431,21 @@ class SessionManager:
         norm_client_id = self._normalize_client_id(client_id)
         if client_id is not None:
             key = self._cache_key(session_id, norm_client_id or None)
-            if key in self._sessions:
+            with self._cache_lock:
+                exists = key in self._sessions
+            if exists:
                 target_keys.append(key)
         else:
-            target_keys = [key for key in self._sessions.keys() if key[1] == session_id]
+            with self._cache_lock:
+                target_keys = [key for key in self._sessions.keys() if key[1] == session_id]
 
         for key in target_keys:
             cached_client_id, cached_session_id = key
-            bot = self._sessions[key].bot
+            with self._cache_lock:
+                entry = self._sessions.get(key)
+            if entry is None:
+                continue
+            bot = entry.bot
             snapshot = bot.to_snapshot(compact_history=True, history_tail_size=4)
             self._buffer.enqueue(
                 cached_session_id,
@@ -358,7 +473,9 @@ class SessionManager:
         lock_key = self._storage_session_id(session_id, normalized_client_id)
 
         with self._lock.lock(lock_key):
-            if cache_key not in self._sessions:
+            with self._cache_lock:
+                present = cache_key in self._sessions
+            if not present:
                 logger.warning(
                     "close_session: session not found in cache",
                     session_id=session_id,
@@ -367,7 +484,8 @@ class SessionManager:
                 return False
 
             self.save(session_id, client_id=normalized_client_id)
-            del self._sessions[cache_key]
+            with self._cache_lock:
+                self._sessions.pop(cache_key, None)
             logger.info(
                 "Session closed and snapshot created",
                 session_id=session_id,
