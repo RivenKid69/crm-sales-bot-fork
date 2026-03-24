@@ -1026,6 +1026,50 @@ class TestClosingDeterministicCompletion:
         assert tp["next_state"] == "video_call_scheduled"
         assert tp["reason_code"] == "autonomous_terminal_video_call"
 
+    @patch("src.feature_flags.flags")
+    def test_video_call_autofinish_uses_unified_profile_even_in_payment_context(self, mock_flags):
+        """
+        Video-call terminal must stay gated only by the unified closing profile.
+        A prior payment context must not silently reintroduce an IIN requirement.
+        """
+        mock_flags.is_enabled.return_value = True
+
+        source = AutonomousDecisionSource(llm=Mock())
+        envelope = SimpleNamespace(
+            consecutive_same_state=1,
+            intent_history=["request_invoice"],
+            total_objections=0,
+            repeated_objection_types=[],
+            state_history=["autonomous_discovery", "autonomous_closing"],
+        )
+        state_config = {
+            "phase": "closing",
+            "goal": "Закрытие сделки",
+            "max_turns_in_state": 6,
+            "terminal_states": ["payment_ready", "video_call_scheduled"],
+            "terminal_state_requirements": CLOSING_TERMINAL_REQUIREMENTS,
+        }
+        bb = make_blackboard(
+            state="autonomous_closing",
+            intent="demo_request",
+            user_message="Лучше тогда проведем видеозвонок.",
+            state_config=state_config,
+            context_envelope=envelope,
+            collected_data={
+                "client_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": False,
+            },
+        )
+
+        source.contribute(bb)
+
+        assert len(bb._transition_proposals) == 1
+        tp = bb._transition_proposals[0]
+        assert tp["next_state"] == "video_call_scheduled"
+        assert tp["reason_code"] == "autonomous_terminal_video_call"
+
 
 class TestMergedContactFastPath:
     """Merged-mode regression guards for contact_provided handling."""

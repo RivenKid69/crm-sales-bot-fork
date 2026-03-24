@@ -38,7 +38,7 @@ retriever:
   use_embeddings: true
 
   # TEI endpoint для эмбеддингов (Qwen3-Embedding-4B)
-  embedder_url: "http://tei-embed:80"
+  embedder_url: "http://host.docker.internal:8081"
 
   # Пороги для каждого этапа каскада
   thresholds:
@@ -62,7 +62,7 @@ reranker:
   enabled: true
 
   # TEI endpoint для reranking (Qwen3-Reranker-4B)
-  url: "http://tei-rerank:80"
+  url: "http://host.docker.internal:8082"
 
   # Порог score ниже которого включается reranker
   threshold: 0.5

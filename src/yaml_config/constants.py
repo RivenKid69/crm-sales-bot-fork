@@ -494,12 +494,23 @@ def notify_operator_on_success(
     """
     import logging as _logging
     _log = _logging.getLogger(__name__)
-    if outcome == "payment_ready":
-        relevant = {k: collected_data.get(k) for k in
-                    ("kaspi_phone", "iin", "contact_info", "business_type", "company_size")}
-    else:  # video_call_scheduled
-        relevant = {k: collected_data.get(k) for k in
-                    ("preferred_call_time", "contact_info", "contact_type", "business_type")}
+    relevant_fields = [
+        "contact_name",
+        "client_name",
+        "business_type",
+        "city",
+        "automation_before",
+        "current_tools",
+        "contact_info",
+        "phone",
+        "email",
+        "kaspi_phone",
+        "iin",
+        "preferred_call_time",
+        "contact_type",
+        "company_size",
+    ]
+    relevant = {k: collected_data.get(k) for k in relevant_fields}
     _log.info(
         "OPERATOR_NOTIFY | outcome=%s | conversation=%s | data=%s",
         outcome, conversation_id, relevant,

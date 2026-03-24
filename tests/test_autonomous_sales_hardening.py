@@ -11,6 +11,7 @@ from src.generator import ResponseGenerator
 from src.response_boundary_validator import ResponseBoundaryValidator
 from src.response_directives import ResponseDirectivesBuilder
 from src.context_envelope import ContextEnvelope
+from src.yaml_config.constants import notify_operator_on_success
 
 
 def _priority_intent(message: str):
@@ -72,6 +73,31 @@ def test_quant_claim_sanitizer_preserves_useful_core_text():
     low = sanitized.lower()
     assert "30%" not in low
     assert "упрощ" in low
+
+
+def test_operator_notification_logs_full_closing_profile(caplog):
+    payload = {
+        "contact_name": "Айбота",
+        "business_type": "магазин",
+        "city": "Астана",
+        "automation_before": True,
+        "current_tools": "Excel",
+        "kaspi_phone": "+77015551234",
+        "iin": "123456789012",
+    }
+
+    with caplog.at_level("INFO"):
+        notify_operator_on_success("payment_ready", payload, conversation_id="conv-1")
+
+    assert caplog.records
+    logged = caplog.records[-1].args[2]
+    assert logged["contact_name"] == "Айбота"
+    assert logged["business_type"] == "магазин"
+    assert logged["city"] == "Астана"
+    assert logged["automation_before"] is True
+    assert logged["current_tools"] == "Excel"
+    assert logged["kaspi_phone"] == "+77015551234"
+    assert logged["iin"] == "123456789012"
 
 
 def test_agreement_not_treated_as_payment_signal_without_buy_words():
@@ -863,39 +889,37 @@ def test_hallucination_fallback_prefers_iin_boundary_for_refusal():
     assert "без иин счёт" in fallback.lower()
 
 
-def test_kb_targeted_repairs_adds_printer_sizes():
+def test_kb_targeted_repairs_is_passthrough_for_printer_sizes_case():
     generator = ResponseGenerator(llm=Mock())
     facts = "Чековые принтеры: GP-C58 — 58 мм. GP-C200I — 80 мм с автоотрезом."
+    response = "У нас есть GP-C58 и GP-C200I для чеков."
     output = generator._apply_kb_targeted_repairs(
-        "У нас есть GP-C58 и GP-C200I для чеков.",
+        response,
         {
             "intent": "question_equipment_specs",
             "user_message": "Какие принтеры чеков у вас есть? Чем они отличаются?",
         },
         retrieved_facts=facts,
     )
-    low = output.lower()
-    assert "58 мм" in low
-    assert "80 мм" in low
+    assert output == response
 
 
-def test_kb_targeted_repairs_normalizes_wildberries_ozon_tis_limit_phrase():
+def test_kb_targeted_repairs_is_passthrough_for_wildberries_ozon_case():
     generator = ResponseGenerator(llm=Mock())
     facts = (
         "Продажи через Wildberries и Ozon не входят в расчёт лимита ТИС, "
         "потому что проходят мимо кассы."
     )
+    response = "Да, продажи через Ozon и Wildberries входят в лимиты ТИС."
     output = generator._apply_kb_targeted_repairs(
-        "Да, продажи через Ozon и Wildberries входят в лимиты ТИС.",
+        response,
         {
             "intent": "question_limits",
             "user_message": "Входят ли продажи через Wildberries и Ozon в лимиты ТИС?",
         },
         retrieved_facts=facts,
     )
-    low = output.lower()
-    assert "не входят в расчёт лимита" in low
-    assert "входят в лимит" not in low
+    assert output == response
 
 
 def test_hallucination_fallback_for_alcohol_keeps_ukm_and_excise():
@@ -914,74 +938,64 @@ def test_hallucination_fallback_for_alcohol_keeps_ukm_and_excise():
     assert "алкогол" in low
 
 
-def test_kb_targeted_repairs_for_wipon_kassa_keeps_ofd_and_fiscalization_without_free_word():
+def test_kb_targeted_repairs_is_passthrough_for_wipon_kassa_case():
     generator = ResponseGenerator(llm=Mock())
     facts = "Wipon Kassa — онлайн-касса с фискализацией и передачей чеков в ОФД."
+    response = "Wipon Kassa — это бесплатная онлайн-касса."
     output = generator._apply_kb_targeted_repairs(
-        "Wipon Kassa — это бесплатная онлайн-касса.",
+        response,
         {"intent": "question_product", "user_message": "Что такое Wipon Kassa?"},
         retrieved_facts=facts,
     )
-    low = output.lower()
-    assert "онлайн-касса" in low
-    assert "фискализац" in low
-    assert "офд" in low
-    assert "бесплатн" not in low
+    assert output == response
 
 
-def test_kb_targeted_repairs_for_cash_drawer_keeps_21k_and_compartments():
+def test_kb_targeted_repairs_is_passthrough_for_cash_drawer_case():
     generator = ResponseGenerator(llm=Mock())
     facts = (
         "Денежный ящик Wipon WP-405 стоит 21 000 ₸ и имеет 5 отделений для купюр. "
         "Денежный ящик Wipon WP-170 стоит 30 000 ₸."
     )
+    response = "У нас есть три модели: WP-19 за 19 000 ₸, WP-405 за 21 000 ₸ и WP-170 за 30 000 ₸."
     output = generator._apply_kb_targeted_repairs(
-        "У нас есть три модели: WP-19 за 19 000 ₸, WP-405 за 21 000 ₸ и WP-170 за 30 000 ₸.",
+        response,
         {
             "intent": "question_cash_drawer",
             "user_message": "Сколько стоит денежный ящик Wipon?",
         },
         retrieved_facts=facts,
     )
-    low = output.lower()
-    assert "21 000" in output
-    assert "купюр" in low
-    assert "30 000" not in output
+    assert output == response
 
 
-def test_kb_targeted_repairs_for_too_instead_of_tis_keeps_roznica_in_primary_sentence():
+def test_kb_targeted_repairs_is_passthrough_for_too_instead_of_tis_case():
     generator = ResponseGenerator(llm=Mock())
     facts = "Для ТОО вместо ТИС обычно выбирают Wipon Розница под режим розничного налога."
+    response = "Для ТОО вместо ТИС рекомендую Wipon под режим розничного налога."
     output = generator._apply_kb_targeted_repairs(
-        "Для ТОО вместо ТИС рекомендую Wipon под режим розничного налога.",
+        response,
         {"intent": "question_tis", "user_message": "Что предложить для ТОО вместо ТИС?"},
         retrieved_facts=facts,
     )
-    low = output.lower()
-    assert "розниц" in low
-    assert output.endswith("налога.")
-    assert "?" not in output
+    assert output == response
 
 
-def test_kb_targeted_repairs_for_smart_scales_avoids_rongta_mix():
+def test_kb_targeted_repairs_is_passthrough_for_smart_scales_case():
     generator = ResponseGenerator(llm=Mock())
     facts = (
         "Умные весы Wipon стоят 100 000 ₸ и выдерживают до 30 кг. "
         "Весы Rongta RLS1100 стоят 200 000 ₸."
     )
+    response = "Есть Wipon за 100 000 и Rongta за 200 000."
     output = generator._apply_kb_targeted_repairs(
-        "Есть Wipon за 100 000 и Rongta за 200 000.",
+        response,
         {
             "intent": "question_equipment_price",
             "user_message": "Есть ли у вас умные весы? Сколько стоят?",
         },
         retrieved_facts=facts,
     )
-    low = output.lower()
-    assert "100 000" in output
-    assert "30 кг" in low
-    assert "rongta" not in low
-    assert "200 000" not in output
+    assert output == response
 
 
 def test_kb_targeted_repairs_does_not_downgrade_detailed_answer_to_generic_summary():

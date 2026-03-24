@@ -63,7 +63,18 @@ DEFAULT_API_KEY = os.environ.get("API_KEY", "change-me-in-production")
 DEFAULT_TIMEOUT_SECONDS_RAW = os.environ.get("E2E_HTTP_TIMEOUT_SECONDS", "180")
 DEFAULT_TIMEOUT_SECONDS = _parse_timeout(DEFAULT_TIMEOUT_SECONDS_RAW)
 DEFAULT_INTER_TURN_DELAY_MS = int(os.environ.get("E2E_INTER_TURN_DELAY_MS", "0"))
+DEFAULT_WAIT_READY_TIMEOUT_SECONDS = float(
+    os.environ.get("E2E_WAIT_READY_TIMEOUT_SECONDS", "180")
+)
+DEFAULT_WAIT_READY_POLL_SECONDS = float(
+    os.environ.get("E2E_WAIT_READY_POLL_SECONDS", "5")
+)
 DEFAULT_OUTPUT_ROOT = Path(os.environ.get("E2E_OUTPUT_DIR", "results/live_api_real_payload"))
+DEFAULT_USER_AGENT = os.environ.get(
+    "E2E_USER_AGENT",
+    "CRM-Sales-Bot-Live-E2E/1.0 (+real-payload-sula)",
+)
+DEFAULT_CLIENT_IP = os.environ.get("E2E_CLIENT_IP", "203.0.113.77")
 
 
 # Сюда можно вставить конкретный диалог, если не использовать --events-file.
@@ -107,6 +118,11 @@ def parse_args() -> argparse.Namespace:
         "--process-url",
         default=DEFAULT_PROCESS_URL,
         help="Полный URL process endpoint. По умолчанию: %(default)s",
+    )
+    parser.add_argument(
+        "--prod-like",
+        action="store_true",
+        help="Включить режим, максимально похожий на реальный внешний Sula-клиент.",
     )
     parser.add_argument(
         "--api-key",
@@ -180,9 +196,57 @@ def parse_args() -> argparse.Namespace:
         help="Не падать, если /ready вернул не 200. По умолчанию прогон блокируется.",
     )
     parser.add_argument(
+        "--wait-ready-timeout-seconds",
+        type=float,
+        default=DEFAULT_WAIT_READY_TIMEOUT_SECONDS,
+        help="Сколько максимум ждать readiness перед падением. По умолчанию: %(default)s",
+    )
+    parser.add_argument(
+        "--wait-ready-poll-seconds",
+        type=float,
+        default=DEFAULT_WAIT_READY_POLL_SECONDS,
+        help="Интервал опроса /ready во время ожидания. По умолчанию: %(default)s",
+    )
+    parser.add_argument(
         "--output-dir",
         default="",
         help="Куда сохранить trace. По умолчанию results/live_api_real_payload/<timestamp>",
+    )
+    parser.add_argument(
+        "--skip-preflight",
+        action="store_true",
+        help="Не делать /health и /ready перед прогоном.",
+    )
+    parser.add_argument(
+        "--rebase-timestamps-to-now",
+        action="store_true",
+        help="Пересчитать timestamps на текущее время, сохраняя относительные gaps.",
+    )
+    parser.add_argument(
+        "--append-run-id-to-session",
+        action="store_true",
+        help="Добавить уникальный suffix к session, чтобы не смешивать прогон с предыдущими.",
+    )
+    parser.add_argument(
+        "--randomize-event-ids",
+        action="store_true",
+        help="Сгенерировать новые event id под этот запуск.",
+    )
+    parser.add_argument(
+        "--user-agent",
+        default=DEFAULT_USER_AGENT,
+        help="User-Agent для HTTP-запросов. По умолчанию: %(default)s",
+    )
+    parser.add_argument(
+        "--client-ip",
+        default=DEFAULT_CLIENT_IP,
+        help="Какой IP прокинуть в X-Forwarded-For/X-Real-IP. По умолчанию: %(default)s",
+    )
+    parser.add_argument(
+        "--header",
+        action="append",
+        default=[],
+        help="Дополнительный HTTP header в формате 'Name: value'. Можно передавать несколько раз.",
     )
     return parser.parse_args()
 
@@ -192,6 +256,96 @@ def derive_service_root(process_url: str) -> str:
     if not parsed.scheme or not parsed.netloc:
         raise ValueError(f"Некорректный process URL: {process_url}")
     return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def default_sula_process_url(process_url: str) -> str:
+    parsed = urlsplit(process_url)
+    path = parsed.path or ""
+    if path.endswith("/api/v1/process"):
+        return parsed._replace(path="/api/v1/process/sula").geturl()
+    return process_url
+
+
+def make_run_id() -> str:
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{stamp}_{uuid.uuid4().hex[:8]}"
+
+
+def apply_prod_like_defaults(args: argparse.Namespace) -> None:
+    if not args.prod_like:
+        return
+
+    args.process_url = default_sula_process_url(args.process_url)
+    args.rebase_timestamps_to_now = True
+    args.append_run_id_to_session = True
+    args.randomize_event_ids = True
+    args.respect_input_gaps = True
+    args.max_gap_sleep_ms = max(args.max_gap_sleep_ms, 30_000)
+    if args.expected_model == DEFAULT_EXPECTED_MODEL and "EXPECTED_MODEL" not in os.environ:
+        args.expected_model = ""
+
+
+def parse_extra_headers(raw_headers: list[str]) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for raw in raw_headers:
+        name, sep, value = raw.partition(":")
+        if not sep:
+            raise ValueError(f"Некорректный --header '{raw}', ожидается 'Name: value'")
+        header_name = name.strip()
+        if not header_name:
+            raise ValueError(f"Некорректный --header '{raw}', имя header пустое")
+        parsed[header_name] = value.strip()
+    return parsed
+
+
+def rebase_timestamps(events: list[dict[str, Any]], *, base_timestamp_ms: int) -> None:
+    if not events:
+        return
+
+    source_base = int(events[0]["timestamp"])
+    for event in events:
+        gap_ms = max(0, int(event["timestamp"]) - source_base)
+        event["timestamp"] = base_timestamp_ms + gap_ms
+
+
+def apply_run_identity(
+    events: list[dict[str, Any]],
+    *,
+    run_id: str,
+    append_run_id_to_session: bool,
+    randomize_event_ids: bool,
+    rebase_timestamps_to_now: bool,
+) -> list[dict[str, Any]]:
+    prepared = [dict(item) for item in events]
+
+    if rebase_timestamps_to_now:
+        rebase_timestamps(prepared, base_timestamp_ms=int(time.time() * 1000))
+
+    if append_run_id_to_session:
+        for event in prepared:
+            base_session = str(event["session"]).strip()
+            event["session"] = f"{base_session}_{run_id}"
+
+    if randomize_event_ids:
+        for index, event in enumerate(prepared, start=1):
+            event["id"] = f"{event['id']}_{run_id}_{index:02d}_{uuid.uuid4().hex[:6]}"
+
+    return prepared
+
+
+def build_base_headers(args: argparse.Namespace) -> dict[str, str]:
+    headers = {
+        "Authorization": f"Bearer {args.api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": args.user_agent,
+    }
+    client_ip = str(args.client_ip or "").strip()
+    if client_ip:
+        headers["X-Forwarded-For"] = client_ip
+        headers["X-Real-IP"] = client_ip
+    headers.update(parse_extra_headers(args.header))
+    return headers
 
 
 def load_events(args: argparse.Namespace) -> list[dict[str, Any]]:
@@ -292,13 +446,23 @@ def preflight(
     expected_model: str,
     timeout_seconds: float | None,
     allow_not_ready: bool,
+    wait_ready_timeout_seconds: float,
+    wait_ready_poll_seconds: float,
 ) -> dict[str, Any]:
     del api_key  # health/ready are public in current API
     root = derive_service_root(process_url)
     health_url = f"{root}/health"
     ready_url = f"{root}/ready"
 
-    health_response = session.get(health_url, timeout=timeout_seconds)
+    try:
+        health_response = session.get(health_url, timeout=timeout_seconds)
+    except requests.RequestException as err:
+        raise RuntimeError(
+            "Не удалось достучаться до API health endpoint. "
+            f"health_url='{health_url}', error='{err}'. "
+            "Проверьте, что e2e запущен в той же docker-сети, где доступен alias `bot`, "
+            "и что сам bot-container уже поднят."
+        ) from err
     health_payload = fetch_json_or_text(health_response)
     if health_response.status_code != 200:
         raise RuntimeError(f"/health вернул {health_response.status_code}: {health_payload}")
@@ -312,10 +476,54 @@ def preflight(
                 f"Модель сервера не совпадает: expected='{expected_model}', actual='{actual_model}'"
             )
 
-    ready_response = session.get(ready_url, timeout=timeout_seconds)
-    ready_payload = fetch_json_or_text(ready_response)
-    if ready_response.status_code != 200 and not allow_not_ready:
-        raise RuntimeError(f"/ready вернул {ready_response.status_code}: {ready_payload}")
+    ready_response: requests.Response | None = None
+    ready_payload: Any = None
+    deadline = time.monotonic() + max(0.0, float(wait_ready_timeout_seconds))
+    poll_seconds = max(0.5, float(wait_ready_poll_seconds))
+
+    while True:
+        try:
+            ready_response = session.get(ready_url, timeout=timeout_seconds)
+        except requests.RequestException as err:
+            if allow_not_ready or time.monotonic() >= deadline:
+                raise RuntimeError(
+                    "Не удалось достучаться до API ready endpoint. "
+                    f"ready_url='{ready_url}', error='{err}'."
+                ) from err
+            print(f"[preflight] /ready temporary error: {err}; retrying in {poll_seconds:.1f}s")
+            time.sleep(poll_seconds)
+            continue
+
+        ready_payload = fetch_json_or_text(ready_response)
+        if allow_not_ready or ready_response.status_code == 200:
+            break
+
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"/ready не стал ready за {wait_ready_timeout_seconds:.1f}s: "
+                f"status={ready_response.status_code}, payload={ready_payload}"
+            )
+
+        warmup_status = ""
+        failed_dependencies: list[str] = []
+        if isinstance(ready_payload, dict):
+            dependencies = ready_payload.get("dependencies") or {}
+            failed_dependencies = [
+                name for name, value in dependencies.items() if not bool(value)
+            ]
+            warmup_status = str((ready_payload.get("warmup") or {}).get("status") or "")
+
+        hint_parts: list[str] = []
+        if failed_dependencies:
+            hint_parts.append(f"deps={','.join(failed_dependencies)}")
+        if warmup_status:
+            hint_parts.append(f"warmup={warmup_status}")
+        hint_suffix = f" ({'; '.join(hint_parts)})" if hint_parts else ""
+        print(
+            f"[preflight] /ready={ready_response.status_code}{hint_suffix}; "
+            f"retrying in {poll_seconds:.1f}s"
+        )
+        time.sleep(poll_seconds)
 
     if isinstance(ready_payload, dict) and not allow_not_ready:
         dependencies = ready_payload.get("dependencies") or {}
@@ -387,6 +595,7 @@ def render_markdown(
     *,
     process_url: str,
     preflight_data: dict[str, Any],
+    run_id: str,
     events: list[dict[str, Any]],
     trace: list[dict[str, Any]],
 ) -> str:
@@ -394,6 +603,7 @@ def render_markdown(
         "# Live API Real-Payload E2E",
         "",
         f"- Process URL: `{process_url}`",
+        f"- Run ID: `{run_id}`",
         f"- Total turns: `{len(events)}`",
         f"- Generated at: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`",
         "",
@@ -432,28 +642,37 @@ def render_markdown(
 
 def main() -> int:
     args = parse_args()
+    apply_prod_like_defaults(args)
     output_dir = ensure_output_dir(args.output_dir)
-    events = load_events(args)
-
-    headers = {
-        "Authorization": f"Bearer {args.api_key}",
-        "Content-Type": "application/json",
-    }
+    run_id = make_run_id()
+    events = apply_run_identity(
+        load_events(args),
+        run_id=run_id,
+        append_run_id_to_session=args.append_run_id_to_session,
+        randomize_event_ids=args.randomize_event_ids,
+        rebase_timestamps_to_now=args.rebase_timestamps_to_now,
+    )
+    base_headers = build_base_headers(args)
 
     trace: list[dict[str, Any]] = []
     session = requests.Session()
 
     try:
-        preflight_data = preflight(
-            session,
-            process_url=args.process_url,
-            api_key=args.api_key,
-            expected_model=args.expected_model.strip(),
-            timeout_seconds=args.timeout_seconds,
-            allow_not_ready=args.allow_not_ready,
-        )
-
-        print(f"[preflight] health={preflight_data['health_status']} ready={preflight_data['ready_status']}")
+        if args.skip_preflight:
+            preflight_data = {"skipped": True}
+            print("[preflight] skipped")
+        else:
+            preflight_data = preflight(
+                session,
+                process_url=args.process_url,
+                api_key=args.api_key,
+                expected_model=args.expected_model.strip(),
+                timeout_seconds=args.timeout_seconds,
+                allow_not_ready=args.allow_not_ready,
+                wait_ready_timeout_seconds=args.wait_ready_timeout_seconds,
+                wait_ready_poll_seconds=args.wait_ready_poll_seconds,
+            )
+            print(f"[preflight] health={preflight_data['health_status']} ready={preflight_data['ready_status']}")
 
         previous_timestamp = None
         for turn_number, event in enumerate(events, start=1):
@@ -466,10 +685,13 @@ def main() -> int:
                 time.sleep(args.inter_turn_delay_ms / 1000.0)
 
             payload = [event]
+            request_headers = dict(base_headers)
+            request_headers["X-Request-ID"] = f"live-e2e-{run_id}-turn-{turn_number:02d}"
+            sent_at = datetime.now().isoformat(timespec="seconds")
             response, latency_ms = post_with_heartbeat(
                 session,
                 url=args.process_url,
-                headers=headers,
+                headers=request_headers,
                 payload=payload,
                 timeout_seconds=args.timeout_seconds,
                 heartbeat_seconds=args.heartbeat_seconds,
@@ -477,11 +699,15 @@ def main() -> int:
             )
             response_payload = fetch_json_or_text(response)
             ai_text = extract_ai_text(response_payload)
+            received_at = datetime.now().isoformat(timespec="seconds")
 
             trace_item = {
                 "turn": turn_number,
+                "request_headers": request_headers,
                 "request_event": event,
                 "request_payload": payload,
+                "sent_at": sent_at,
+                "received_at": received_at,
                 "status_code": response.status_code,
                 "latency_ms": latency_ms,
                 "response_payload": response_payload,
@@ -501,12 +727,16 @@ def main() -> int:
             previous_timestamp = event["timestamp"]
 
         summary = {
+            "run_id": run_id,
+            "prod_like": bool(args.prod_like),
             "process_url": args.process_url,
             "expected_model": args.expected_model,
             "output_dir": str(output_dir),
             "turns_sent": len(events),
             "session_ids": sorted({event["session"] for event in events}),
             "phones": sorted({event["cleint_phone"] for event in events}),
+            "user_agent": args.user_agent,
+            "client_ip": args.client_ip,
         }
 
         (output_dir / "events.normalized.json").write_text(
@@ -529,6 +759,7 @@ def main() -> int:
             render_markdown(
                 process_url=args.process_url,
                 preflight_data=preflight_data,
+                run_id=run_id,
                 events=events,
                 trace=trace,
             ),
@@ -541,7 +772,10 @@ def main() -> int:
     except Exception as exc:
         failure_payload = {
             "error": str(exc),
+            "run_id": run_id,
+            "prod_like": bool(args.prod_like),
             "process_url": args.process_url,
+            "events": events,
             "trace_so_far": trace,
         }
         (output_dir / "failure.json").write_text(

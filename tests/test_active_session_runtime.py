@@ -612,7 +612,6 @@ class TestApiActiveRuntime:
         monkeypatch.setattr(api_mod, "_session_manager", manager)
         monkeypatch.setattr(api_mod, "_llm", object())
         monkeypatch.setattr(api_mod, "_load_snapshot", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("_load_snapshot should not be called")))
-        monkeypatch.setattr(api_mod, "_persist_bot_state", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("_persist_bot_state should not be called")))
         monkeypatch.setattr(api_mod, "_bootstrap_bot_memory", lambda *_args, **_kwargs: bootstrap_calls.append(True))
         monkeypatch.setattr(api_mod, "_save_user_profile", lambda *_args, **_kwargs: None)
         monkeypatch.setattr(api_mod, "_save_media_knowledge", lambda *_args, **_kwargs: None)
@@ -652,6 +651,14 @@ class TestApiActiveRuntime:
             ("BOT_6921_test", "77710107606", False),
             ("BOT_6921_test", "77710107606", False),
         ]
+
+    def test_api_module_exposes_only_live_session_runtime_contract(self, monkeypatch):
+        _ensure_fastapi_stubs()
+        import src.api as api_mod
+
+        assert not hasattr(api_mod, "_persist_bot_state")
+        assert "live in-memory session runtime" in api_mod.process_message.__doc__
+        assert "Snapshot используется только как cold-restore" in api_mod.process_message.__doc__
 
     def test_process_request_logs_request_path_serialization_and_skips_bootstrap_for_cache(self, monkeypatch):
         _ensure_fastapi_stubs()

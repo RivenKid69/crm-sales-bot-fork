@@ -1074,7 +1074,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                         )
                     )
                     return
-            if "video_call_scheduled" in terminal_names and wants_video_call and not payment_intent_active:
+            if "video_call_scheduled" in terminal_names and wants_video_call and not explicit_payment_now:
                 video_call_requirements = terminal_requirements.get("video_call_scheduled", [])
                 if not terminal_requirements_satisfied(
                     video_call_requirements,
@@ -1295,7 +1295,7 @@ class AutonomousDecisionSource(KnowledgeSource):
                 if "payment_ready" in all_states and (explicit_payment_now or (payment_intent_active and not wants_video_call)):
                     terminal_gate_fallback_state = "autonomous_closing"
                     target = "payment_ready"
-                elif "video_call_scheduled" in all_states and wants_video_call and not payment_intent_active:
+                elif "video_call_scheduled" in all_states and wants_video_call and not explicit_payment_now:
                     terminal_gate_fallback_state = "autonomous_closing"
                     target = "video_call_scheduled"
 
@@ -1322,36 +1322,6 @@ class AutonomousDecisionSource(KnowledgeSource):
                         state, target, missing_for_terminal,
                     )
                     terminal_gate_blocked = True
-            # Additional payment-context gate:
-            # keep payment path strict unless client explicitly refused/deferred IIN.
-            if target == "video_call_scheduled" and not terminal_gate_blocked:
-                iin_refusal_or_deferral = self._has_recent_iin_refusal_or_deferral(
-                    envelope=envelope,
-                    user_message=user_message,
-                    current_intent=intent,
-                )
-                has_iin_now = (
-                    self._has_required_field(collected_data, "iin")
-                    or self._message_has_iin(user_message)
-                )
-                payment_intent_active_now = self._has_recent_payment_intent(
-                    envelope=envelope,
-                    current_intent=intent,
-                    user_message=user_message,
-                    decision_history=self._decision_history,
-                )
-                if (
-                    payment_intent_active_now
-                    and not has_iin_now
-                    and not iin_refusal_or_deferral
-                ):
-                    logger.warning(
-                        "AutonomousDecision: terminal gate — blocked %s → video_call_scheduled "
-                        "(payment context without IIN), forcing stay",
-                        state,
-                    )
-                    terminal_gate_blocked = True
-
             if terminal_gate_blocked:
                 blackboard.propose_transition(
                     next_state=terminal_gate_fallback_state,

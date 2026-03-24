@@ -518,40 +518,6 @@ def _save_media_knowledge_conn(
     )
 
 
-def _persist_bot_state(session_id: str, user_id: str, bot: SalesBot) -> None:
-    snapshot = bot.to_snapshot()
-    updated_at = time.time()
-    conn = _db_connect()
-    try:
-        _save_snapshot_conn(
-            conn,
-            session_id=session_id,
-            user_id=user_id,
-            snapshot=snapshot,
-            updated_at=updated_at,
-        )
-        _save_user_profile_conn(
-            conn,
-            session_id=session_id,
-            user_id=user_id,
-            bot=bot,
-            updated_at=updated_at,
-        )
-        _save_media_knowledge_conn(
-            conn,
-            session_id=session_id,
-            user_id=user_id,
-            bot=bot,
-            updated_at=updated_at,
-        )
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
-
-
 def _save_media_knowledge(session_id: str, user_id: str, bot: SalesBot) -> None:
     """Persist media-derived knowledge from bot memory."""
     conn = _db_connect()
@@ -1026,16 +992,14 @@ def ready():
 @app.post("/api/v1/process/sula", dependencies=[Depends(verify_api_key)])
 async def process_message(request: Request):
     """
-    Обработка одного хода диалога (autonomous flow).
+    Обработка одного хода autonomous-диалога через live in-memory session runtime.
 
-    1. Загрузить snapshot из SQLite по (session_id, user_id).
-    2. Восстановить / создать бота (flow_name="autonomous").
-    3. Обработать сообщение.
-    4. Сохранить snapshot + извлечь данные в user_profiles.
-    5. Вернуть { answer, meta }.
+    На hot path:
+    1. Найти или создать живую сессию по `(session_id, user_id)`.
+    2. Выполнить ход под per-session lock без snapshot roundtrip на каждый запрос.
+    3. Обновить профиль/медиа-память и вернуть `{answer, meta}`.
 
-    NOTE: `def` (не `async def`) — bot.process() синхронный (Ollama HTTP).
-    FastAPI автоматически запустит в threadpool.
+    Snapshot используется только как cold-restore / idle-final fallback и при shutdown.
     """
     try:
         try:
