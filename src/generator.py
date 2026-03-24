@@ -19,7 +19,11 @@ from src.logger import logger
 from src.feature_flags import flags
 from src.response_diversity import diversity_engine
 from src.question_dedup import question_dedup_engine
-from src.terminal_requirements import missing_terminal_fields, terminal_requirements_satisfied
+from src.terminal_requirements import (
+    is_terminal_field_present,
+    missing_terminal_fields,
+    terminal_requirements_satisfied,
+)
 from src.generator_autonomous import (
     SAFETY_RULES_V2 as AUTONOMOUS_SAFETY_RULES_V2,
     HARD_NO_CONTACT_MARKERS as AUTONOMOUS_HARD_NO_CONTACT_MARKERS,
@@ -3533,7 +3537,7 @@ class ResponseGenerator:
             terminal_reqs: dict = context.get("terminal_state_requirements", {})
             if terminal_reqs:
                 def _has_terminal_field(field: str) -> bool:
-                    return bool(collected.get(field))
+                    return is_terminal_field_present(collected.get(field))
 
                 soften_closing_request = self._should_soften_closing_request(
                     intent=intent,

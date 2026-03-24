@@ -30,8 +30,11 @@ from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
 from src.settings import settings as _global_settings
 from src.terminal_requirements import (
+    active_terminal_requirement_field_names,
+    is_terminal_field_present,
     missing_terminal_fields,
     normalize_terminal_requirement_spec,
+    terminal_requirement_field_names,
     terminal_requirements_satisfied,
 )
 
@@ -225,13 +228,7 @@ class AutonomousDecisionSource(KnowledgeSource):
 
     @staticmethod
     def _is_non_empty(value: Any) -> bool:
-        if value is None:
-            return False
-        if isinstance(value, str):
-            return bool(value.strip())
-        if isinstance(value, (list, dict, tuple, set)):
-            return len(value) > 0
-        return True
+        return is_terminal_field_present(value)
 
     @staticmethod
     def _looks_like_phone(value: Any) -> bool:
@@ -1459,11 +1456,11 @@ class AutonomousDecisionSource(KnowledgeSource):
         """Build the decision prompt for LLM."""
         collected_keys = {
             k for k, v in collected_data.items()
-            if v and not k.startswith("_")
+            if is_terminal_field_present(v) and not k.startswith("_")
         }
         collected_str = ", ".join(
             f"{k}={v}" for k, v in collected_data.items()
-            if v and not k.startswith("_")
+            if is_terminal_field_present(v) and not k.startswith("_")
         ) or "пока ничего"
 
         # Build available states with goals for informed LLM choice
@@ -1484,8 +1481,8 @@ class AutonomousDecisionSource(KnowledgeSource):
         # Compute missing optional data (only non-terminal-requirement fields)
         terminal_req_fields: set = set()
         if terminal_requirements:
-            for fields in terminal_requirements.values():
-                terminal_req_fields.update(fields)
+            for spec in terminal_requirements.values():
+                terminal_req_fields.update(terminal_requirement_field_names(spec))
         missing_optional = ""
         if optional_data:
             non_terminal_optional = [f for f in optional_data if f not in terminal_req_fields]
@@ -1667,17 +1664,14 @@ class AutonomousDecisionSource(KnowledgeSource):
                             get_value=collected_data.get,
                             satisfied_overrides=snapshot_overrides,
                         )
+                        active_fields = active_terminal_requirement_field_names(
+                            reqs,
+                            get_value=collected_data.get,
+                            satisfied_overrides=snapshot_overrides,
+                        )
                         present_t = [
                             field
-                            for field in (
-                                list(normalized_reqs["required_any"])
-                                + list(normalized_reqs["required_all"])
-                                + [
-                                    dep
-                                    for deps in normalized_reqs["required_if_true"].values()
-                                    for dep in deps
-                                ]
-                            )
+                            for field in active_fields
                             if field not in missing_t
                         ]
                         if missing_t:
@@ -1788,6 +1782,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             state=state,
             goal=goal,
             collected_keys=collected_keys,
+            collected_data=collected_data,
             all_states_config=all_states_config,
             available_states=available_states,
             terminal_names=terminal_names,
@@ -1844,6 +1839,7 @@ discovery (узнать бизнес клиента) → qualification (потр
         state: str,
         goal: str,
         collected_keys: set,
+        collected_data: dict,
         all_states_config: dict,
         available_states: list,
         terminal_names: list = None,
@@ -1898,7 +1894,10 @@ discovery (узнать бизнес клиента) → qualification (потр
             for t_name in terminal_names:
                 t_reqs = (terminal_requirements or {}).get(t_name, [])
                 t_req_status = []
-                for f in t_reqs:
+                for f in active_terminal_requirement_field_names(
+                    t_reqs,
+                    get_value=lambda field: collected_data.get(field),
+                ):
                     mark = "✅" if f in collected_keys else "❌"
                     t_req_status.append(f"{f} {mark}")
                 t_line = ", ".join(t_req_status) if t_req_status else "нет"

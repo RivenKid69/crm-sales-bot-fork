@@ -3,6 +3,16 @@ from __future__ import annotations
 from typing import Any, Callable
 
 
+def is_terminal_field_present(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, dict, tuple, set)):
+        return len(value) > 0
+    return True
+
+
 def normalize_terminal_requirement_spec(spec: Any) -> dict[str, Any]:
     if isinstance(spec, dict):
         required_any = list(spec.get("required_any") or [])
@@ -29,6 +39,70 @@ def normalize_terminal_requirement_spec(spec: Any) -> dict[str, Any]:
         "required_all": [],
         "required_if_true": {},
     }
+
+
+def terminal_requirement_field_names(spec: Any) -> list[str]:
+    normalized = normalize_terminal_requirement_spec(spec)
+    ordered_fields: list[str] = []
+    seen: set[str] = set()
+
+    for field in normalized["required_any"]:
+        field_name = str(field)
+        if field_name not in seen:
+            seen.add(field_name)
+            ordered_fields.append(field_name)
+
+    for field in normalized["required_all"]:
+        field_name = str(field)
+        if field_name not in seen:
+            seen.add(field_name)
+            ordered_fields.append(field_name)
+
+    for dependent_fields in normalized["required_if_true"].values():
+        for field in dependent_fields:
+            field_name = str(field)
+            if field_name not in seen:
+                seen.add(field_name)
+                ordered_fields.append(field_name)
+
+    return ordered_fields
+
+
+def active_terminal_requirement_field_names(
+    spec: Any,
+    *,
+    get_value: Callable[[str], Any] | None = None,
+    satisfied_overrides: set[str] | None = None,
+) -> list[str]:
+    normalized = normalize_terminal_requirement_spec(spec)
+    get_value = get_value or (lambda _field: None)
+    overrides = set(satisfied_overrides or ())
+    ordered_fields: list[str] = []
+    seen: set[str] = set()
+
+    for field in normalized["required_any"]:
+        field_name = str(field)
+        if field_name not in seen:
+            seen.add(field_name)
+            ordered_fields.append(field_name)
+
+    for field in normalized["required_all"]:
+        field_name = str(field)
+        if field_name not in seen:
+            seen.add(field_name)
+            ordered_fields.append(field_name)
+
+    for trigger_field, dependent_fields in normalized["required_if_true"].items():
+        trigger_value = True if trigger_field in overrides else get_value(trigger_field)
+        if not bool(trigger_value):
+            continue
+        for field in dependent_fields:
+            field_name = str(field)
+            if field_name not in seen:
+                seen.add(field_name)
+                ordered_fields.append(field_name)
+
+    return ordered_fields
 
 
 def missing_terminal_fields(

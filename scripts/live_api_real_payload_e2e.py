@@ -37,6 +37,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import os
 import sys
@@ -150,6 +151,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=DEFAULT_INTER_TURN_DELAY_MS,
         help="Пауза между запросами. По умолчанию 0.",
+    )
+    parser.add_argument(
+        "--heartbeat-seconds",
+        type=float,
+        default=30.0,
+        help="Как часто печатать heartbeat во время ожидания ответа на один ход.",
     )
     parser.add_argument(
         "--respect-input-gaps",
@@ -343,6 +350,39 @@ def extract_ai_text(response_payload: Any) -> str:
     return ""
 
 
+def post_with_heartbeat(
+    session: requests.Session,
+    *,
+    url: str,
+    headers: dict[str, str],
+    payload: Any,
+    timeout_seconds: float | None,
+    heartbeat_seconds: float,
+    turn_number: int,
+) -> tuple[requests.Response, int]:
+    started = time.perf_counter()
+    heartbeat_seconds = max(1.0, float(heartbeat_seconds))
+
+    def _do_post() -> requests.Response:
+        return session.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=timeout_seconds,
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_do_post)
+        while True:
+            try:
+                response = future.result(timeout=heartbeat_seconds)
+                latency_ms = int((time.perf_counter() - started) * 1000)
+                return response, latency_ms
+            except concurrent.futures.TimeoutError:
+                elapsed = int(time.perf_counter() - started)
+                print(f"[turn {turn_number:02d}] waiting... elapsed={elapsed}s")
+
+
 def render_markdown(
     *,
     process_url: str,
@@ -426,14 +466,15 @@ def main() -> int:
                 time.sleep(args.inter_turn_delay_ms / 1000.0)
 
             payload = [event]
-            started = time.perf_counter()
-            response = session.post(
-                args.process_url,
+            response, latency_ms = post_with_heartbeat(
+                session,
+                url=args.process_url,
                 headers=headers,
-                json=payload,
-                timeout=args.timeout_seconds,
+                payload=payload,
+                timeout_seconds=args.timeout_seconds,
+                heartbeat_seconds=args.heartbeat_seconds,
+                turn_number=turn_number,
             )
-            latency_ms = int((time.perf_counter() - started) * 1000)
             response_payload = fetch_json_or_text(response)
             ai_text = extract_ai_text(response_payload)
 

@@ -766,6 +766,9 @@ async def lifespan(app: FastAPI):
             closed = _session_manager.close_all_sessions()
             if closed:
                 logger.info("Serialized sessions on shutdown", count=closed)
+            flushed = _session_manager.flush_buffered_snapshots(force=True)
+            if flushed:
+                logger.info("Flushed buffered snapshots on shutdown", count=flushed)
         except Exception:
             logger.exception("Failed to serialize sessions on shutdown")
     _session_sweeper_stop = None
@@ -929,40 +932,49 @@ def _process_message_request(req: ProcessRequest) -> dict:
             idle_seconds=ACTIVE_SESSION_FINAL_IDLE_SECONDS,
         )
 
-    acquire = _session_manager.get_or_create_with_status(
-        req.session_id,
-        llm=_llm,
-        client_id=req.user_id,
-        flow_name="autonomous",
-        config_name="default",
-        enable_tracing=True,
-    )
-    bot = acquire.bot
-    if acquire.source == "new":
-        _bootstrap_bot_memory(bot, user_id=req.user_id)
-
-    media_turn_context = prepared_message.media_turn_context
-    if media_turn_context is not None:
-        media_turn_context = freeze_media_turn_context(
-            replace(
-                media_turn_context,
-                source_session_id=req.session_id,
-                source_user_id=req.user_id,
-            )
+    def _run_turn() -> tuple[dict, int]:
+        acquire = _session_manager.get_or_create_with_status(
+            req.session_id,
+            llm=_llm,
+            client_id=req.user_id,
+            flow_name="autonomous",
+            config_name="default",
+            enable_tracing=True,
+            assume_locked=True,
         )
+        bot = acquire.bot
+        if acquire.source == "new":
+            _bootstrap_bot_memory(bot, user_id=req.user_id)
 
-    result = bot.process(
-        prepared_message.text,
-        media_turn_context=media_turn_context,
-    )
-    processing_ms = int((time.time() - start) * 1000)
-    _session_manager.touch(
+        media_turn_context = prepared_message.media_turn_context
+        if media_turn_context is not None:
+            media_turn_context = freeze_media_turn_context(
+                replace(
+                    media_turn_context,
+                    source_session_id=req.session_id,
+                    source_user_id=req.user_id,
+                )
+            )
+
+        result = bot.process(
+            prepared_message.text,
+            media_turn_context=media_turn_context,
+        )
+        processing_ms = int((time.time() - start) * 1000)
+        _session_manager.touch(
+            req.session_id,
+            client_id=req.user_id,
+            is_final=bot.state_machine.is_final(),
+        )
+        _save_user_profile(req.session_id, req.user_id, bot)
+        _save_media_knowledge(req.session_id, req.user_id, bot)
+        return result, processing_ms
+
+    result, processing_ms = _session_manager.run_session_job(
         req.session_id,
         client_id=req.user_id,
-        is_final=bot.state_machine.is_final(),
+        job=_run_turn,
     )
-    _save_user_profile(req.session_id, req.user_id, bot)
-    _save_media_knowledge(req.session_id, req.user_id, bot)
 
     # kb_used: check KB results in traces
     trace = result.get("decision_trace") or {}

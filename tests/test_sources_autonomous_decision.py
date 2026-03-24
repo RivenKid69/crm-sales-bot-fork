@@ -497,6 +497,65 @@ class TestDecisionPromptEnrichment:
         assert "media_safety_class: attachment_summary" in prompt
         assert "media_candidate_mode: current" in prompt
 
+    def test_structured_terminal_requirements_render_real_field_names_in_prompt(self):
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_closing",
+            phase="closing",
+            goal="Закрыть сделку",
+            intent="question_features",
+            user_message="Что ещё нужно для следующего шага?",
+            collected_data={"contact_name": "Айбота", "business_type": "магазин"},
+            available_states=["autonomous_closing"],
+            optional_data=["preferred_call_time"],
+            terminal_names=["payment_ready"],
+            terminal_requirements={
+                "payment_ready": {
+                    "required_any": ["contact_name", "client_name"],
+                    "required_all": ["business_type", "city", "automation_before"],
+                    "required_if_true": {"automation_before": ["current_tools"]},
+                }
+            },
+        )
+
+        assert "required_any" not in prompt
+        assert "required_all" not in prompt
+        assert "required_if_true" not in prompt
+        assert "contact_name ✅" in prompt
+        assert "business_type ✅" in prompt
+        assert "city ❌" in prompt
+        assert "automation_before ❌" in prompt
+
+    def test_structured_terminal_requirements_treat_false_boolean_as_collected_in_prompt(self):
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_decision_prompt(
+            state="autonomous_closing",
+            phase="closing",
+            goal="Закрыть сделку",
+            intent="question_features",
+            user_message="Что ещё нужно для следующего шага?",
+            collected_data={
+                "contact_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": False,
+            },
+            available_states=["autonomous_closing"],
+            terminal_names=["video_call_scheduled"],
+            terminal_requirements={
+                "video_call_scheduled": {
+                    "required_any": ["contact_name", "client_name"],
+                    "required_all": ["business_type", "city", "automation_before"],
+                    "required_if_true": {"automation_before": ["current_tools"]},
+                }
+            },
+        )
+
+        assert "automation_before ✅" in prompt
+        assert "current_tools ❌" not in prompt
+
 
 # =============================================================================
 # Test: Media routing safety classifier and deterministic rewrite

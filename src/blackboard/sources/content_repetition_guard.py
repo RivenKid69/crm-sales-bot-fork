@@ -24,6 +24,7 @@ import logging
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
 from src.terminal_requirements import (
+    is_terminal_field_present,
     normalize_terminal_requirement_spec,
     terminal_requirements_satisfied,
 )
@@ -85,7 +86,7 @@ class ContentRepetitionGuardSource(KnowledgeSource):
                     continue
                 if terminal_requirements_satisfied(
                     reqs,
-                    has_field=lambda field: bool(collected.get(field)),
+                    has_field=lambda field: is_terminal_field_present(collected.get(field)),
                     get_value=collected.get,
                 ):
                     return False

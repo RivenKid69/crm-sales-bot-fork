@@ -216,6 +216,61 @@ def test_autonomous_closing_prompt_understands_structured_terminal_requirements(
     assert "была ли раньше автоматизация" in low
 
 
+def test_autonomous_closing_prompt_treats_automation_before_false_as_collected(monkeypatch):
+    llm = Mock()
+    llm.generate.return_value = "Уточню пару деталей."
+
+    flow = SimpleNamespace(
+        name="autonomous",
+        get_template=lambda key: "{closing_data_request}",
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = None
+
+    monkeypatch.setattr(
+        "src.generator.get_retriever",
+        lambda: SimpleNamespace(
+            kb=SimpleNamespace(
+                company_name="Wipon",
+                company_description="Retail automation",
+            )
+        ),
+    )
+
+    generator.generate(
+        "autonomous_respond",
+        {
+            "intent": "question_features",
+            "state": "autonomous_closing",
+            "user_message": "Хорошо, что ещё нужно?",
+            "history": [],
+            "collected_data": {
+                "contact_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": False,
+            },
+            "missing_data": [],
+            "goal": "Закрыть сделку",
+            "spin_phase": "closing",
+            "terminal_state_requirements": {
+                "video_call_scheduled": {
+                    "required_any": ["contact_name", "client_name"],
+                    "required_all": ["business_type", "city", "automation_before"],
+                    "required_if_true": {"automation_before": ["current_tools"]},
+                }
+            },
+            "_skip_retrieval": True,
+            "retrieved_facts": "У нас есть онлайн-касса и мобильное приложение.",
+        },
+    )
+
+    prompt = llm.generate.call_args_list[-1].args[0]
+    low = prompt.lower()
+    assert "была ли раньше автоматизация" not in low
+    assert "какая была автоматизация" not in low
+
+
 def test_autonomous_decision_record_roundtrip_dict():
     record = AutonomousDecisionRecord(
         turn_in_state=2,

@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 import threading
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from src.bot import SalesBot
 from src.logger import logger
@@ -80,6 +80,9 @@ class SessionManager:
             return f"{norm_client_id}{self.STORAGE_KEY_SEPARATOR}{session_id}"
         return session_id
 
+    def _session_lock_key(self, session_id: str, client_id: Optional[str]) -> str:
+        return self._storage_session_id(session_id, client_id)
+
     def _load_external_snapshot_candidates(
         self,
         session_id: str,
@@ -103,28 +106,29 @@ class SessionManager:
                 unique.append(sid)
         return unique
 
-    def _maybe_flush_batch(self) -> None:
+    def _maybe_flush_batch(self, *, force: bool = False) -> int:
         """Flush buffered snapshots after first request past flush_hour."""
         now = self._time_provider()
         today = (now.tm_year, now.tm_mon, now.tm_mday)
 
-        if now.tm_hour < self._flush_hour:
-            return
+        if not force and now.tm_hour < self._flush_hour:
+            return 0
 
-        if self._buffer.last_flush_date == today:
-            return
+        if not force and self._buffer.last_flush_date == today:
+            return 0
 
         if not self._buffer.try_flush_lock():
-            return
+            return 0
 
         try:
             if self._save_snapshot is None:
-                return
+                return 0
 
             entries = self._buffer.get_all_entries()
             if not entries:
-                self._buffer.last_flush_date = today
-                return
+                if not force:
+                    self._buffer.last_flush_date = today
+                return 0
 
             for entry in entries:
                 client_id = entry.get("client_id")
@@ -136,8 +140,27 @@ class SessionManager:
             self._buffer.clear()
             self._buffer.last_flush_date = today
             logger.info("Snapshot batch flushed", count=len(entries))
+            return len(entries)
         finally:
             self._buffer.release_flush_lock()
+
+    def flush_buffered_snapshots(self, *, force: bool = True) -> int:
+        """Persist locally buffered snapshots to external storage when available."""
+        return self._maybe_flush_batch(force=force)
+
+    def run_session_job(
+        self,
+        session_id: str,
+        *,
+        client_id: Optional[str] = None,
+        job: Callable[[], Any],
+    ) -> Any:
+        """Run a full session-scoped job under the per-session lock."""
+        self._ensure_client_id(client_id, session_id)
+        normalized_client_id = self._normalize_client_id(client_id) or None
+        lock_key = self._session_lock_key(session_id, normalized_client_id)
+        with self._lock.lock(lock_key):
+            return job()
 
     def _snapshot_matches_client(self, snapshot: Dict, client_id: Optional[str]) -> bool:
         """Verify snapshot belongs to expected client_id (if provided)."""
@@ -191,7 +214,7 @@ class SessionManager:
             enable_tracing=enable_tracing,
         )
 
-    def get_or_create_with_status(
+    def _get_or_create_with_status_locked(
         self,
         session_id: str,
         llm=None,
@@ -209,140 +232,179 @@ class SessionManager:
         - external_snapshot
         - new
         """
-        self._ensure_client_id(client_id, session_id)
         normalized_client_id = self._normalize_client_id(client_id) or None
         cache_key = self._cache_key(session_id, normalized_client_id)
-        lock_key = self._storage_session_id(session_id, normalized_client_id)
+        self._maybe_flush_batch()
+        now = self._now()
 
-        with self._lock.lock(lock_key):
-            self._maybe_flush_batch()
-            now = self._now()
-
-            with self._cache_lock:
-                entry = self._sessions.get(cache_key)
-            if entry is not None:
-                if flow_name or config_name:
-                    current_flow = getattr(entry.bot, "_flow", None)
-                    current_flow_name = current_flow.name if current_flow else None
-                    current_config_name = getattr(getattr(entry.bot, "_config", None), "name", None)
-                    if (flow_name and flow_name != current_flow_name) or (
-                        config_name and config_name != current_config_name
-                    ):
-                        logger.info(
-                            "Flow/config switch requested for active session",
-                            session_id=session_id,
-                            from_flow=current_flow_name,
-                            to_flow=flow_name,
-                            from_config=current_config_name,
-                            to_config=config_name,
-                        )
-                        history_tail = entry.bot.history[-4:] if entry.bot.history else []
-                        snapshot = entry.bot.to_snapshot(compact_history=False, history_tail_size=4)
-                        snapshot = self._override_snapshot_flow_config(
-                            snapshot, flow_name=flow_name, config_name=config_name
-                        )
-                        entry.bot = SalesBot.from_snapshot(
-                            snapshot, llm=llm, history_tail=history_tail
-                        )
-                entry.last_activity = now
-                logger.debug(
-                    "Session from cache",
-                    session_id=session_id,
-                    client_id=normalized_client_id,
-                )
-                return SessionAcquireResult(bot=entry.bot, source="cache")
-
-            bot = None
-            source = "new"
-            local_snapshot = self._buffer.get(session_id, client_id=normalized_client_id)
-            if local_snapshot:
-                if self._snapshot_matches_client(local_snapshot, client_id):
-                    try:
-                        bot = self._restore_from_snapshot(
-                            local_snapshot,
-                            session_id=session_id,
-                            client_id=normalized_client_id,
-                            llm=llm,
-                            flow_name=flow_name,
-                            config_name=config_name,
-                            enable_tracing=enable_tracing,
-                        )
-                        self._buffer.delete(session_id, client_id=normalized_client_id)
-                        source = "local_buffer"
-                        logger.info(
-                            "Session restored from local snapshot buffer",
-                            session_id=session_id,
-                            client_id=normalized_client_id,
-                        )
-                    except Exception:
-                        logger.exception("Failed to restore from local snapshot buffer")
-                else:
-                    logger.warning(
-                        "Snapshot client_id mismatch (local buffer)",
-                        session_id=session_id,
-                        expected_client_id=normalized_client_id,
-                        snapshot_client_id=local_snapshot.get("client_id"),
-                    )
-
-            if bot is None and self._load_snapshot:
-                for external_session_id in self._load_external_snapshot_candidates(
-                    session_id=session_id,
-                    client_id=normalized_client_id,
+        with self._cache_lock:
+            entry = self._sessions.get(cache_key)
+        if entry is not None:
+            if flow_name or config_name:
+                current_flow = getattr(entry.bot, "_flow", None)
+                current_flow_name = current_flow.name if current_flow else None
+                current_config_name = getattr(getattr(entry.bot, "_config", None), "name", None)
+                if (flow_name and flow_name != current_flow_name) or (
+                    config_name and config_name != current_config_name
                 ):
-                    snapshot = self._load_snapshot(external_session_id)
-                    if not snapshot:
-                        continue
-                    if self._snapshot_matches_client(snapshot, client_id):
-                        bot = self._restore_from_snapshot(
-                            snapshot,
-                            session_id=session_id,
-                            client_id=normalized_client_id,
-                            llm=llm,
-                            flow_name=flow_name,
-                            config_name=config_name,
-                            enable_tracing=enable_tracing,
-                        )
-                        source = "external_snapshot"
-                        logger.info(
-                            "Session restored from external snapshot",
-                            session_id=session_id,
-                            client_id=normalized_client_id,
-                            storage_session_id=external_session_id,
-                        )
-                        break
-
-                    logger.warning(
-                        "Snapshot client_id mismatch (external)",
+                    logger.info(
+                        "Flow/config switch requested for active session",
                         session_id=session_id,
-                        expected_client_id=normalized_client_id,
-                        snapshot_client_id=snapshot.get("client_id"),
+                        from_flow=current_flow_name,
+                        to_flow=flow_name,
+                        from_config=current_config_name,
+                        to_config=config_name,
+                    )
+                    history_tail = entry.bot.history[-4:] if entry.bot.history else []
+                    snapshot = entry.bot.to_snapshot(compact_history=False, history_tail_size=4)
+                    snapshot = self._override_snapshot_flow_config(
+                        snapshot, flow_name=flow_name, config_name=config_name
+                    )
+                    entry.bot = SalesBot.from_snapshot(
+                        snapshot, llm=llm, history_tail=history_tail
+                    )
+            entry.last_activity = now
+            logger.debug(
+                "Session from cache",
+                session_id=session_id,
+                client_id=normalized_client_id,
+            )
+            return SessionAcquireResult(bot=entry.bot, source="cache")
+
+        bot = None
+        source = "new"
+        local_snapshot = self._buffer.get(session_id, client_id=normalized_client_id)
+        if local_snapshot:
+            if self._snapshot_matches_client(local_snapshot, client_id):
+                try:
+                    bot = self._restore_from_snapshot(
+                        local_snapshot,
+                        session_id=session_id,
+                        client_id=normalized_client_id,
+                        llm=llm,
+                        flow_name=flow_name,
+                        config_name=config_name,
+                        enable_tracing=enable_tracing,
+                    )
+                    self._buffer.delete(session_id, client_id=normalized_client_id)
+                    source = "local_buffer"
+                    logger.info(
+                        "Session restored from local snapshot buffer",
+                        session_id=session_id,
+                        client_id=normalized_client_id,
+                    )
+                except Exception:
+                    logger.exception("Failed to restore from local snapshot buffer")
+            else:
+                logger.warning(
+                    "Snapshot client_id mismatch (local buffer)",
+                    session_id=session_id,
+                    expected_client_id=normalized_client_id,
+                    snapshot_client_id=local_snapshot.get("client_id"),
+                )
+
+        if bot is None and self._load_snapshot:
+            for external_session_id in self._load_external_snapshot_candidates(
+                session_id=session_id,
+                client_id=normalized_client_id,
+            ):
+                snapshot = self._load_snapshot(external_session_id)
+                if not snapshot:
+                    continue
+                if self._snapshot_matches_client(snapshot, client_id):
+                    bot = self._restore_from_snapshot(
+                        snapshot,
+                        session_id=session_id,
+                        client_id=normalized_client_id,
+                        llm=llm,
+                        flow_name=flow_name,
+                        config_name=config_name,
+                        enable_tracing=enable_tracing,
+                    )
+                    source = "external_snapshot"
+                    logger.info(
+                        "Session restored from external snapshot",
+                        session_id=session_id,
+                        client_id=normalized_client_id,
                         storage_session_id=external_session_id,
                     )
+                    break
 
-            if bot is None:
-                bot = SalesBot(
-                    llm=llm,
-                    flow_name=flow_name,
-                    client_id=normalized_client_id,
-                    config_name=config_name,
-                    enable_tracing=enable_tracing,
-                )
-                bot.conversation_id = session_id
-                logger.info(
-                    "New session created",
+                logger.warning(
+                    "Snapshot client_id mismatch (external)",
                     session_id=session_id,
-                    client_id=normalized_client_id,
+                    expected_client_id=normalized_client_id,
+                    snapshot_client_id=snapshot.get("client_id"),
+                    storage_session_id=external_session_id,
                 )
 
-            entry = SessionEntry(
-                bot=bot,
-                last_activity=now,
-                created_at=now,
-                final_since=now if bot.state_machine.is_final() else None,
+        if bot is None:
+            bot = SalesBot(
+                llm=llm,
+                flow_name=flow_name,
+                client_id=normalized_client_id,
+                config_name=config_name,
+                enable_tracing=enable_tracing,
             )
-            with self._cache_lock:
-                self._sessions[cache_key] = entry
-            return SessionAcquireResult(bot=bot, source=source)
+            bot.conversation_id = session_id
+            logger.info(
+                "New session created",
+                session_id=session_id,
+                client_id=normalized_client_id,
+            )
+
+        entry = SessionEntry(
+            bot=bot,
+            last_activity=now,
+            created_at=now,
+            final_since=now if bot.state_machine.is_final() else None,
+        )
+        with self._cache_lock:
+            self._sessions[cache_key] = entry
+        return SessionAcquireResult(bot=bot, source=source)
+
+    def get_or_create_with_status(
+        self,
+        session_id: str,
+        llm=None,
+        client_id: Optional[str] = None,
+        flow_name: Optional[str] = None,
+        config_name: Optional[str] = None,
+        enable_tracing: bool = False,
+        *,
+        assume_locked: bool = False,
+    ) -> SessionAcquireResult:
+        """
+        Same as get_or_create(), but also returns the source of the session.
+
+        source:
+        - cache
+        - local_buffer
+        - external_snapshot
+        - new
+        """
+        self._ensure_client_id(client_id, session_id)
+        normalized_client_id = self._normalize_client_id(client_id) or None
+        if assume_locked:
+            return self._get_or_create_with_status_locked(
+                session_id=session_id,
+                llm=llm,
+                client_id=normalized_client_id,
+                flow_name=flow_name,
+                config_name=config_name,
+                enable_tracing=enable_tracing,
+            )
+
+        lock_key = self._session_lock_key(session_id, normalized_client_id)
+        with self._lock.lock(lock_key):
+            return self._get_or_create_with_status_locked(
+                session_id=session_id,
+                llm=llm,
+                client_id=normalized_client_id,
+                flow_name=flow_name,
+                config_name=config_name,
+                enable_tracing=enable_tracing,
+            )
 
     def get_or_create(
         self,
@@ -410,18 +472,27 @@ class SessionManager:
 
         serialized = 0
         for client_id, session_id in targets:
-            if self.close_session(session_id, client_id=client_id or None):
+            if self.close_session(
+                session_id,
+                client_id=client_id or None,
+                durable=True,
+                require_final_since_at_or_before=cutoff,
+            ):
                 serialized += 1
         return serialized
 
-    def close_all_sessions(self) -> int:
+    def close_all_sessions(self, *, durable: bool = True) -> int:
         """Serialize and remove all cached sessions."""
         with self._cache_lock:
             targets = list(self._sessions.keys())
 
         closed = 0
         for client_id, session_id in targets:
-            if self.close_session(session_id, client_id=client_id or None):
+            if self.close_session(
+                session_id,
+                client_id=client_id or None,
+                durable=durable,
+            ):
                 closed += 1
         return closed
 
@@ -458,8 +529,83 @@ class SessionManager:
                 client_id=cached_client_id or None,
             )
 
+    def _persist_snapshot(
+        self,
+        session_id: str,
+        *,
+        client_id: Optional[str],
+        snapshot: Dict[str, Any],
+        durable: bool,
+    ) -> str:
+        if durable and self._save_snapshot is not None:
+            storage_session_id = self._storage_session_id(session_id, client_id)
+            self._save_snapshot(storage_session_id, snapshot)
+            self._buffer.delete(session_id, client_id=client_id)
+            return "external_snapshot"
+
+        self._buffer.enqueue(
+            session_id,
+            snapshot,
+            client_id=client_id,
+        )
+        return "local_buffer"
+
+    def _close_session_locked(
+        self,
+        session_id: str,
+        *,
+        client_id: Optional[str],
+        durable: bool,
+        require_final_since_at_or_before: Optional[float],
+    ) -> bool:
+        cache_key = self._cache_key(session_id, client_id)
+        with self._cache_lock:
+            entry = self._sessions.get(cache_key)
+        if entry is None:
+            logger.warning(
+                "close_session: session not found in cache",
+                session_id=session_id,
+                client_id=client_id,
+            )
+            return False
+
+        if require_final_since_at_or_before is not None:
+            final_since = entry.final_since
+            if final_since is None or final_since > require_final_since_at_or_before:
+                logger.debug(
+                    "close_session skipped: session is no longer idle-final",
+                    session_id=session_id,
+                    client_id=client_id,
+                    final_since=final_since,
+                    cutoff=require_final_since_at_or_before,
+                )
+                return False
+
+        snapshot = entry.bot.to_snapshot(compact_history=True, history_tail_size=4)
+        persisted_via = self._persist_snapshot(
+            session_id,
+            client_id=client_id,
+            snapshot=snapshot,
+            durable=durable,
+        )
+        with self._cache_lock:
+            self._sessions.pop(cache_key, None)
+        logger.info(
+            "Session closed and snapshot created",
+            session_id=session_id,
+            client_id=client_id,
+            persisted_via=persisted_via,
+            durable=durable,
+        )
+        return True
+
     def close_session(
-        self, session_id: str, client_id: Optional[str] = None
+        self,
+        session_id: str,
+        client_id: Optional[str] = None,
+        *,
+        durable: bool = False,
+        require_final_since_at_or_before: Optional[float] = None,
     ) -> bool:
         """
         Close session explicitly: create snapshot with compaction and remove from cache.
@@ -469,26 +615,12 @@ class SessionManager:
         """
         self._ensure_client_id(client_id, session_id)
         normalized_client_id = self._normalize_client_id(client_id) or None
-        cache_key = self._cache_key(session_id, normalized_client_id)
-        lock_key = self._storage_session_id(session_id, normalized_client_id)
+        lock_key = self._session_lock_key(session_id, normalized_client_id)
 
         with self._lock.lock(lock_key):
-            with self._cache_lock:
-                present = cache_key in self._sessions
-            if not present:
-                logger.warning(
-                    "close_session: session not found in cache",
-                    session_id=session_id,
-                    client_id=normalized_client_id,
-                )
-                return False
-
-            self.save(session_id, client_id=normalized_client_id)
-            with self._cache_lock:
-                self._sessions.pop(cache_key, None)
-            logger.info(
-                "Session closed and snapshot created",
+            return self._close_session_locked(
                 session_id=session_id,
                 client_id=normalized_client_id,
+                durable=durable,
+                require_final_since_at_or_before=require_final_since_at_or_before,
             )
-            return True

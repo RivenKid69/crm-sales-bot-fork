@@ -659,21 +659,35 @@ def test_api_process_accepts_attachment_only_message(monkeypatch):
     captured = {}
 
     class FakeBot:
-        def __init__(self, *_args, **_kwargs):
-            pass
+        state_machine = types.SimpleNamespace(is_final=lambda: False)
 
         def process(self, text, *, media_turn_context=None):
             captured["text"] = text
             captured["media_turn_context"] = media_turn_context
             return {"response": "Ответ", "decision_trace": None}
 
-        def to_snapshot(self):
-            return {}
+    class FakeSessionManager:
+        def __init__(self):
+            self.bot = FakeBot()
+
+        def serialize_inactive_final_sessions(self, *_args, **_kwargs):
+            return 0
+
+        def run_session_job(self, _session_id, *, client_id=None, job):
+            captured["run_session_job_client_id"] = client_id
+            return job()
+
+        def get_or_create_with_status(self, *_args, **_kwargs):
+            return types.SimpleNamespace(bot=self.bot, source="new")
+
+        def touch(self, *_args, **_kwargs):
+            return True
 
     monkeypatch.setattr(api_mod, "_llm", _FakeLLM())
-    monkeypatch.setattr(api_mod, "_load_snapshot", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(api_mod, "_persist_bot_state", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(api_mod, "SalesBot", FakeBot)
+    monkeypatch.setattr(api_mod, "_session_manager", FakeSessionManager())
+    monkeypatch.setattr(api_mod, "_bootstrap_bot_memory", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(api_mod, "_save_user_profile", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(api_mod, "_save_media_knowledge", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         api_mod,
         "prepare_autonomous_incoming_message",
@@ -725,6 +739,7 @@ def test_api_process_accepts_attachment_only_message(monkeypatch):
     assert captured["text"] == ""
     assert captured["media_turn_context"] is not None
     assert captured["media_turn_context"].attachment_only is True
+    assert captured["run_session_job_client_id"] == "user-1"
     assert result["meta"]["media_used"] is True
     assert result["meta"]["attachments_used"] == 1
 
@@ -735,21 +750,35 @@ def test_api_process_accepts_voice_only_message(monkeypatch):
     captured = {}
 
     class FakeBot:
-        def __init__(self, *_args, **_kwargs):
-            pass
+        state_machine = types.SimpleNamespace(is_final=lambda: False)
 
         def process(self, text, *, media_turn_context=None):
             captured["text"] = text
             captured["media_turn_context"] = media_turn_context
             return {"response": "Ответ", "decision_trace": None}
 
-        def to_snapshot(self):
-            return {}
+    class FakeSessionManager:
+        def __init__(self):
+            self.bot = FakeBot()
+
+        def serialize_inactive_final_sessions(self, *_args, **_kwargs):
+            return 0
+
+        def run_session_job(self, _session_id, *, client_id=None, job):
+            captured["run_session_job_client_id"] = client_id
+            return job()
+
+        def get_or_create_with_status(self, *_args, **_kwargs):
+            return types.SimpleNamespace(bot=self.bot, source="new")
+
+        def touch(self, *_args, **_kwargs):
+            return True
 
     monkeypatch.setattr(api_mod, "_llm", _FakeLLM())
-    monkeypatch.setattr(api_mod, "_load_snapshot", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(api_mod, "_persist_bot_state", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(api_mod, "SalesBot", FakeBot)
+    monkeypatch.setattr(api_mod, "_session_manager", FakeSessionManager())
+    monkeypatch.setattr(api_mod, "_bootstrap_bot_memory", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(api_mod, "_save_user_profile", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(api_mod, "_save_media_knowledge", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         api_mod,
         "prepare_autonomous_incoming_message",
@@ -802,6 +831,7 @@ def test_api_process_accepts_voice_only_message(monkeypatch):
     assert captured["text"] == ""
     assert captured["media_turn_context"] is not None
     assert captured["media_turn_context"].attachment_only is True
+    assert captured["run_session_job_client_id"] == "user-voice"
     assert result["meta"]["media_used"] is True
     assert result["meta"]["attachments_used"] == 1
 

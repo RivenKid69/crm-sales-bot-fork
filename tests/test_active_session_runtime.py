@@ -4,6 +4,7 @@ import asyncio
 import importlib.machinery
 import importlib.util
 import sys
+import threading
 import types
 from types import SimpleNamespace
 
@@ -113,6 +114,29 @@ class TestSessionManagerActiveRuntime:
         assert restored.source == "local_buffer"
         assert restored.bot.state_machine.state == "success"
 
+    def test_serialize_inactive_final_sessions_persists_durably_when_external_storage_exists(
+        self, mock_llm, tmp_path
+    ):
+        now = [1000.0]
+        saved = {}
+
+        def save_snapshot(storage_session_id, snapshot):
+            saved[storage_session_id] = snapshot
+
+        manager, buf = _mk_manager(
+            tmp_path,
+            now_provider=lambda: now[0],
+            save_snapshot=save_snapshot,
+        )
+        bot = manager.get_or_create("s1", llm=mock_llm, client_id="c1")
+        bot.state_machine.state = "success"
+        manager.touch("s1", client_id="c1", is_final=True)
+
+        now[0] += 3600
+        assert manager.serialize_inactive_final_sessions(3600) == 1
+        assert saved["c1::s1"]["client_id"] == "c1"
+        assert buf.count() == 0
+
     def test_touch_non_final_resets_final_since(self, mock_llm, tmp_path):
         now = [1000.0]
         manager, buf = _mk_manager(tmp_path, now_provider=lambda: now[0])
@@ -125,6 +149,28 @@ class TestSessionManagerActiveRuntime:
 
         now[0] += 4000
         assert manager.serialize_inactive_final_sessions(3600) == 0
+        assert buf.count() == 0
+        cached = manager.get_or_create_with_status("s1", llm=mock_llm, client_id="c1")
+        assert cached.source == "cache"
+        assert cached.bot is bot
+
+    def test_close_session_rechecks_final_idle_cutoff_before_serializing(self, mock_llm, tmp_path):
+        now = [1000.0]
+        manager, buf = _mk_manager(tmp_path, now_provider=lambda: now[0])
+        bot = manager.get_or_create("s1", llm=mock_llm, client_id="c1")
+
+        bot.state_machine.state = "success"
+        manager.touch("s1", client_id="c1", is_final=True)
+        cutoff = now[0]
+        now[0] += 5
+        manager.touch("s1", client_id="c1", is_final=False)
+
+        assert manager.close_session(
+            "s1",
+            client_id="c1",
+            durable=True,
+            require_final_since_at_or_before=cutoff,
+        ) is False
         assert buf.count() == 0
         cached = manager.get_or_create_with_status("s1", llm=mock_llm, client_id="c1")
         assert cached.source == "cache"
@@ -146,6 +192,20 @@ class TestSessionManagerActiveRuntime:
 
         assert manager.close_all_sessions() == 2
         assert buf.count() == 2
+
+    def test_close_all_sessions_prefers_external_storage_when_available(self, mock_llm, tmp_path):
+        saved = {}
+
+        def save_snapshot(storage_session_id, snapshot):
+            saved[storage_session_id] = snapshot
+
+        manager, buf = _mk_manager(tmp_path, save_snapshot=save_snapshot)
+        manager.get_or_create("s1", llm=mock_llm, client_id="c1")
+        manager.get_or_create("s2", llm=mock_llm, client_id="c2")
+
+        assert manager.close_all_sessions() == 2
+        assert set(saved.keys()) == {"c1::s1", "c2::s2"}
+        assert buf.count() == 0
 
     def test_save_skips_missing_entry_after_target_resolution(self, mock_llm, tmp_path):
         manager, buf = _mk_manager(tmp_path)
@@ -181,6 +241,66 @@ class TestSessionManagerActiveRuntime:
         assert restored.source == "local_buffer"
         assert restored.bot.history == bot.history[-4:]
 
+    def test_flush_buffered_snapshots_persists_local_queue_to_external_storage(self, mock_llm, tmp_path):
+        saved = {}
+
+        def save_snapshot(storage_session_id, snapshot):
+            saved[storage_session_id] = snapshot
+
+        manager, buf = _mk_manager(tmp_path, save_snapshot=save_snapshot)
+        manager.get_or_create("s1", llm=mock_llm, client_id="c1")
+        manager.save("s1", client_id="c1")
+
+        assert buf.count() == 1
+        assert manager.flush_buffered_snapshots(force=True) == 1
+        assert saved["c1::s1"]["client_id"] == "c1"
+        assert buf.count() == 0
+
+    def test_run_session_job_serializes_same_session_callbacks(self, tmp_path):
+        manager, _ = _mk_manager(tmp_path, require_client_id=False)
+        entered = threading.Event()
+        release = threading.Event()
+        order = []
+        active = {"count": 0, "max": 0}
+        active_guard = threading.Lock()
+
+        def _job(name):
+            def _inner():
+                with active_guard:
+                    active["count"] += 1
+                    active["max"] = max(active["max"], active["count"])
+                order.append(f"start:{name}")
+                if name == "first":
+                    entered.set()
+                    assert release.wait(timeout=2)
+                order.append(f"end:{name}")
+                with active_guard:
+                    active["count"] -= 1
+                return name
+
+            return manager.run_session_job("s1", client_id=None, job=_inner)
+
+        first_result = {}
+        second_result = {}
+
+        t1 = threading.Thread(target=lambda: first_result.setdefault("value", _job("first")))
+        t1.start()
+        assert entered.wait(timeout=2)
+
+        t2 = threading.Thread(target=lambda: second_result.setdefault("value", _job("second")))
+        t2.start()
+        assert t2.is_alive()
+        assert active["max"] == 1
+
+        release.set()
+        t1.join(timeout=2)
+        t2.join(timeout=2)
+
+        assert first_result["value"] == "first"
+        assert second_result["value"] == "second"
+        assert active["max"] == 1
+        assert order == ["start:first", "end:first", "start:second", "end:second"]
+
 
 class _FakeApiBot:
     def __init__(self):
@@ -204,13 +324,21 @@ class _FakeApiManager:
         self.calls = 0
         self.touches = []
         self.serialize_calls = []
+        self.run_jobs = []
+        self.flush_calls = []
+        self.acquire_kwargs = []
 
     def serialize_inactive_final_sessions(self, idle_seconds):
         self.serialize_calls.append(idle_seconds)
         return self.serialize_result
 
+    def run_session_job(self, session_id, *, client_id=None, job):
+        self.run_jobs.append((session_id, client_id))
+        return job()
+
     def get_or_create_with_status(self, *args, **kwargs):
         self.calls += 1
+        self.acquire_kwargs.append(dict(kwargs))
         source = (
             self.acquire_source_sequence[self.calls - 1]
             if self.calls <= len(self.acquire_source_sequence)
@@ -221,6 +349,10 @@ class _FakeApiManager:
     def touch(self, session_id, *, client_id=None, is_final=None):
         self.touches.append((session_id, client_id, is_final))
         return True
+
+    def flush_buffered_snapshots(self, *, force=True):
+        self.flush_calls.append(force)
+        return 0
 
 
 class _FakeConn:
@@ -357,11 +489,17 @@ class TestApiActiveRuntime:
             def __init__(self, **kwargs):
                 self.kwargs = kwargs
                 self.closed = 0
+                self.flushed = []
                 created_managers.append(self)
 
-            def close_all_sessions(self):
+            def close_all_sessions(self, *, durable=True):
                 self.closed += 1
+                self.closed_durable = durable
                 return 2
+
+            def flush_buffered_snapshots(self, *, force=True):
+                self.flushed.append(force)
+                return 1
 
         def _make_thread(*, target=None, args=(), name=None, daemon=None):
             thread_holder["thread"] = _FakeThread(target=target, args=args, name=name, daemon=daemon)
@@ -388,9 +526,12 @@ class TestApiActiveRuntime:
         asyncio.run(_run())
 
         assert created_managers[0].closed == 1
+        assert created_managers[0].closed_durable is True
+        assert created_managers[0].flushed == [True]
         assert event.set_called is True
         assert thread_holder["thread"].join_timeout == 2
         assert ("Serialized sessions on shutdown", {"count": 2}) in infos
+        assert ("Flushed buffered snapshots on shutdown", {"count": 1}) in infos
         assert api_mod._llm is None
         assert api_mod._session_manager is None
         assert api_mod._session_sweeper_stop is None
@@ -407,7 +548,7 @@ class TestApiActiveRuntime:
             def __init__(self, **kwargs):
                 self.kwargs = kwargs
 
-            def close_all_sessions(self):
+            def close_all_sessions(self, *, durable=True):
                 raise RuntimeError("boom")
 
         monkeypatch.setattr(api_mod, "_setup_production_flags", lambda: None)
@@ -500,6 +641,11 @@ class TestApiActiveRuntime:
         assert result1["answer"] == "echo:Здравствуйте"
         assert result2["answer"] == "echo:Здравствуйте"
         assert manager.calls == 2
+        assert manager.run_jobs == [
+            ("BOT_6921_test", "77710107606"),
+            ("BOT_6921_test", "77710107606"),
+        ]
+        assert all(call.get("assume_locked") is True for call in manager.acquire_kwargs)
         assert len(bootstrap_calls) == 1
         assert len(bot.process_calls) == 2
         assert manager.touches == [

@@ -14,13 +14,72 @@ BUG 2: _init_db() lacked PRAGMA journal_mode=WAL.
 import json
 import os
 import sqlite3
+import sys
 import tempfile
 import threading
 import time
+import types
 from unittest.mock import MagicMock
 
 import pytest
 from src.media_preprocessor import PreparedMessage
+
+
+def _import_api_module_with_fastapi_stub(monkeypatch):
+    fastapi_mod = types.ModuleType("fastapi")
+    fastapi_concurrency = types.ModuleType("fastapi.concurrency")
+    fastapi_exceptions = types.ModuleType("fastapi.exceptions")
+    fastapi_responses = types.ModuleType("fastapi.responses")
+
+    class _FakeFastAPI:
+        def __init__(self, *args, **kwargs):
+            self.args = args
+            self.kwargs = kwargs
+
+        def exception_handler(self, *_args, **_kwargs):
+            def decorator(fn):
+                return fn
+
+            return decorator
+
+        def get(self, *_args, **_kwargs):
+            def decorator(fn):
+                return fn
+
+            return decorator
+
+        def post(self, *_args, **_kwargs):
+            def decorator(fn):
+                return fn
+
+            return decorator
+
+    class _FakeJSONResponse:
+        def __init__(self, status_code=200, content=None):
+            self.status_code = status_code
+            self.content = content
+
+    class _FakeRequestValidationError(Exception):
+        def errors(self):
+            return []
+
+    fastapi_mod.Depends = lambda value=None: value
+    fastapi_mod.FastAPI = _FakeFastAPI
+    fastapi_mod.Header = lambda default=None: default
+    fastapi_mod.Request = object
+    fastapi_concurrency.run_in_threadpool = lambda func, *args, **kwargs: func(*args, **kwargs)
+    fastapi_exceptions.RequestValidationError = _FakeRequestValidationError
+    fastapi_responses.JSONResponse = _FakeJSONResponse
+
+    monkeypatch.setitem(sys.modules, "fastapi", fastapi_mod)
+    monkeypatch.setitem(sys.modules, "fastapi.concurrency", fastapi_concurrency)
+    monkeypatch.setitem(sys.modules, "fastapi.exceptions", fastapi_exceptions)
+    monkeypatch.setitem(sys.modules, "fastapi.responses", fastapi_responses)
+    sys.modules.pop("src.api", None)
+
+    import src.api as api_mod
+
+    return api_mod
 
 
 # ---------------------------------------------------------------------------
@@ -30,9 +89,9 @@ from src.media_preprocessor import PreparedMessage
 class TestInitDbWalMode:
     """Verify _init_db() sets WAL journal mode and creates tables."""
 
-    def test_init_db_creates_tables(self, tmp_path):
+    def test_init_db_creates_tables(self, tmp_path, monkeypatch):
         """_init_db() must create conversations and user_profiles tables."""
-        import src.api as api_mod
+        api_mod = _import_api_module_with_fastapi_stub(monkeypatch)
 
         db_path = str(tmp_path / "test.db")
         original = api_mod.DB_PATH
@@ -54,9 +113,9 @@ class TestInitDbWalMode:
         finally:
             api_mod.DB_PATH = original
 
-    def test_init_db_sets_wal_mode(self, tmp_path):
+    def test_init_db_sets_wal_mode(self, tmp_path, monkeypatch):
         """_init_db() must set journal_mode=WAL for concurrent access."""
-        import src.api as api_mod
+        api_mod = _import_api_module_with_fastapi_stub(monkeypatch)
 
         db_path = str(tmp_path / "test_wal.db")
         original = api_mod.DB_PATH
@@ -73,9 +132,9 @@ class TestInitDbWalMode:
         finally:
             api_mod.DB_PATH = original
 
-    def test_concurrent_writes_succeed_with_wal(self, tmp_path):
+    def test_concurrent_writes_succeed_with_wal(self, tmp_path, monkeypatch):
         """Multiple threads writing simultaneously must not raise 'database is locked'."""
-        import src.api as api_mod
+        api_mod = _import_api_module_with_fastapi_stub(monkeypatch)
 
         db_path = str(tmp_path / "test_concurrent.db")
         original = api_mod.DB_PATH
@@ -113,9 +172,9 @@ class TestInitDbWalMode:
         finally:
             api_mod.DB_PATH = original
 
-    def test_snapshot_roundtrip(self, tmp_path):
+    def test_snapshot_roundtrip(self, tmp_path, monkeypatch):
         """_save_snapshot then _load_snapshot must return identical data."""
-        import src.api as api_mod
+        api_mod = _import_api_module_with_fastapi_stub(monkeypatch)
 
         db_path = str(tmp_path / "test_roundtrip.db")
         original = api_mod.DB_PATH
@@ -132,7 +191,7 @@ class TestInitDbWalMode:
             api_mod.DB_PATH = original
 
     def test_process_bootstraps_media_knowledge_for_new_session(self, tmp_path, monkeypatch):
-        import src.api as api_mod
+        api_mod = _import_api_module_with_fastapi_stub(monkeypatch)
 
         db_path = str(tmp_path / "bootstrap.db")
         original = api_mod.DB_PATH
@@ -190,8 +249,7 @@ class TestInitDbWalMode:
             captured = {}
 
             class _FakeBot:
-                def __init__(self, *_args, **_kwargs):
-                    pass
+                state_machine = types.SimpleNamespace(is_final=lambda: False)
 
                 def hydrate_external_memory(self, *, profile_data=None, media_cards=None):
                     captured["profile_data"] = profile_data
@@ -204,13 +262,27 @@ class TestInitDbWalMode:
                     captured["media_turn_context"] = media_turn_context
                     return {"response": "ok", "decision_trace": None}
 
-                def to_snapshot(self):
-                    return {}
+            class _FakeSessionManager:
+                def __init__(self):
+                    self.bot = _FakeBot()
+
+                def serialize_inactive_final_sessions(self, *_args, **_kwargs):
+                    return 0
+
+                def run_session_job(self, _session_id, *, client_id=None, job):
+                    captured["run_session_job_client_id"] = client_id
+                    return job()
+
+                def get_or_create_with_status(self, *_args, **_kwargs):
+                    return types.SimpleNamespace(bot=self.bot, source="new")
+
+                def touch(self, *_args, **_kwargs):
+                    return True
 
             monkeypatch.setattr(api_mod, "_llm", MagicMock())
-            monkeypatch.setattr(api_mod, "SalesBot", _FakeBot)
-            monkeypatch.setattr(api_mod, "_load_snapshot", lambda *_args, **_kwargs: None)
-            monkeypatch.setattr(api_mod, "_persist_bot_state", lambda *_args, **_kwargs: None)
+            monkeypatch.setattr(api_mod, "_session_manager", _FakeSessionManager())
+            monkeypatch.setattr(api_mod, "_save_user_profile", lambda *_args, **_kwargs: None)
+            monkeypatch.setattr(api_mod, "_save_media_knowledge", lambda *_args, **_kwargs: None)
             monkeypatch.setattr(
                 api_mod,
                 "prepare_autonomous_incoming_message",
@@ -232,15 +304,16 @@ class TestInitDbWalMode:
 
             api_mod._process_message_request(req)
 
+            assert captured["run_session_job_client_id"] == "user-1"
             assert captured["profile_data"]["company_name"] == "Альфа Логистик"
             assert captured["profile_data"]["business_type"] == "логистика"
             assert captured["media_cards"][0]["knowledge_id"] == "card-1"
         finally:
             api_mod.DB_PATH = original
 
-    def test_load_snapshot_returns_none_for_missing(self, tmp_path):
+    def test_load_snapshot_returns_none_for_missing(self, tmp_path, monkeypatch):
         """_load_snapshot for non-existent key must return None."""
-        import src.api as api_mod
+        api_mod = _import_api_module_with_fastapi_stub(monkeypatch)
 
         db_path = str(tmp_path / "test_missing.db")
         original = api_mod.DB_PATH

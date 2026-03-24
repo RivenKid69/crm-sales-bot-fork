@@ -331,6 +331,30 @@ class TestContentRepetitionGuardShouldContribute:
         )
         assert source.should_contribute(bb) is False
 
+    def test_terminal_requirements_treat_false_boolean_as_collected(self):
+        source = self._make_source()
+        bb = self._make_blackboard(
+            count=3,
+            repeated_question="price_question",
+            state_config={
+                "autonomous": True,
+                "terminal_state_requirements": {
+                    "video_call_scheduled": {
+                        "required_any": ["contact_name", "client_name"],
+                        "required_all": ["business_type", "city", "automation_before"],
+                        "required_if_true": {"automation_before": ["current_tools"]},
+                    }
+                },
+            },
+            collected_data={
+                "contact_name": "Айбота",
+                "business_type": "магазин",
+                "city": "Астана",
+                "automation_before": False,
+            },
+        )
+        assert source.should_contribute(bb) is False
+
     def test_normal_action_passes(self):
         """count=3 + last_action=autonomous_respond → True."""
         source = self._make_source()
