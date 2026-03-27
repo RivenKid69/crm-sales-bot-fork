@@ -100,7 +100,12 @@ class QueryRewriter:
             return True
         return self._word_count(text) < self.rewrite_min_words
 
-    def rewrite(self, user_message: str, history: Optional[List[Dict[str, Any]]] = None) -> str:
+    def rewrite(
+        self,
+        user_message: str,
+        history: Optional[List[Dict[str, Any]]] = None,
+        dialogue_text: Optional[str] = None,
+    ) -> str:
         original = (user_message or "").strip()
         if not original:
             return ""
@@ -123,7 +128,7 @@ class QueryRewriter:
         prompt = (
             "Перепиши вопрос клиента как самостоятельный поисковый запрос.\n"
             "Диалог:\n"
-            f"{self._format_last_turns(history)}\n"
+            f"{self._format_dialogue(history, dialogue_text=dialogue_text)}\n"
             f"Вопрос клиента: {original}\n"
             "Самостоятельный запрос:"
         )
@@ -266,9 +271,17 @@ class QueryRewriter:
             return unique[0]
         return None
 
-    def _format_last_turns(self, history: List[Dict[str, Any]]) -> str:
+    def _format_dialogue(
+        self,
+        history: List[Dict[str, Any]],
+        *,
+        dialogue_text: Optional[str] = None,
+    ) -> str:
+        rendered = str(dialogue_text or "").strip()
+        if rendered:
+            return rendered
         lines: List[str] = []
-        for turn in history[-3:]:
+        for turn in history:
             user = (turn.get("user") or "").strip()
             bot = (turn.get("bot") or "").strip()
             if user:
@@ -578,6 +591,7 @@ class EnhancedRetrievalPipeline:
         kb: Any,
         recently_used_keys: Optional[Set[str]] = None,
         history: Optional[List[Dict[str, Any]]] = None,
+        dialogue_text: Optional[str] = None,
         secondary_intents: Optional[List[str]] = None,
         semantic_frame: Optional[Dict[str, Any]] = None,
         collected_data: Optional[dict] = None,
@@ -636,6 +650,7 @@ class EnhancedRetrievalPipeline:
         rewritten_query = selection_resolved_query or self.query_rewriter.rewrite(
             user_message=user_message,
             history=history,
+            dialogue_text=dialogue_text,
         )
 
         # [2] Category routing (optional).

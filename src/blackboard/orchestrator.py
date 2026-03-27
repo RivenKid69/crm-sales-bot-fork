@@ -260,6 +260,8 @@ class DialogueOrchestrator:
         user_message: str = "",
         frustration_level: int = 0,
         dialog_history: list = None,
+        transcript: Optional[Any] = None,
+        history_projections: Optional[Dict[str, Any]] = None,
         media_turn_context: Optional[Any] = None,
     ) -> ResolvedDecision:
         """
@@ -292,6 +294,8 @@ class DialogueOrchestrator:
                 user_message=user_message,
                 frustration_level=frustration_level,
                 dialog_history=dialog_history,
+                transcript=transcript,
+                history_projections=history_projections,
                 media_turn_context=media_turn_context,
             )
 

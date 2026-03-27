@@ -9,6 +9,8 @@
 import re
 from typing import Dict, Set, List
 
+from src.conditions.state_machine.contact_validator import ContactValidator
+from src.contact_payload_parser import parse_inline_contact_payload
 from src.knowledge.lemmatizer import get_lemmatizer, Lemmatizer
 from src.yaml_config.constants import SPIN_PHASE_CLASSIFICATION
 
@@ -1630,60 +1632,21 @@ class DataExtractor:
         # === Контактная информация (с валидацией) ===
         # Используем ContactValidator для явной валидации и нормализации
         # Это предотвращает ложные срабатывания и обеспечивает качество данных
-        from src.conditions.state_machine.contact_validator import ContactValidator
         contact_validator = ContactValidator()
-
-        # Email (с валидацией)
-        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w{2,}', message)
-        if email_match:
-            email_result = contact_validator.validate_email(email_match.group(0))
-            if email_result.is_valid:
-                # Сохраняем нормализованный email (lowercase)
-                extracted["contact_info"] = email_result.normalized_value
-                extracted["contact_type"] = "email"  # Явно указываем тип
-
-        # Телефон (если email не найден)
-        if "contact_info" not in extracted:
-            phone_patterns = [
-                # +7 с разными разделителями: +7 999 123-45-67, +7(999)123-45-67, +79991234567
-                # (?<!\d) предотвращает матч внутри ИИН (12 цифр подряд)
-                r'(?<!\d)\+7[\s\-\.]?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{2}[\s\-\.]?\d{2}',
-                # 8 с разными разделителями: 8 999 123-45-67, 8(999)123-45-67
-                # (?!\d) на конце предотвращает матч первых 11 цифр ИИН (12-значного)
-                r'(?<!\d)8[\s\-\.]?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{2}[\s\-\.]?\d{2}(?!\d)',
-                # 10 цифр подряд (без кода страны): 9991234567
-                r'\b\d{10}\b',
-                # Формат XXX-XXX-XX-XX или XXX XXX XX XX
-                r'(?<!\d)\d{3}[\s\-\.]\d{3}[\s\-\.]\d{2}[\s\-\.]\d{2}',
-            ]
-            for pattern in phone_patterns:
-                phone_match = re.search(pattern, message)
-                if phone_match:
-                    phone_raw = phone_match.group(0).strip()
-                    phone_result = contact_validator.validate_phone(phone_raw)
-                    if phone_result.is_valid:
-                        # Сохраняем нормализованный телефон (+7XXXXXXXXXX)
-                        extracted["contact_info"] = phone_result.normalized_value
-                        extracted["contact_type"] = "phone"  # Явно указываем тип
-                        # KZ phones (prefix 7xx) also stored as kaspi_phone
-                        raw_digits = re.sub(r'\D', '', phone_raw)
-                        kz_prefix = int(raw_digits[-10:][:3]) if len(raw_digits) >= 10 else 0
-                        if 700 <= kz_prefix <= 799:
-                            extracted["kaspi_phone"] = phone_result.normalized_value
-                        break
-                    # Если телефон невалиден, продолжаем искать
-                    # (не сохраняем невалидные паттерны типа 1234567890)
+        inline_payload = parse_inline_contact_payload(message, validator=contact_validator)
+        if inline_payload.email:
+            extracted["contact_info"] = inline_payload.email
+            extracted["contact_type"] = "email"
+        elif inline_payload.phone:
+            extracted["contact_info"] = inline_payload.phone
+            extracted["contact_type"] = "phone"
+        if inline_payload.kaspi_phone:
+            extracted["kaspi_phone"] = inline_payload.kaspi_phone
 
         # === IIN (12-digit Kazakh national ID) ===
-        iin_patterns = [
-            r'(?:ИИН|ИНН|иин|инн)\s*:?\s*(\d{12})',  # with keyword
-        ]
         if "iin" not in extracted:
-            for pattern in iin_patterns:
-                iin_match = re.search(pattern, message, re.IGNORECASE)
-                if iin_match:
-                    extracted["iin"] = iin_match.group(1)
-                    break
+            if inline_payload.iin:
+                extracted["iin"] = inline_payload.iin
             # Contextual: standalone 12-digit number when iin is not yet collected.
             # Uses collected_data (not missing_data) so this works in all states,
             # including autonomous_closing where missing_data only lists required_data

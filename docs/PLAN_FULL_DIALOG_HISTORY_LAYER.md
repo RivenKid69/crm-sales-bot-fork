@@ -1,0 +1,137 @@
+# Единый Full-Dialog History Layer для Autonomous Pipeline
+
+## Summary
+- В autonomous pipeline ввести один canonical источник истории: append-only transcript всего диалога с полными raw сообщениями клиента и бота.
+- Гарантия этой фазы: полный диалог всегда доступен во всех live/hot-session autonomous сценариях, пока жив тот же in-memory runtime instance (`SalesBot` / cache entry) и не происходил snapshot/restore/recreate.
+- `ContextWindow`, `IntentTracker`, `generator._response_history`, `history_compact`, `dialog_history` перестают быть "заменителями истории"; они остаются только как аналитические, производные или специализированные runtime-представления.
+- Важно: `generator._response_history` не заменяется transcript и не объявляется частью canonical history; это отдельный bounded anti-dup cache генератора.
+- Полный transcript должен быть доступен каждому consumer по запросу, но не обязан целиком инжектиться в каждый prompt.
+- "Бот видит full dialog" в этой фазе означает: любой autonomous consumer может запросить полный transcript или нужную projection из canonical transcript; это не означает безусловную инъекцию полного raw диалога в каждый LLM prompt.
+- Prompt/render budget остаётся consumer-specific: formatter/projection может ограничивать объём истории, но источник у этих ограниченных окон должен быть один и тот же canonical transcript.
+- Под `hot-session` в этом документе понимается только непрерывная работа того же in-memory bot instance без rehydrate из local buffer / external snapshot, без `from_snapshot()`-восстановления и без re-instantiation при flow/config switch.
+- На переходный период `history` сохраняется как legacy runtime contract в точном формате `List[{"user": ..., "bot": ...}]`, но материализуется из transcript и не должен больше мутироваться напрямую.
+
+## Key Changes
+- Добавить отдельный доменный слой истории, например `DialogTranscript`, как единственный source of truth для текстового диалога.
+- Каноническая запись хода: `user_text`, `bot_text`, `turn_index`, timestamps, плюс опциональные meta (`intent`, `state`, `action`, `reason_codes`, `source_branch`) как вторичные поля; raw тексты клиента и бота обязательны.
+- `SalesBot` переводится с прямого владения `self.history` на владение transcript-объектом.
+- `self.history` на переходный период оставить только как read-only compatibility view, материализуемый из transcript через явный adapter вроде `transcript.as_legacy_history()`; новые direct writes в `self.history` запрещаются.
+- Ввести единый commit path, например `commit_turn(...)` / `append_completed_turn(...)`, который:
+  - атомарно append-ит завершённый ход в transcript;
+  - затем синхронно обновляет derived stores и compatibility views;
+  - становится единственной точкой записи вместо разрозненных `self.history.append(...)` по веткам.
+- Зафиксировать единый write surface:
+  - внешний runtime код пишет историю только через `commit_turn(...)` / coordinator;
+  - низкоуровневый `DialogTranscript.append(...)`, если существует, считается internal-only primitive и не используется напрямую consumers/runtime orchestration code.
+- Явно мигрировать на этот commit path все текущие ранние return-ветки и специальные ветки генерации:
+  - normal generation;
+  - media-only / forced response paths;
+  - fallback/soft-close paths;
+  - любые terminal и guard branches.
+- Жизненный цикл зафиксировать явно:
+  - До генерации transcript содержит только завершённые ходы.
+  - Текущее сообщение клиента передаётся отдельно как `current_user_message`.
+  - После финального ответа ход атомарно commit-ится в transcript и только потом обновляются совместимые derived stores.
+- Разделить роли памяти:
+  - Transcript: полный текстовый диалог для autonomous reasoning/retrieval/verification.
+  - `ContextWindow`: короткое окно и episodic memory для аналитики, guard, momentum, engagement.
+  - `IntentTracker`: счётчики и истории интентов.
+  - `HistoryCompactor`: только производный артефакт для snapshot/архива, не runtime source.
+  - `generator._response_history`: отдельный bounded anti-repeat cache, не source of truth диалога.
+- Все autonomous consumers перевести на единый transcript API вместо локальных ad-hoc slicing:
+  - classifier LLM / `dialog_history` short-context для тех autonomous путей, где классификатор использует историю диалога;
+  - decision LLM / blackboard autonomous decision source;
+  - generator prompt history;
+  - enhanced retrieval / query rewrite / fact disambiguation;
+  - factual verifier;
+  - response directives / anti-repeat;
+  - helper-логика вроде no-contact, repeated-name, question dedup, address instruction;
+  - deterministic post-process / boundary-related history checks.
+- Для каждого consumer использовать named projection из transcript, а не прямые `history[-N:]` в коде.
+- Отдельно зафиксировать миграцию blackboard-контракта:
+  - `ContextSnapshot.dialog_history` остаётся consumer-specific view для decision LLM;
+  - но наполняется projection-слоем transcript, а не `ContextWindow` и не локальной ручной сборкой.
+- Ввести централизованные projections:
+  - `completed_turns()`
+  - `recent_turns(n)`
+  - `recent_bot_responses(n)`
+  - `recent_user_messages(n)`
+  - `classifier_window(n)`
+  - `decision_window(n)`
+  - `prompt_window(max_turns)`
+  - `verifier_window(n)`
+  - `retrieval_window(n)`
+  - `legacy_history_view(max_turns=None)` или `as_legacy_history(max_turns=None)`
+  - `full_transcript()`
+- Projection layer должен уметь возвращать не только transcript turns, но и legacy shape `List[{"user","bot"}]` там, где это требуется существующими runtime-контрактами во время миграции.
+- Размер окон вынести в один конфиг/константный контракт на projection-уровне, а не размазывать `4/5/30` по коду.
+- Убрать ложные fallback’и и расхождения:
+  - не читать несуществующий `envelope.history`;
+  - не использовать `context_window` как запасной текстовый transcript;
+  - не реконструировать transcript из `ContextWindow` на restore path;
+  - не считать `history_compact` чем-то, что "участвует" в autonomous reasoning, пока он реально не инжектится;
+  - не собирать decision/generator/verifier windows вручную из разных источников.
+- Зафиксировать invariant согласованности:
+  - transcript всегда коммитится через единый coordinator;
+  - derived stores не должны жить своей отдельной "исторической правдой";
+  - если restore дал только tail/partial history, это явно маркируется как degraded continuity, а не как full-history runtime.
+- Для hot-session-only scope не делать durable full transcript обязательным результатом этой фазы.
+- Для этой фазы явно зафиксировать границу гарантии:
+  - hot-session guarantee действует только пока используется тот же in-memory bot instance;
+  - любой restore / rehydrate / `from_snapshot()` / re-instantiation при flow-config switch считается restore-path semantics и не подпадает под гарантию full-history continuity этой фазы.
+- При этом restore/snapshot path должен быть честным:
+  - если полный transcript недоступен после cold restore, создаётся partial transcript только из explicit restore payload (`history_tail` или эквивалентного явно переданного restore data);
+  - continuity маркируется как degraded;
+  - reconstruction transcript из `ContextWindow` не допускается;
+  - compatibility `history` после restore отражает только реально восстановленную часть explicit payload, а не "притворяется" full transcript.
+- Snapshot/restore в этой фазе не обязан становиться полноценным durable source of truth, но обязан не фальсифицировать полноту истории.
+- После cold restore поведение явно маркировать как degraded continuity, а не притворяться, что bot "видит полный диалог".
+
+## Public Interfaces / Types
+- Новый тип `DialogTranscriptTurn`.
+- Новый тип `DialogTranscript` с read/projection API и internal append primitive для coordinator-уровня.
+- Новый единый commit-контракт, например `TranscriptCommitCoordinator` или `commit_turn(...)`, как единственный публичный write path для завершённого хода.
+- Новый компактный контракт `HistoryProjectionPolicy` или эквивалентный config object для decision/generation/retrieval/verifier views.
+- В `SalesBot` добавить `transcript` как canonical field.
+- В `SalesBot` оставить `history` только как compatibility field/view на период миграции; direct mutation этого поля считается запрещённой.
+- В автономный runtime context передавать не только `history`, а `transcript` или готовые named projections; `history` оставить как compatibility field только на период миграции и только в legacy shape.
+- Для restore/degraded-mode добавить явный статус/метаданные происхождения истории, например:
+  - `transcript_status = full | partial | empty`
+  - `transcript_provenance = live | history_tail | explicit_restore_payload`
+  - `degraded_continuity = true/false`
+
+## Test Plan
+- Unit: append/read/projection transcript с обоими ролями сообщений и корректным порядком.
+- Unit: текущий `user_message` не дублируется в completed transcript до commit.
+- Unit: `legacy_history_view()` возвращает точный существующий формат `List[{"user","bot"}]`.
+- Unit: `classifier_window()` возвращает отдельную projection для classifier-side `dialog_history` и не подменяется ручным slicing в runtime code.
+- Unit: все autonomous projections берутся из одного transcript, а не из `ContextWindow`/локальных списков.
+- Unit: classifier `dialog_history`, если он используется в autonomous path, тоже строится из transcript projection, а не из `ContextWindow`.
+- Unit: decision-window для blackboard строится из transcript projection, а не из `ContextWindow`.
+- Unit: `response_directives`, factual verifier, enhanced retrieval и fact disambiguation читают один и тот же transcript source.
+- Unit: `generator._response_history` продолжает жить как отдельный bounded cache и не подменяется transcript.
+- Unit: direct writes в `self.history` больше не используются; все ветки записи проходят через единый `commit_turn`.
+- Unit: runtime/orchestration code не вызывает `DialogTranscript.append(...)` напрямую; единственный публичный write path — `commit_turn(...)`.
+- Integration: длинный autonomous диалог 12-20+ ходов, ранние факты доступны поздним autonomous consumers без зависимости от `ContextWindow.max_size`.
+- Integration: decision LLM получает свою projection из full transcript, generator свою, verifier свою; окна разные, источник один.
+- Integration: ранние return-ветки (`soft_close`, fallback, media/forced paths) тоже коммитят transcript через тот же coordinator и не создают расхождения между transcript и derived stores.
+- Regression: после нескольких factual follow-up ходов pipeline не "теряет" предыдущие бот/клиентские реплики внутри живой сессии.
+- Regression: compatibility path с `context["history"]` продолжает работать во время миграции, но фактически питается от transcript adapter.
+- Regression: prompt-formatting и verifier/retrieval helpers сохраняют текущий ожидаемый legacy shape истории до завершения миграции.
+- Snapshot tests обновить так, чтобы они больше не утверждали, что `tail-only restore` равен нормальной full-history continuity для autonomous hot path; это должно быть отдельным degraded-mode поведением.
+- Snapshot/restore tests: если после restore доступен только tail, `transcript_status/provenance` и `degraded_continuity` выставляются явно и консистентно.
+- Snapshot/restore tests: transcript после restore не реконструируется из `ContextWindow`; используются только explicit restore payloads.
+- Integration: rehydrate / flow-config switch через re-instantiation не считается hot-session continuity и должен явно давать degraded-mode semantics, если полного transcript payload нет.
+
+## Assumptions
+- Scope: autonomous-first. Дизайн общий, но обязательная миграция в этой фазе только для полного autonomous pipeline.
+- В scope этой фазы входит и classifier-side `dialog_history`, если он используется в autonomous runtime для LLM-классификации коротких/неоднозначных сообщений.
+- Гарантия этой фазы: live/hot-session only. Полный durable transcript после restart/close/restore не является обязательным результатом этого этапа.
+- `live/hot-session only` в этом документе означает только непрерывную жизнь того же in-memory bot instance; любой restore/recreate переводит систему в degraded/restore semantics.
+- Raw transcript хранит и сообщения клиента, и ответы бота целиком, без сокращения внутри живой сессии.
+- `ContextWindow` и compaction сохраняются, но больше не используются как substitute для canonical textual history.
+- `history` в этой фазе остаётся только переходным runtime adapter'ом для совместимости со старыми вызовами и шаблонными контрактами.
+- Если consumer ожидает ограниченное окно или legacy shape, это допустимо, но окно/shape должен выдавать projection layer transcript, а не локальный ad-hoc код.
+- Если после restore полный transcript недоступен, система не обязана "восстановить правду" из compaction/`ContextWindow`; она обязана честно показать degraded continuity и работать с partial transcript как с partial transcript, построенным только из explicit restore payload.
+- Для classifier-side history применяется отдельная named projection `classifier_window(n)`; classifier не должен получать историю через ручную сборку из `ContextWindow`.
+- Публичный write contract ровно один: `commit_turn(...)` / coordinator; direct append в transcript за пределами coordinator считается нарушением архитектуры.

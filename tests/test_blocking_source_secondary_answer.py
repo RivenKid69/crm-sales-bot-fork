@@ -41,12 +41,18 @@ class TestEscalateToHumanTemplate:
         )
         tmpl = templates["escalate_to_human"]
         assert "template" in tmpl, "escalate_to_human не содержит поле 'template'"
-        # Шаблон должен давать инструкцию про ценовой вопрос
-        assert "БАЗЕ ЗНАНИЙ" in tmpl["template"], (
-            "escalate_to_human не содержит инструкцию использовать базу знаний"
+        template_str = tmpl["template"]
+        assert "подтвержденных фактах" in template_str.lower(), (
+            "escalate_to_human должен опираться на подтвержденные факты"
         )
-        assert "менеджер" in tmpl["template"].lower() or "менеджер" in tmpl["template"], (
-            "escalate_to_human не содержит обещание связать с менеджером"
+        assert "чуть позже вам перезвонят" in template_str.lower(), (
+            "escalate_to_human должен использовать нейтральный delayed follow-up"
+        )
+        assert "менеджер или коллега позвонит" not in template_str.lower(), (
+            "escalate_to_human не должен обещать связь с менеджером или коллегой"
+        )
+        assert "живым сотрудником" not in template_str.lower(), (
+            "escalate_to_human не должен отсылать к живому сотруднику"
         )
 
     def test_blocking_with_pricing_template_loaded(self):
@@ -71,8 +77,8 @@ class TestEscalateToHumanTemplate:
             assert slot in template_str, (
                 f"blocking_with_pricing не содержит слот {slot}"
             )
-        assert "БАЗЕ ЗНАНИЙ" in template_str, (
-            "blocking_with_pricing не содержит инструкцию использовать базу знаний"
+        assert "подтвержденные факты" in template_str.lower(), (
+            "blocking_with_pricing должен опираться на подтвержденные факты"
         )
 
     def test_escalate_to_human_no_hallucinated_prices(self):
@@ -87,7 +93,7 @@ class TestEscalateToHumanTemplate:
             data = yaml.safe_load(f)
         tmpl_str = data["templates"]["escalate_to_human"]["template"]
         # Антигаллюцинационная инструкция
-        assert "НЕ выдумывай" in tmpl_str or "не придумывай" in tmpl_str.lower(), (
+        assert "не выдумывай" in tmpl_str.lower() or "не придумывай" in tmpl_str.lower(), (
             "escalate_to_human должен запрещать выдумывать данные"
         )
 

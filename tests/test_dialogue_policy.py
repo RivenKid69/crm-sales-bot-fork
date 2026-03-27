@@ -10,6 +10,7 @@ Phase 3 из PLAN_CONTEXT_POLICY.md:
 import pytest
 import sys
 import os
+from unittest.mock import patch
 
 from src.dialogue_policy import (
     CascadeDisposition,
@@ -101,6 +102,12 @@ class TestDialoguePolicy:
         """Проверить инициализацию в shadow mode."""
         policy = DialoguePolicy(shadow_mode=True)
         assert policy.shadow_mode is True
+
+    def test_init_does_not_report_autonomous_ssot_templates_as_missing(self):
+        """Autonomous SSOT templates should satisfy policy validation even without flow."""
+        with patch("src.logger.logger.error") as mock_error:
+            DialoguePolicy()
+        mock_error.assert_not_called()
 
     def test_maybe_override_disabled(self):
         """Проверить что overlay отключён без feature flag."""

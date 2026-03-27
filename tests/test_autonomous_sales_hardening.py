@@ -6,6 +6,7 @@ from unittest.mock import Mock
 from src.blackboard.sources.autonomous_decision import AutonomousDecisionRecord
 from src.blackboard.sources.autonomous_decision import AutonomousDecisionSource
 from src.classifier.intents.patterns import COMPILED_PRIORITY_PATTERNS
+from src.dialog_transcript import DialogTranscript
 from src.feature_flags import flags
 from src.generator import ResponseGenerator
 from src.response_boundary_validator import ResponseBoundaryValidator
@@ -45,6 +46,22 @@ def test_no_contact_boundary_blocks_contact_push_on_defer():
     ctx = {
         "user_message": "если ок, потом дам контакт",
         "history": [{"user": "если ок, потом дам контакт", "bot": "Ок"}],
+    }
+    sanitized = ResponseGenerator._enforce_no_contact_boundaries(raw, ctx)
+    low = sanitized.lower()
+    assert "остав" not in low
+    assert "телефон" not in low
+    assert "email" not in low
+
+
+def test_no_contact_boundary_prefers_transcript_over_legacy_history():
+    raw = "Подходит. Оставьте, пожалуйста, телефон или email, и менеджер свяжется."
+    ctx = {
+        "user_message": "хорошо",
+        "transcript": DialogTranscript.from_legacy_history(
+            [{"user": "если ок, потом дам контакт", "bot": "Ок"}]
+        ),
+        "history": [{"user": "legacy-user", "bot": "legacy-bot"}],
     }
     sanitized = ResponseGenerator._enforce_no_contact_boundaries(raw, ctx)
     low = sanitized.lower()
@@ -227,7 +244,6 @@ def test_autonomous_closing_prompt_understands_structured_terminal_requirements(
                 "payment_ready": {
                     "required_any": ["contact_name", "client_name"],
                     "required_all": ["business_type", "city", "automation_before"],
-                    "required_if_true": {"automation_before": ["current_tools"]},
                 }
             },
             "_skip_retrieval": True,
@@ -240,6 +256,7 @@ def test_autonomous_closing_prompt_understands_structured_terminal_requirements(
     assert "имя клиента" in low
     assert "город" in low
     assert "была ли раньше автоматизация" in low
+    assert "current_tools" not in low
 
 
 def test_autonomous_closing_prompt_treats_automation_before_false_as_collected(monkeypatch):
@@ -283,7 +300,6 @@ def test_autonomous_closing_prompt_treats_automation_before_false_as_collected(m
                 "video_call_scheduled": {
                     "required_any": ["contact_name", "client_name"],
                     "required_all": ["business_type", "city", "automation_before"],
-                    "required_if_true": {"automation_before": ["current_tools"]},
                 }
             },
             "_skip_retrieval": True,
@@ -294,6 +310,115 @@ def test_autonomous_closing_prompt_treats_automation_before_false_as_collected(m
     prompt = llm.generate.call_args_list[-1].args[0]
     low = prompt.lower()
     assert "была ли раньше автоматизация" not in low
+
+
+def test_autonomous_closing_prompt_uses_neutral_callback_language_after_payment_data(monkeypatch):
+    llm = Mock()
+    llm.generate.return_value = "Продолжим."
+
+    flow = SimpleNamespace(
+        name="autonomous",
+        get_template=lambda key: "{closing_data_request}",
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = None
+
+    monkeypatch.setattr(
+        "src.generator.get_retriever",
+        lambda: SimpleNamespace(
+            kb=SimpleNamespace(
+                company_name="Wipon",
+                company_description="Retail automation",
+            )
+        ),
+    )
+
+    generator.generate(
+        "autonomous_respond",
+        {
+            "intent": "question_features",
+            "state": "autonomous_closing",
+            "user_message": "ИИН 123456789012, Kaspi номер 87770001122",
+            "history": [],
+            "collected_data": {},
+            "missing_data": [],
+            "goal": "Закрыть сделку",
+            "spin_phase": "closing",
+            "terminal_state_requirements": {
+                "payment_ready": {
+                    "required_any": ["contact_name", "client_name"],
+                    "required_all": ["business_type", "city", "automation_before"],
+                }
+            },
+            "_skip_retrieval": True,
+            "retrieved_facts": "Есть онлайн-касса и мобильное приложение.",
+        },
+    )
+
+    prompt = llm.generate.call_args_list[-1].args[0]
+    low = prompt.lower()
+    assert "чуть позже вам перезвонят" in low
+    assert "коллег" not in low
+    assert "менеджер" not in low
+
+
+def test_strip_banned_phrases_neutralizes_role_based_handoff_language():
+    raw = (
+        "Менеджер свяжется с вами позже. "
+        "Как только получу реквизиты, передам информацию коллеге."
+    )
+    sanitized = ResponseGenerator._strip_banned_phrases(raw)
+    low = sanitized.lower()
+
+    assert "менедж" not in low
+    assert "коллег" not in low
+    assert "чуть позже вам перезвонят" in low
+    assert "уточню этот вопрос" in low
+
+
+def test_strip_banned_phrases_neutralizes_first_person_call_promise():
+    raw = "Я свяжусь с вами завтра и всё объясню."
+    sanitized = ResponseGenerator._strip_banned_phrases(raw)
+    low = sanitized.lower()
+
+    assert "свяжусь" not in low
+    assert "позвоню" not in low
+    assert "коллег" not in low
+    assert "чуть позже вам перезвонят" in low
+
+
+def test_boundary_hallucination_fallback_uses_neutral_callback_language():
+    validator = ResponseBoundaryValidator()
+    sanitized = validator._hallucination_fallback(
+        {
+            "state": "payment_ready",
+            "intent": "contact_provided",
+            "collected_data": {"contact_info": "+77070001122"},
+            "user_message": "телефон отправил",
+            "history": [],
+        }
+    )
+    low = sanitized.lower()
+    assert "коллег" not in low
+    assert "менедж" not in low
+    assert "чуть позже вам перезвонят" in low
+
+
+def test_boundary_deterministic_fallback_uses_neutral_callback_language():
+    validator = ResponseBoundaryValidator()
+    sanitized = validator._deterministic_fallback(
+        {
+            "state": "autonomous_closing",
+            "intent": "contact_provided",
+            "collected_data": {"contact_info": "+77070001122"},
+            "user_message": "контакт оставила",
+            "history": [],
+        }
+    )
+    low = sanitized.lower()
+    assert "коллег" not in low
+    assert "менедж" not in low
+    assert "чуть позже вам перезвонят" in low
     assert "какая была автоматизация" not in low
 
 
@@ -1221,7 +1346,7 @@ def test_invoice_status_sanitizer_non_payment_context_is_not_iin_push():
     )
     low = sanitized.lower()
     assert "счёт ещё не оформлен" in low
-    assert "видеозвон" in low
+    assert "следующему шагу позже" in low
 
 
 def test_fast_track_contact_disabled_when_client_defers_contact():
@@ -1363,6 +1488,20 @@ def test_autonomous_contact_request_is_removed_from_final_text():
     assert "подходит по задачам" in low
 
 
+def test_soft_close_contact_request_is_removed_without_selected_template():
+    sanitized = ResponseGenerator._suppress_autonomous_contact_requests(
+        "Подходит по задачам. Оставьте номер телефона для связи.",
+        {
+            "state": "soft_close",
+            "intent": "price_question",
+            "user_message": "Пока номер не дам.",
+        },
+    )
+    low = sanitized.lower()
+    assert "номер телефона" not in low
+    assert "подходит по задачам" in low
+
+
 def test_boundary_does_not_use_deterministic_vertical_assumption_detector():
     validator = ResponseBoundaryValidator()
     violations = validator._detect_violations(
@@ -1392,3 +1531,131 @@ def test_boundary_does_not_flag_connection_word_as_past_setup():
         },
     )
     assert "hallucinated_past_action" not in result.violations
+
+
+def test_non_factual_prompt_does_not_inject_unknown_kb_fallback(monkeypatch):
+    llm = Mock()
+    llm.generate.return_value = "Продолжим."
+
+    flow = SimpleNamespace(
+        name="autonomous",
+        get_template=lambda key: "{safety_rules}\n{unknown_fallback_contract}\nFACTS:{retrieved_facts}",
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = None
+
+    monkeypatch.setattr(
+        "src.generator.get_retriever",
+        lambda: SimpleNamespace(
+            kb=SimpleNamespace(
+                company_name="Wipon",
+                company_description="Retail automation",
+            )
+        ),
+    )
+
+    generator.generate(
+        "continue_current_goal",
+        {
+            "intent": "info_provided",
+            "state": "autonomous_discovery",
+            "user_message": "Хорошо",
+            "history": [{"user": "У меня 2 точки", "bot": "Поняла. А что сейчас используете?"}],
+            "collected_data": {},
+            "missing_data": ["current_tools"],
+            "goal": "Понять текущий процесс",
+            "spin_phase": "discovery",
+            "_skip_retrieval": True,
+            "retrieved_facts": "",
+        },
+    )
+
+    prompt = llm.generate.call_args_list[-1].args[0]
+    assert "Информация по этому вопросу будет уточнена." not in prompt
+    assert "Я уточню этот вопрос и чуть позже отпишу вам" not in prompt
+    assert "не обещай дополнительное уточнение" in prompt
+    assert "FACTS:" in prompt
+
+
+def test_factual_prompt_keeps_unknown_kb_fallback_instruction(monkeypatch):
+    llm = Mock()
+    llm.generate.return_value = "Есть мобильное приложение."
+
+    flow = SimpleNamespace(
+        name="autonomous",
+        get_template=lambda key: "{safety_rules}\n{unknown_fallback_contract}\nFACTS:{retrieved_facts}",
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = None
+
+    monkeypatch.setattr(
+        "src.generator.get_retriever",
+        lambda: SimpleNamespace(
+            kb=SimpleNamespace(
+                company_name="Wipon",
+                company_description="Retail automation",
+            )
+        ),
+    )
+
+    generator.generate(
+        "continue_current_goal",
+        {
+            "intent": "question_features",
+            "state": "autonomous_discovery",
+            "user_message": "Есть мобильное приложение?",
+            "history": [],
+            "collected_data": {},
+            "missing_data": [],
+            "goal": "Ответить по возможностям",
+            "spin_phase": "discovery",
+            "_skip_retrieval": True,
+            "retrieved_facts": "Есть мобильное приложение для владельца и кассира.",
+        },
+    )
+
+    prompt = llm.generate.call_args_list[0].args[0]
+    assert "Я уточню этот вопрос и чуть позже отпишу вам" in prompt
+    assert "Есть мобильное приложение для владельца и кассира." in prompt
+
+
+def test_unknown_kb_instruction_alias_matches_canonical_contract(monkeypatch):
+    llm = Mock()
+    llm.generate.return_value = "Продолжим."
+
+    flow = SimpleNamespace(
+        name="autonomous",
+        get_template=lambda key: "{unknown_fallback_contract}\nALIAS:{unknown_kb_instruction}",
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = None
+
+    monkeypatch.setattr(
+        "src.generator.get_retriever",
+        lambda: SimpleNamespace(
+            kb=SimpleNamespace(
+                company_name="Wipon",
+                company_description="Retail automation",
+            )
+        ),
+    )
+
+    generator.generate(
+        "continue_current_goal",
+        {
+            "intent": "info_provided",
+            "state": "autonomous_discovery",
+            "user_message": "Хорошо",
+            "history": [],
+            "collected_data": {},
+            "missing_data": ["current_tools"],
+            "goal": "Понять текущий процесс",
+            "spin_phase": "discovery",
+            "_skip_retrieval": True,
+            "retrieved_facts": "",
+        },
+    )
+
+    prompt = llm.generate.call_args_list[-1].args[0]
+    contract, alias = prompt.split("\nALIAS:", 1)
+    assert contract == alias

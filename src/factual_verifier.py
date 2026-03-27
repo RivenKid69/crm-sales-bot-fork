@@ -112,6 +112,7 @@ class FactualVerifier:
         intent: str,
         state: str,
         dialog_history: Optional[List[dict]] = None,
+        dialogue_text: Optional[str] = None,
     ) -> VerificationResult:
         original = str(candidate_response or "").strip()
         facts_text = str(retrieved_facts or "").strip()
@@ -157,6 +158,7 @@ class FactualVerifier:
             state=state,
             allow_rewrite=self.rewrite_on_fail,
             dialog_history=dialog_history,
+            dialogue_text=dialogue_text,
         )
         if first is None:
             reason_codes: List[str] = ["llm_error"]
@@ -166,6 +168,7 @@ class FactualVerifier:
                 intent=intent,
                 state=state,
                 dialog_history=dialog_history,
+                dialogue_text=dialogue_text,
             )
             if llm_rewrite is not None:
                 rewritten_text, rewrite_reason = llm_rewrite
@@ -215,6 +218,7 @@ class FactualVerifier:
                 state=state,
                 allow_rewrite=False,
                 dialog_history=dialog_history,
+                dialogue_text=dialogue_text,
             )
             if second is not None and second.verdict == "pass":
                 cleaned_rewrite = self._ensure_no_forbidden_fallback(
@@ -242,6 +246,7 @@ class FactualVerifier:
             intent=intent,
             state=state,
             dialog_history=dialog_history,
+            dialogue_text=dialogue_text,
         )
         if llm_rewrite is not None:
             rewritten_text, rewrite_reason = llm_rewrite
@@ -276,6 +281,7 @@ class FactualVerifier:
         state: str,
         allow_rewrite: bool,
         dialog_history: Optional[List[dict]] = None,
+        dialogue_text: Optional[str] = None,
     ) -> Optional[VerifierOutput]:
         mode = "rewrite" if allow_rewrite else "verify_only"
         prompt = self._build_prompt(
@@ -286,6 +292,7 @@ class FactualVerifier:
             state=state,
             mode=mode,
             dialog_history=dialog_history,
+            dialogue_text=dialogue_text,
         )
         try:
             result = self.llm.generate_structured(
@@ -312,6 +319,7 @@ class FactualVerifier:
         intent: str,
         state: str,
         dialog_history: Optional[List[dict]] = None,
+        dialogue_text: Optional[str] = None,
     ) -> Optional[VerifierOutput]:
         """Run a strict verify-only pass (no rewrite) for an already-mutated response."""
         response = str(candidate_response or "").strip()
@@ -331,6 +339,7 @@ class FactualVerifier:
             state=state,
             allow_rewrite=False,
             dialog_history=dialog_history,
+            dialogue_text=dialogue_text,
         )
         return result
 
@@ -344,6 +353,7 @@ class FactualVerifier:
         state: str,
         mode: str,
         dialog_history: Optional[List[dict]] = None,
+        dialogue_text: Optional[str] = None,
     ) -> str:
         rewrite_policy = (
             "Если verdict=fail, перепиши ответ строго по фактам из KB. "
@@ -359,9 +369,12 @@ class FactualVerifier:
         )
 
         history_block = ""
-        if dialog_history:
+        rendered_dialogue = str(dialogue_text or "").strip()
+        if rendered_dialogue:
+            history_block = f"ИСТОРИЯ ДИАЛОГА:\n{rendered_dialogue}\n\n"
+        elif dialog_history:
             lines = []
-            for entry in dialog_history[-4:]:
+            for entry in dialog_history:
                 user_txt = str(entry.get("user", "") or "").strip()
                 bot_txt = str(entry.get("bot", "") or "").strip()
                 if not user_txt and not bot_txt:
@@ -444,11 +457,15 @@ class FactualVerifier:
         intent: str,
         state: str,
         dialog_history: Optional[List[dict]] = None,
+        dialogue_text: Optional[str] = None,
     ) -> str:
         history_block = ""
-        if dialog_history:
+        rendered_dialogue = str(dialogue_text or "").strip()
+        if rendered_dialogue:
+            history_block = f"ИСТОРИЯ ДИАЛОГА:\n{rendered_dialogue}\n\n"
+        elif dialog_history:
             lines = []
-            for entry in dialog_history[-4:]:
+            for entry in dialog_history:
                 user_txt = str(entry.get("user", "") or "").strip()
                 bot_txt = str(entry.get("bot", "") or "").strip()
                 if not user_txt and not bot_txt:
@@ -485,6 +502,7 @@ class FactualVerifier:
         intent: str,
         state: str,
         dialog_history: Optional[List[dict]] = None,
+        dialogue_text: Optional[str] = None,
     ) -> str:
         generate_fn = getattr(self.llm, "generate", None)
         if not callable(generate_fn):
@@ -496,6 +514,7 @@ class FactualVerifier:
             intent=intent,
             state=state,
             dialog_history=dialog_history,
+            dialogue_text=dialogue_text,
         )
         try:
             response = generate_fn(
@@ -534,6 +553,7 @@ class FactualVerifier:
         intent: str,
         state: str,
         dialog_history: Optional[List[dict]] = None,
+        dialogue_text: Optional[str] = None,
     ) -> Optional[tuple[str, str]]:
         rewritten = self._rewrite_from_kb_llm(
             user_message=user_message,
@@ -541,6 +561,7 @@ class FactualVerifier:
             intent=intent,
             state=state,
             dialog_history=dialog_history,
+            dialogue_text=dialogue_text,
         )
         if not rewritten:
             return None
@@ -552,6 +573,7 @@ class FactualVerifier:
             state=state,
             allow_rewrite=False,
             dialog_history=dialog_history,
+            dialogue_text=dialogue_text,
         )
         if verified is None or verified.verdict != "pass":
             return None

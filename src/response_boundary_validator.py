@@ -19,6 +19,11 @@ from pydantic import BaseModel, Field
 
 from src.feature_flags import flags
 from src.logger import logger
+from src.response_routing_contract import (
+    build_response_routing_context,
+    is_autonomous_response_context,
+)
+from src.dialog_transcript import history_list_from_context
 from src.unknown_kb_fallbacks import pick_unknown_kb_fallback, with_unknown_kb_fallback
 
 
@@ -725,12 +730,12 @@ class ResponseBoundaryValidator:
         return any(marker in low for marker in refusal_markers)
 
     @staticmethod
-    def _history_user_text(context: Dict[str, Any], limit: int = 4) -> str:
-        history = context.get("history", [])
-        if not isinstance(history, list):
-            return ""
+    def _history_user_text(context: Dict[str, Any], limit: Optional[int] = None) -> str:
+        history = history_list_from_context(context, "boundary")
+        if limit is not None and limit > 0:
+            history = history[-limit:]
         chunks: List[str] = []
-        for item in history[-limit:]:
+        for item in history:
             if isinstance(item, dict):
                 user = item.get("user", "")
                 if user:
@@ -761,17 +766,7 @@ class ResponseBoundaryValidator:
         return self._has_payment_marker(f"{user_msg} {history_user}")
 
     def _is_autonomous_flow_context(self, context: Optional[Dict[str, Any]]) -> bool:
-        ctx = context or {}
-        state = str(ctx.get("state", "") or "").lower()
-        template = str(ctx.get("selected_template", "") or "").lower()
-        return state.startswith("autonomous_") or state in {
-            "payment_ready",
-            "video_call_scheduled",
-        } or template in {
-            "autonomous_respond",
-            "continue_current_goal",
-            "autonomous_media_only",
-        }
+        return is_autonomous_response_context(context=context)
 
     def _is_autonomous_no_contact_context(self, context: Optional[Dict[str, Any]]) -> bool:
         ctx = context or {}
@@ -795,10 +790,10 @@ class ResponseBoundaryValidator:
         return any(marker in source for marker in markers)
 
     def _is_unknown_source_guard_context(self, context: Optional[Dict[str, Any]]) -> bool:
-        ctx = context or {}
+        ctx = build_response_routing_context(context=context)
         intent = str(ctx.get("intent", "") or "").lower()
         action = str(ctx.get("action", "") or "").lower()
-        template = str(ctx.get("selected_template", "") or "").lower()
+        template = str(ctx.get("selected_template_key", "") or "").lower()
         if intent in {
             "request_sla",
             "question_security",
@@ -840,7 +835,7 @@ class ResponseBoundaryValidator:
         context: Optional[Dict[str, Any]] = None,
         llm: Any = None,
     ) -> BoundaryValidationResult:
-        context = context or {}
+        context = build_response_routing_context(context=context)
         original = response or ""
 
         # Master switch.
@@ -1021,6 +1016,7 @@ class ResponseBoundaryValidator:
         )
 
     def _detect_violations(self, response: str, context: Dict[str, Any]) -> List[str]:
+        context = build_response_routing_context(context=context)
         violations: List[str] = []
 
         if self._is_pricing_context(context) and self.RUB_PATTERN.search(response):
@@ -1105,7 +1101,7 @@ class ResponseBoundaryValidator:
             violations.append("hallucinated_contact_claim")
 
         # Greeting opener is wrong in ANY non-greeting template (mid-conversation)
-        _tmpl = context.get("selected_template", "")
+        _tmpl = context.get("selected_template_key", "")
         if "greeting" not in _tmpl and "greet" not in _tmpl and self.MID_CONV_GREETING_PATTERN.match(response):
             violations.append("mid_conversation_greeting")
 
@@ -1398,7 +1394,7 @@ class ResponseBoundaryValidator:
             return (
                 "Счёт без ИИН оформить нельзя. "
                 "Если хотите, можем продолжить консультацию в чате "
-                "или зафиксировать контакт для видеозвонка с коллегой."
+                "или вернуться к следующему шагу позже."
             )
         return response
 
@@ -1410,7 +1406,7 @@ class ResponseBoundaryValidator:
                     "Если захотите, разберём ваш кейс по шагам без передачи контактов."
                 )
             return (
-                "Для подробной консультации нужен контакт, чтобы менеджер согласовал удобное время. "
+                "Для подробной консультации нужен контакт, чтобы согласовать удобное время. "
                 "Если контакт пока не готовы дать, могу кратко ответить на вопросы здесь."
             )
         return response
@@ -1463,7 +1459,7 @@ class ResponseBoundaryValidator:
             return (
                 "Счёт ещё не оформлен. "
                 "Если захотите оформление, понадобится ИИН и номер телефона Kaspi. "
-                "Можем также перейти к видеозвонку с менеджером."
+                "Можем также вернуться к следующему шагу позже."
             )
         return response
 
@@ -1740,17 +1736,17 @@ class ResponseBoundaryValidator:
         if state == "payment_ready":
             return (
                 "Подтверждаю, вы готовы к оплате. "
-                "В ближайшее время коллега позвонит вам, чтобы завершить покупку."
+                "Чуть позже вам перезвонят, чтобы завершить покупку."
             )
         if state == "video_call_scheduled":
             return (
                 "Подтверждаю, видеозвонок нужен. "
-                "В ближайшее время коллега позвонит вам, чтобы точно согласовать время."
+                "Чуть позже вам перезвонят, чтобы согласовать время."
             )
         if intent == "contact_provided" and state == "payment_ready":
             return (
                 "Подтверждаю, вы готовы к оплате. "
-                "В ближайшее время коллега позвонит вам, чтобы завершить покупку."
+                "Чуть позже вам перезвонят, чтобы завершить покупку."
             )
         if intent in {"contact_provided", "callback_request", "demo_request"}:
             if self._is_autonomous_flow_context(ctx):
@@ -1760,18 +1756,18 @@ class ResponseBoundaryValidator:
                         "Напишите, какой вопрос хотите закрыть следующим."
                     )
                 return (
-                    "Спасибо! В ближайшее время коллега свяжется с вами, "
+                    "Спасибо! Чуть позже вам перезвонят, "
                     "если захотите перейти к следующему шагу."
                 )
             if not has_contact_now:
                 # Check if client asked about free trial vs scheduling demo
                 return (
                     "Отлично, давайте организуем. "
-                    "Оставьте номер телефона — мой коллега позвонит и подберёт оптимальный тариф."
+                    "Оставьте номер телефона — чуть позже вам перезвонят и помогут подобрать оптимальный тариф."
                 )
             return (
-                "Спасибо! Мой коллега позвонит вам "
-                "в ближайшее время и согласует удобное время."
+                "Спасибо! Чуть позже вам перезвонят "
+                "и согласуют удобное время."
             )
         if intent == "objection_contract_bound":
             if self._has_iin_refusal_marker(refusal_source) or self._is_payment_context(ctx):
@@ -1824,7 +1820,7 @@ class ResponseBoundaryValidator:
             if self._is_autonomous_flow_context(ctx):
                 return (
                     "Подтверждаю, можно переходить к оформлению. "
-                    "В ближайшее время коллега подскажет следующий шаг по оплате."
+                    "Чуть позже вам перезвонят по следующему шагу оплаты."
                 )
             return (
                 "Для оплаты через Kaspi нужны ваш ИИН и номер Kaspi. "
@@ -1832,8 +1828,8 @@ class ResponseBoundaryValidator:
             )
         if state == "autonomous_closing" and has_contact_now:
             return (
-                "Спасибо! Мой коллега позвонит вам "
-                "в ближайшее время и согласует удобное время."
+                "Спасибо! Чуть позже вам перезвонят "
+                "и согласуют следующий шаг."
             )
         if state == "autonomous_closing":
             if self._has_contact_refusal_marker(refusal_source):
@@ -1937,7 +1933,7 @@ class ResponseBoundaryValidator:
         if "closing" in state:
             return (
                 "Чтобы продолжить оформление, оставьте номер телефона — "
-                "коллега позвонит и согласует удобное время."
+                "чуть позже вам перезвонят и согласуют удобное время."
             )
         if "negotiation" in state:
             return self._grounded_pricing_fallback(ctx, user_message)
@@ -2052,7 +2048,8 @@ class ResponseBoundaryValidator:
             return None
 
     def _sanitize_mid_conversation_greeting(self, response: str, context: Dict[str, Any]) -> str:
-        _tmpl = context.get("selected_template", "")
+        context = build_response_routing_context(context=context)
+        _tmpl = context.get("selected_template_key", "")
         if "greeting" in _tmpl or "greet" in _tmpl:
             return response  # не трогаем начальное приветствие
         cleaned = self.MID_CONV_GREETING_PATTERN.sub("", response).strip()
@@ -2120,7 +2117,8 @@ class ResponseBoundaryValidator:
             + "Контекст:\n"
             f"intent={context.get('intent', '')}\n"
             f"action={context.get('action', '')}\n"
-            f"selected_template={context.get('selected_template', '')}\n\n"
+            f"selected_template_key={context.get('selected_template_key', '')}\n"
+            f"response_mode={context.get('response_mode', '')}\n\n"
             "Исходный ответ:\n"
             f"{response}"
         )
@@ -2132,12 +2130,12 @@ class ResponseBoundaryValidator:
         if state == "payment_ready":
             return (
                 "Подтверждаю, вы готовы к оплате. "
-                "В ближайшее время коллега позвонит вам, чтобы завершить покупку."
+                "Чуть позже вам перезвонят, чтобы завершить покупку."
             )
         if state == "video_call_scheduled":
             return (
                 "Подтверждаю, видеозвонок нужен. "
-                "В ближайшее время коллега позвонит вам, чтобы точно согласовать время."
+                "Чуть позже вам перезвонят, чтобы согласовать время."
             )
         if intent == "request_brevity":
             return (
@@ -2151,8 +2149,8 @@ class ResponseBoundaryValidator:
                     "Могу продолжить консультацию здесь и ответить по делу."
                 )
             return (
-                "Спасибо! Мой коллега позвонит вам "
-                "в ближайшее время и согласует удобное время."
+                "Спасибо! Чуть позже вам перезвонят "
+                "и согласуют следующий шаг."
             )
         if self._has_contact_refusal_marker(refusal_source):
             user_msg_low = str(context.get("user_message", "") or "").lower()
@@ -2444,7 +2442,7 @@ class ResponseBoundaryValidator:
     def _is_pricing_context(self, context: Dict[str, Any]) -> bool:
         intent = str(context.get("intent", "")).lower()
         action = str(context.get("action", "")).lower()
-        template = str(context.get("selected_template", "")).lower()
+        template = str(context.get("selected_template_key", "")).lower()
         user_message = str(context.get("user_message", "")).lower()
 
         pricing_signals = (

@@ -184,6 +184,8 @@ class DialogueBlackboard:
         user_message: str = "",
         frustration_level: int = 0,
         dialog_history: list = None,
+        transcript: Any = None,
+        history_projections: Optional[Dict[str, Any]] = None,
         media_turn_context: Optional[MediaTurnContext] = None,
     ) -> None:
         """
@@ -326,6 +328,8 @@ class DialogueBlackboard:
             frustration_level=frustration_level,
             # Dialog history for decision LLM
             dialog_history=tuple(dialog_history or []),
+            transcript=transcript,
+            history_projections=deep_freeze_dict(dict(history_projections or {})),
             media_turn_context=freeze_media_turn_context(media_turn_context),
         )
 

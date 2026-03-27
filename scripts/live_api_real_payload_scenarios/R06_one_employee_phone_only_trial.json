@@ -1,0 +1,105 @@
+{
+  "scenario_id": "R06",
+  "name": "Один сотрудник, запуск только с телефона, без оборудования на старте",
+  "notes": "Собрано из реального диалога, где клиент хочет начать с телефона, без лишней техники, уточняет бонусы и готов сразу перейти к тестовому периоду.",
+  "grounding": {
+    "source_files": [
+      "диалоги/TXT.txt"
+    ],
+    "observed_patterns": [
+      "1 сотрудник",
+      "Хорошо, напишите через телефон как это сделать",
+      "Через телефон или ноутбук нужно будет",
+      "Сканер и принтер подключаются только если понадобятся",
+      "У вас же в программе есть бонусная система",
+      "Давайте",
+      "Или лучше рабочий телефон указать"
+    ]
+  },
+  "events": [
+    {
+      "id": "evt_r06_001",
+      "timestamp": 1774365000000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Здравствуйте",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_002",
+      "timestamp": 1774365060000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "У меня один сотрудник",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_003",
+      "timestamp": 1774365120000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Небольшой магазин у дома",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_004",
+      "timestamp": 1774365180000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Хорошо, напишите через телефон как это сделать",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_005",
+      "timestamp": 1774365240000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Ноутбук покупать не хочу",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_006",
+      "timestamp": 1774365300000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Сканер и принтер сразу обязательно нужны?",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_007",
+      "timestamp": 1774365360000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Если пока без оборудования начать можно?",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_008",
+      "timestamp": 1774365420000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Бонусная система есть?",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_009",
+      "timestamp": 1774365480000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Там проценты я сама настраиваю?",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_010",
+      "timestamp": 1774365540000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Давайте тестовый период",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_011",
+      "timestamp": 1774365600000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "ИИН и номер сюда отправить?",
+      "cleint_phone": "77770010006"
+    },
+    {
+      "id": "evt_r06_012",
+      "timestamp": 1774365660000,
+      "session": "BOT_REAL_R06_TEST",
+      "client_text": "Или лучше рабочий телефон указать",
+      "cleint_phone": "77770010006"
+    }
+  ]
+}

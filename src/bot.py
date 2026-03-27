@@ -19,6 +19,7 @@ import time
 import re
 import json
 import uuid
+from collections.abc import MutableSequence
 from dataclasses import dataclass, replace
 from typing import Dict, List, Optional, Any, Set, Sequence
 
@@ -76,6 +77,19 @@ from src.media_turn_context import (
     scrub_media_extracted_data,
     scrub_media_fact_list,
 )
+from src.response_routing_contract import (
+    build_response_routing_context,
+    is_autonomous_response_context,
+)
+from src.dialog_transcript import (
+    DialogTranscript,
+    HistoryProjectionPolicy,
+    project_history_from_context,
+)
+from src.autonomous_profile_extractor import (
+    AUTONOMOUS_PROFILE_FIELDS,
+    AutonomousProfileExtractor,
+)
 
 # Personalization v2: Adaptive personalization
 from src.personalization import EffectiveActionTracker
@@ -101,6 +115,65 @@ from src.decision_trace import (
 
 
 MEDIA_PROFILE_SAFE_FIELDS: Set[str] = set(MEDIA_PROFILE_SAFE_FIELDS_SET)
+
+
+class _LegacyHistoryCompatView(MutableSequence):
+    """Mutable compatibility adapter that writes back into canonical transcript."""
+
+    def __init__(self, bot: "SalesBot") -> None:
+        self._bot = bot
+
+    def _current(self) -> List[Dict[str, str]]:
+        return self._bot.transcript.as_legacy_history()
+
+    def _commit(self, value: Sequence[Dict[str, Any]]) -> None:
+        current_transcript = self._bot.transcript
+        next_status = current_transcript.status
+        if value:
+            if next_status == "empty":
+                next_status = "full"
+        else:
+            next_status = "empty"
+        self._bot._replace_history_compat(  # noqa: SLF001
+            value,
+            status=next_status,
+            provenance=current_transcript.provenance,
+            degraded_continuity=current_transcript.degraded_continuity,
+        )
+
+    def __len__(self) -> int:
+        return len(self._current())
+
+    def __getitem__(self, index):
+        return self._current()[index]
+
+    def __setitem__(self, index, value) -> None:
+        current = self._current()
+        current[index] = value
+        self._commit(current)
+
+    def __delitem__(self, index) -> None:
+        current = self._current()
+        del current[index]
+        self._commit(current)
+
+    def insert(self, index: int, value: Dict[str, Any]) -> None:
+        current = self._current()
+        current.insert(index, value)
+        self._commit(current)
+
+    def __repr__(self) -> str:
+        return repr(self._current())
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _LegacyHistoryCompatView):
+            return self._current() == other._current()
+        if isinstance(other, Sequence):
+            return self._current() == list(other)
+        return False
+
+    def copy(self) -> List[Dict[str, str]]:
+        return self._current()
 
 
 @dataclass
@@ -182,7 +255,9 @@ class SalesBot:
             flow=self._flow,
         )
         self.generator = ResponseGenerator(llm, flow=self._flow)
-        self.history: List[Dict] = []
+        self.autonomous_profile_extractor = AutonomousProfileExtractor(self.generator.llm)
+        self.history_projection_policy = HistoryProjectionPolicy()
+        self.transcript = DialogTranscript(policy=self.history_projection_policy)
         self.history_compact: Optional[Dict[str, Any]] = None
         self.history_compact_meta: Optional[Dict[str, Any]] = None
 
@@ -330,7 +405,7 @@ class SalesBot:
 
         # Reset core
         self.state_machine.reset()
-        self.history = []
+        self.transcript = DialogTranscript(policy=self.history_projection_policy)
         self.last_action = None
         self.last_intent = None
         self.last_bot_message = None
@@ -370,6 +445,49 @@ class SalesBot:
         self._decision_traces = []
 
         logger.info("SalesBot reset", conversation_id=self.conversation_id)
+
+    @property
+    def history(self) -> MutableSequence[Dict[str, str]]:
+        """Legacy compatibility view materialized from canonical transcript."""
+        return _LegacyHistoryCompatView(self)
+
+    def _replace_history_compat(
+        self,
+        value: Optional[Sequence[Dict[str, Any]]],
+        *,
+        status: str,
+        provenance: str,
+        degraded_continuity: bool,
+    ) -> None:
+        self.transcript = DialogTranscript.from_legacy_history(
+            value or [],
+            policy=self.history_projection_policy,
+            status=status,
+            provenance=provenance,
+            degraded_continuity=degraded_continuity,
+        )
+
+    @history.setter
+    def history(self, value: Optional[List[Dict[str, Any]]]) -> None:
+        """Compatibility setter for bulk restore/test setup; runtime writes use commit_turn()."""
+        self._replace_history_compat(
+            value or [],
+            status="full" if value else "empty",
+            provenance="explicit_restore_payload" if value else "live",
+            degraded_continuity=False,
+        )
+
+    @property
+    def transcript_status(self) -> str:
+        return self.transcript.status
+
+    @property
+    def transcript_provenance(self) -> str:
+        return self.transcript.provenance
+
+    @property
+    def degraded_continuity(self) -> bool:
+        return bool(self.transcript.degraded_continuity)
 
     @property
     def disambiguation_ui(self):
@@ -437,17 +555,84 @@ class SalesBot:
         context["confidence_trend"] = self.context_window.get_confidence_trend()
 
         # История диалога (последние 4 хода) для классификации коротких ответов
-        recent_turns = self.context_window.get_last_n_turns(4)
-        if recent_turns:
+        dialog_history = self.transcript.classifier_window()
+        if dialog_history:
             context["dialog_history"] = [
                 {
-                    "bot": (t.bot_response or "")[:250],
-                    "user": t.user_message[:200],
+                    "bot": str(t.get("bot", "") or "")[:250],
+                    "user": str(t.get("user", "") or "")[:200],
                 }
-                for t in recent_turns
+                for t in dialog_history
             ]
 
         return context
+
+    def _build_history_projections(self) -> Dict[str, List[Dict[str, str]]]:
+        return self.transcript.projection_bundle()
+
+    def commit_turn(
+        self,
+        *,
+        user_message: str,
+        bot_message: str,
+        intent: str,
+        confidence: float,
+        action: str,
+        state: str,
+        next_state: str,
+        method: str,
+        extracted_data: Optional[Dict[str, Any]] = None,
+        is_fallback: bool = False,
+        fallback_tier: Optional[str] = None,
+        fact_keys_used: Optional[List[str]] = None,
+        response_embedding: Optional[Any] = None,
+        media_cards_to_store: Optional[List[Dict[str, Any]]] = None,
+        reason_codes: Optional[List[str]] = None,
+        source_branch: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Canonical write path for completed turns."""
+        self.transcript.append_turn_internal(
+            user_text=user_message,
+            bot_text=bot_message,
+            intent=intent,
+            state=next_state,
+            action=action,
+            reason_codes=reason_codes or [],
+            source_branch=source_branch or method,
+            metadata=metadata or {},
+        )
+
+        self.context_window.add_turn_from_dict(
+            user_message=user_message,
+            bot_response=bot_message,
+            intent=intent,
+            confidence=confidence,
+            action=action,
+            state=state,
+            next_state=next_state,
+            method=method,
+            extracted_data=extracted_data or {},
+            is_fallback=is_fallback,
+            fallback_tier=fallback_tier,
+            fact_keys_used=fact_keys_used or [],
+            response_embedding=response_embedding,
+        )
+        self._store_media_knowledge_cards(media_cards_to_store)
+
+        if self.action_tracker and self.last_action:
+            turn_type = "NEUTRAL"
+            if hasattr(self.context_window, "get_last_turn_type"):
+                turn_type = self.context_window.get_last_turn_type() or "NEUTRAL"
+            self.action_tracker.record_outcome(
+                action=self.last_action,
+                turn_type=turn_type,
+                intent=intent,
+            )
+
+        self.last_action = action
+        self.last_intent = intent
+        self.last_bot_message = bot_message
 
     def _analyze_tone(self, user_message: str) -> Dict:
         """
@@ -719,7 +904,7 @@ class SalesBot:
 
         # Respect explicit "no pressure / no contact" requests — no CTA push.
         msg = str(context.get("user_message", "") or "").lower()
-        history = context.get("history", [])
+        history = project_history_from_context(context, "prompt_window", max_turns=4)
         recent_user_text = " ".join(
             str(turn.get("user", "") or "").lower()
             for turn in (history[-4:] if isinstance(history, list) else [])
@@ -940,6 +1125,79 @@ class SalesBot:
                 continue
             merged[key] = value
         return merged
+
+    def _build_autonomous_profile_history(
+        self,
+        current_user_message: str,
+    ) -> List[Dict[str, str]]:
+        history = self.transcript.full_history_list()
+        if str(current_user_message or "").strip():
+            history.append({"user": str(current_user_message or "").strip(), "bot": ""})
+        return history
+
+    def _apply_autonomous_profile_snapshot(
+        self,
+        extracted_data: Optional[Dict[str, Any]],
+        *,
+        current_state: str,
+        user_message: str,
+    ) -> Dict[str, Any]:
+        extracted = dict(extracted_data or {})
+        if not (self._flow and self._flow.name == "autonomous"):
+            return extracted
+
+        history = self._build_autonomous_profile_history(user_message)
+        logger.info(
+            "autonomous profile snapshot extraction started",
+            state=current_state,
+            history_turns=len(history),
+        )
+
+        try:
+            snapshot = self.autonomous_profile_extractor.extract(history)
+        except Exception as exc:
+            logger.warning(
+                "autonomous profile snapshot extraction failed",
+                state=current_state,
+                error=str(exc),
+                fail_open=True,
+            )
+            return extracted
+
+        if snapshot is None:
+            logger.warning(
+                "autonomous profile snapshot extraction returned empty result",
+                state=current_state,
+                fail_open=True,
+            )
+            return extracted
+
+        snapshot_payload = self.autonomous_profile_extractor.non_empty_payload(snapshot)
+        overwritten_fields: List[str] = []
+        for key, new_value in snapshot_payload.items():
+            previous_value = extracted.get(key)
+            if previous_value in (None, "", [], {}):
+                previous_value = self.state_machine.collected_data.get(key)
+            if previous_value not in (None, "", [], {}) and previous_value != new_value:
+                overwritten_fields.append(key)
+
+        for key in AUTONOMOUS_PROFILE_FIELDS:
+            extracted.pop(key, None)
+        extracted.pop("client_name", None)
+
+        for key in AUTONOMOUS_PROFILE_FIELDS:
+            value = snapshot_payload.get(key)
+            if value in (None, "", [], {}):
+                continue
+            extracted[key] = value
+
+        logger.info(
+            "autonomous profile snapshot extraction completed",
+            state=current_state,
+            extracted_keys=sorted(snapshot_payload.keys()),
+            overwritten_fields=sorted(overwritten_fields),
+        )
+        return extracted
 
     def _get_client_media_facts(self) -> List[str]:
         if not hasattr(self, "context_window") or not hasattr(self.context_window, "episodic_memory"):
@@ -1641,11 +1899,9 @@ class SalesBot:
         action: str,
     ) -> Dict[str, Any]:
         self.state_machine.update_data(extracted_data or {})
-        self.history.append({"user": user_message, "bot": response})
-
-        self.context_window.add_turn_from_dict(
+        self.commit_turn(
             user_message=user_message,
-            bot_response=response,
+            bot_message=response,
             intent=intent,
             confidence=confidence,
             action=action,
@@ -1657,12 +1913,10 @@ class SalesBot:
             fallback_tier=None,
             fact_keys_used=[],
             response_embedding=None,
+            media_cards_to_store=media_cards_to_store,
+            reason_codes=[reason_code],
+            source_branch="media_only_response",
         )
-        self._store_media_knowledge_cards(media_cards_to_store)
-
-        self.last_action = action
-        self.last_intent = intent
-        self.last_bot_message = response
 
         self._record_turn_metrics(
             state=current_state,
@@ -1753,11 +2007,9 @@ class SalesBot:
         method: str,
     ) -> Dict[str, Any]:
         self.state_machine.update_data(extracted_data or {})
-        self.history.append({"user": user_message, "bot": response})
-
-        self.context_window.add_turn_from_dict(
+        self.commit_turn(
             user_message=user_message,
-            bot_response=response,
+            bot_message=response,
             intent=intent,
             confidence=confidence,
             action=action,
@@ -1769,22 +2021,10 @@ class SalesBot:
             fallback_tier=None,
             fact_keys_used=[],
             response_embedding=None,
+            media_cards_to_store=media_cards_to_store,
+            reason_codes=list(reason_codes or []),
+            source_branch=method,
         )
-        self._store_media_knowledge_cards(media_cards_to_store)
-
-        if self.action_tracker and self.last_action:
-            turn_type = "NEUTRAL"
-            if hasattr(self.context_window, "get_last_turn_type"):
-                turn_type = self.context_window.get_last_turn_type() or "NEUTRAL"
-            self.action_tracker.record_outcome(
-                action=self.last_action,
-                turn_type=turn_type,
-                intent=intent,
-            )
-
-        self.last_action = action
-        self.last_intent = intent
-        self.last_bot_message = response
 
         self._record_turn_metrics(
             state=next_state,
@@ -2070,6 +2310,11 @@ class SalesBot:
                 else {}
             ),
         )
+        extracted = self._apply_autonomous_profile_snapshot(
+            extracted,
+            current_state=current_state,
+            user_message=visible_user_message,
+        )
         classification["extracted_data"] = extracted
         classification_confidence = float(classification.get("confidence", 0.0) or 0.0)
         classification_elapsed = (time.time() - classification_start) * 1000
@@ -2194,10 +2439,24 @@ class SalesBot:
                             fallback_tier=intervention
                         )
 
-                        self.history.append({
-                            "user": visible_user_message,
-                            "bot": fb_result["response"]
-                        })
+                        self.commit_turn(
+                            user_message=visible_user_message,
+                            bot_message=fb_result["response"],
+                            intent="fallback_close",
+                            confidence=classification_confidence,
+                            action="soft_close",
+                            state=current_state,
+                            next_state="soft_close",
+                            method="fallback_close",
+                            extracted_data=extracted,
+                            is_fallback=True,
+                            fallback_tier=intervention,
+                            fact_keys_used=[],
+                            response_embedding=None,
+                            media_cards_to_store=None,
+                            reason_codes=["fallback_close"],
+                            source_branch="fallback_close",
+                        )
 
                         self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
                         if trace_builder:
@@ -2340,6 +2599,8 @@ class SalesBot:
                 classification_result=classification,
                 user_message=visible_user_message,
                 last_bot_message=self.last_bot_message or "",
+                history=self.transcript.legacy_history_view(),
+                bot_responses=self.transcript.recent_bot_responses(5),
             )
 
         # === Structural Frustration Detection (P3) ===
@@ -2358,6 +2619,7 @@ class SalesBot:
         # Defer ResponseDirectives until AFTER policy override
         response_directives = None
         prepared_response_ctx: Optional[Dict[str, Any]] = None
+        history_projections = self._build_history_projections()
 
         merged_autonomous_enabled = bool(
             self._flow
@@ -2367,7 +2629,10 @@ class SalesBot:
         should_prepare_autonomous_response_context = bool(
             self._flow
             and self._flow.name == "autonomous"
-            and (current_state.startswith("autonomous_") or current_state == "greeting")
+            and is_autonomous_response_context(
+                state=current_state,
+                requested_action="autonomous_respond",
+            )
         )
 
         if should_prepare_autonomous_response_context:
@@ -2376,10 +2641,13 @@ class SalesBot:
                     state=current_state,
                     context={
                         "action": "autonomous_respond",
+                        "requested_action": "autonomous_respond",
                         "user_message": visible_user_message,
                         "intent": intent,
                         "state": current_state,
-                        "history": self.history,
+                        "transcript": self.transcript,
+                        "history_projections": history_projections,
+                        "history": history_projections["prompt_window"],
                         "goal": self._flow.states.get(current_state, {}).get("goal", ""),
                         "collected_data": self.state_machine.collected_data,
                         "missing_data": [
@@ -2402,6 +2670,8 @@ class SalesBot:
                         "semantic_frame": classification.get("semantic_frame", {}),
                         "style_separation_applied": classification.get("style_separation_applied", False),
                         "media_turn_context": resolved_media_turn_context,
+                        "response_mode": "normal_dialog",
+                        "media_route_mode": "normal_dialog",
                         "terminal_state_requirements": self._flow.states.get(current_state, {}).get(
                             "terminal_state_requirements", {}
                         ),
@@ -2427,13 +2697,13 @@ class SalesBot:
         #
         # СТАЛО:
         # Собираем dialog history для decision LLM (последние 4 хода)
-        decision_dialog_history = []
-        _recent_for_decision = self.context_window.get_last_n_turns(4)
-        for _t in _recent_for_decision:
-            decision_dialog_history.append({
-                "user": (_t.user_message or "")[:200],
-                "bot": (_t.bot_response or "")[:250],
-            })
+        decision_dialog_history = [
+            {
+                "user": str(turn.get("user", "") or "")[:200],
+                "bot": str(turn.get("bot", "") or "")[:250],
+            }
+            for turn in self.transcript.decision_window()
+        ]
 
         sm_start = time.time()
         decision = self._orchestrator.process_turn(
@@ -2443,6 +2713,8 @@ class SalesBot:
             user_message=visible_user_message,
             frustration_level=frustration_level,
             dialog_history=decision_dialog_history,
+            transcript=self.transcript,
+            history_projections=history_projections,
             media_turn_context=resolved_media_turn_context,
         )
         # Convert to sm_result dict for compatibility with DialoguePolicy/Generator
@@ -2593,7 +2865,7 @@ class SalesBot:
         }
         if intent in forced_misroute_responses:
             forced_action, first_turn_response, followup_response = forced_misroute_responses[intent]
-            forced_response = first_turn_response if not self.history else followup_response
+            forced_response = first_turn_response if len(self.transcript) == 0 else followup_response
             forced_reason_codes = list(sm_result.get("reason_codes", []))
             forced_reason_codes.append("forced_misroute_response")
             return self._build_forced_process_result(
@@ -2761,12 +3033,15 @@ class SalesBot:
             response_directives.rephrase_mode = True
 
         directive_instruction = response_directives.get_instruction() if response_directives else ""
+        history_projections = self._build_history_projections()
         context = {
             "user_message": visible_user_message,
             "intent": intent,
             "state": sm_result["next_state"],
-            "history": self.history,
-            "is_first_bot_reply": len(self.history) == 0,
+            "transcript": self.transcript,
+            "history_projections": history_projections,
+            "history": history_projections["prompt_window"],
+            "is_first_bot_reply": len(self.transcript) == 0,
             "goal": sm_result["goal"],
             "collected_data": sm_result["collected_data"],
             "missing_data": sm_result["missing_data"],
@@ -2784,7 +3059,7 @@ class SalesBot:
             "policy_reason_codes": policy_override.reason_codes if policy_override else [],
             "context_envelope": context_envelope,
             "action_tracker": self.action_tracker,
-            "user_messages": [turn.get("user", "") for turn in self.history[-5:]] + [visible_user_message],
+            "user_messages": self.transcript.recent_user_messages() + [visible_user_message],
             "response_directives": response_directives,
             "recent_fact_keys": list(self.context_window.get_recent_fact_keys(3)),
             "fact_keys": (prepared_response_ctx or {}).get("fact_keys", []),
@@ -2795,6 +3070,7 @@ class SalesBot:
             "terminal_state_requirements": sm_result.get("terminal_state_requirements", {}),
             "retrieved_facts": final_grounding_facts,
             "retrieved_urls": retrieved_urls,
+            "response_mode": media_route_mode,
             "media_route_mode": media_route_mode,
             "selected_media_grounding": selected_media_grounding,
             "kb_retrieved_facts": kb_retrieved_facts,
@@ -2805,6 +3081,11 @@ class SalesBot:
         }
         if grounding_contract_version is not None:
             context["grounding_contract_version"] = grounding_contract_version
+        context = build_response_routing_context(
+            context=context,
+            requested_action=action,
+            response_mode=context.get("response_mode", context.get("media_route_mode")),
+        )
 
         # FIX: Record the final state for phase coverage tracking
         if next_state not in visited_states:
@@ -2859,12 +3140,23 @@ class SalesBot:
                 attempt_number=objection_info.get("attempt_number")
             )
         elif pre_gen and not fallback_response and action in ("autonomous_respond", "continue_current_goal"):
+            pre_generated_template_key = self.generator._resolve_postprocess_template_key(
+                requested_action=action,
+                selected_template_key=(prepared_response_ctx or {}).get("selected_template_key"),
+                context=context,
+            )
+            context = build_response_routing_context(
+                context=context,
+                requested_action=action,
+                selected_template_key=pre_generated_template_key,
+                response_mode=context.get("response_mode", context.get("media_route_mode")),
+            )
             response_start = time.time()
             processed, validation_events = self.generator.post_process_only(
                 response=pre_gen,
                 context=context,
                 requested_action=action,
-                selected_template_key=action,
+                selected_template_key=pre_generated_template_key,
                 retrieved_facts=merged_retrieved_facts,
             )
             response = processed
@@ -2874,7 +3166,7 @@ class SalesBot:
             self.generator._compute_and_cache_response_embedding(response)
             self.generator._last_generation_meta = {
                 "requested_action": action,
-                "selected_template_key": action,
+                "selected_template_key": pre_generated_template_key,
                 "validation_events": validation_events,
                 "fact_keys": (prepared_response_ctx or {}).get("fact_keys", []),
                 **self.generator._last_factual_verifier_meta,
@@ -3065,7 +3357,24 @@ class SalesBot:
                 state=current_state, intent="fallback_close",
                 tone=tone_info.get("tone"), fallback_used=True, fallback_tier="soft_close",
             )
-            self.history.append({"user": visible_user_message, "bot": response})
+            self.commit_turn(
+                user_message=visible_user_message,
+                bot_message=response,
+                intent="fallback_close",
+                confidence=classification_confidence,
+                action="soft_close",
+                state=current_state,
+                next_state="soft_close",
+                method="guard_soft_close",
+                extracted_data=extracted,
+                is_fallback=True,
+                fallback_tier="soft_close",
+                fact_keys_used=[],
+                response_embedding=None,
+                media_cards_to_store=current_media_cards,
+                reason_codes=list(sm_result.get("reason_codes", [])) + ["guard_soft_close"],
+                source_branch="guard_soft_close",
+            )
             self._finalize_metrics(ConversationOutcome.SOFT_CLOSE)
             if trace_builder:
                 trace_builder.record_response(
@@ -3145,7 +3454,7 @@ class SalesBot:
                     "user_message": visible_user_message,
                     # Pass collected_data for contact gate
                     "collected_data": self.state_machine.collected_data,
-                    "history": self.history,
+                    "history": self.transcript.prompt_window(),
                     # Keep CTA aligned with response directives
                     "question_mode": (
                         response_directives.question_mode if response_directives else "adaptive"
@@ -3179,12 +3488,7 @@ class SalesBot:
             )
 
         # 4. Save to history
-        self.history.append({
-            "user": visible_user_message,
-            "bot": response
-        })
-
-        # 4.1 Save to context window (расширенный контекст)
+        # 4. Save to transcript + derived stores through unified coordinator
         # Extract fact_keys from generator metadata for fact rotation tracking
         _gen_meta = self.generator.get_last_generation_meta() if hasattr(self.generator, "get_last_generation_meta") else {}
         _fact_keys = _gen_meta.get("fact_keys", [])
@@ -3196,9 +3500,9 @@ class SalesBot:
             if generator_used and hasattr(self.generator, "get_last_response_embedding")
             else None
         )
-        self.context_window.add_turn_from_dict(
+        self.commit_turn(
             user_message=visible_user_message,
-            bot_response=response,
+            bot_message=response,
             intent=intent,
             confidence=classification_confidence,
             action=action,
@@ -3210,27 +3514,12 @@ class SalesBot:
             fallback_tier=fallback_tier,
             fact_keys_used=_fact_keys,
             response_embedding=_response_embedding,
+            media_cards_to_store=current_media_cards,
+            reason_codes=list(sm_result.get("reason_codes", [])),
+            source_branch="generator_response",
         )
-        self._store_media_knowledge_cards(current_media_cards)
 
-        # 4.2 Record action outcome for personalization v2
-        if self.action_tracker and self.last_action:
-            # Получаем turn_type из context_window
-            turn_type = "NEUTRAL"
-            if hasattr(self.context_window, 'get_last_turn_type'):
-                turn_type = self.context_window.get_last_turn_type() or "NEUTRAL"
-            self.action_tracker.record_outcome(
-                action=self.last_action,
-                turn_type=turn_type,
-                intent=intent,
-            )
-
-        # 5. Save context for next turn
-        self.last_action = action
-        self.last_intent = intent
-        self.last_bot_message = response
-
-        # 6. Record metrics
+        # 5. Record metrics
         self._record_turn_metrics(
             state=next_state,  # Используем локальную переменную
             intent=intent,
@@ -3470,7 +3759,21 @@ class SalesBot:
             "_context_window_full": context_payload.get("_context_window_full"),
 
             "history": [],
-            "history_tail": list(self.history[-max(0, history_tail_size):]) if history_tail_size > 0 else [],
+            "history_tail": self.transcript.legacy_history_view(
+                max_turns=max(0, history_tail_size)
+            ) if history_tail_size > 0 else [],
+            "transcript": {
+                "status": self.transcript.status,
+                "provenance": self.transcript.provenance,
+                "degraded_continuity": self.transcript.degraded_continuity,
+                "turns": [],
+            },
+            "transcript_tail": self.transcript.legacy_history_view(
+                max_turns=max(0, history_tail_size)
+            ) if history_tail_size > 0 else [],
+            "transcript_status": self.transcript.status,
+            "transcript_provenance": self.transcript.provenance,
+            "degraded_continuity": self.transcript.degraded_continuity,
             "history_compact": history_compact,
             "history_compact_meta": history_compact_meta,
             "last_action": self.last_action,
@@ -3548,18 +3851,29 @@ class SalesBot:
         )
         bot._merge_flow_state_order()  # Re-merge after snapshot restore
 
-        restored_history = history_tail
-        if restored_history is None:
-            stored_tail = snapshot.get("history_tail")
-            if isinstance(stored_tail, list):
-                restored_history = list(stored_tail)
-            else:
-                restored_history = [
-                    {"user": t["user_message"], "bot": t["bot_response"]}
-                    for t in snapshot.get("context_window", [])
-                    if isinstance(t, dict) and "user_message" in t and "bot_response" in t
-                ]
-        bot.history = restored_history or []
+        full_transcript_payload = snapshot.get("transcript")
+        if isinstance(full_transcript_payload, dict) and full_transcript_payload.get("turns"):
+            bot.transcript = DialogTranscript.from_dict(
+                full_transcript_payload,
+                policy=bot.history_projection_policy,
+            )
+        else:
+            restored_history = history_tail
+            restore_provenance = "history_tail" if history_tail is not None else "explicit_restore_payload"
+            if restored_history is None:
+                stored_tail = snapshot.get("transcript_tail")
+                if not isinstance(stored_tail, list):
+                    stored_tail = snapshot.get("history_tail")
+                restored_history = list(stored_tail) if isinstance(stored_tail, list) else []
+                if isinstance(stored_tail, list):
+                    restore_provenance = "history_tail"
+
+            bot.transcript = DialogTranscript.from_restore_payload(
+                restored_history,
+                policy=bot.history_projection_policy,
+                provenance=restore_provenance,
+            )
+
         bot.history_compact = snapshot.get("history_compact")
         bot.history_compact_meta = snapshot.get("history_compact_meta")
         bot.last_action = snapshot.get("last_action")
@@ -3608,7 +3922,7 @@ class SalesBot:
     @property
     def turn(self) -> int:
         """Текущий номер хода."""
-        return len(self.history)
+        return len(self.transcript)
 
 
 

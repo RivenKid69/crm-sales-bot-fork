@@ -317,7 +317,6 @@ class TestContentRepetitionGuardShouldContribute:
                     "payment_ready": {
                         "required_any": ["contact_name", "client_name"],
                         "required_all": ["business_type", "city", "automation_before"],
-                        "required_if_true": {"automation_before": ["current_tools"]},
                     }
                 },
             },
@@ -326,7 +325,6 @@ class TestContentRepetitionGuardShouldContribute:
                 "business_type": "магазин",
                 "city": "Астана",
                 "automation_before": True,
-                "current_tools": "Excel",
             },
         )
         assert source.should_contribute(bb) is False
@@ -342,7 +340,6 @@ class TestContentRepetitionGuardShouldContribute:
                     "video_call_scheduled": {
                         "required_any": ["contact_name", "client_name"],
                         "required_all": ["business_type", "city", "automation_before"],
-                        "required_if_true": {"automation_before": ["current_tools"]},
                     }
                 },
             },

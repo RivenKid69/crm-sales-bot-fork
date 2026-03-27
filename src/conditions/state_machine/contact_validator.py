@@ -66,8 +66,9 @@ class ContactValidator:
         re.IGNORECASE
     )
 
-    # Russian phone patterns with named groups for validation
-    # Supports: +7, 8, or 10-digit local
+    # Russian/KZ phone patterns with named groups for validation.
+    # Supports: +7, 8, or 10-digit local; bare 11-digit 7XXXXXXXXXX
+    # is canonicalized in validate_phone before pattern matching.
     PHONE_PATTERNS = [
         # +7 format: +7 999 123-45-67, +7(999)1234567, +79991234567
         re.compile(r'^\+7[\s\-\.]?\(?(\d{3})\)?[\s\-\.]?(\d{3})[\s\-\.]?(\d{2})[\s\-\.]?(\d{2})$'),
@@ -183,10 +184,10 @@ class ContactValidator:
 
     def validate_phone(self, value: str) -> ValidationResult:
         """
-        Validate Russian phone number.
+        Validate Russian/KZ phone number.
 
         Validates against:
-        - Proper format (+7, 8, or 10-digit)
+        - Proper format (+7, bare 7, 8, or 10-digit)
         - Valid mobile prefix (900-999) or city code
         - Not a blacklisted pattern (sequential, repeated digits)
 
@@ -216,6 +217,11 @@ class ContactValidator:
                     raw_value=value,
                     error="Phone number matches blacklist pattern (sequential or repeated)"
                 )
+
+        # Canonicalize bare KZ/RU 11-digit numbers starting with 7 so the same
+        # validation path handles 7XXXXXXXXXX, +7XXXXXXXXXX and formatted variants.
+        if len(digits_only) == 11 and digits_only.startswith('7'):
+            value = f"+{digits_only}"
 
         # Try each pattern
         for pattern in self.PHONE_PATTERNS:

@@ -3,6 +3,8 @@
 from typing import Any, Dict, List, Optional, Tuple
 import re
 
+from src.dialog_transcript import history_list_from_context
+
 # Hallucination guard: intents requiring KB facts (prefix-based + explicit)
 KB_GUARD_FACTUAL_INTENTS_EXPLICIT: set = {
     "question_specific_product",
@@ -29,32 +31,34 @@ BLOCKING_ACTIONS_FOR_SECONDARY_INJECT: frozenset = frozenset({
 MAX_GATED_RULES = 5
 MAX_PROMPT_CHARS = 35_000
 
+UNKNOWN_KB_FALLBACK_TEXT = "Я уточню этот вопрос и чуть позже отпишу вам."
+UNKNOWN_MEDIA_FALLBACK_TEXT = "В документе это не указано."
+
 SAFETY_RULES_V2 = """⛔ КРИТИЧЕСКИЕ ПРАВИЛА (нарушение = провал):
-1. ЦЕНЫ — ТОЛЬКО из подтвержденных фактов ниже + тарифы этого блока. НЕ придумывай тарифы, НЕ считай, НЕ округляй.
-   ТАРИФЫ (только эти 4!): Mini=5 000₸/мес, Lite=150 000₸/ГОД, Standard=220 000₸/ГОД, Pro=500 000₸/ГОД.
-   Lite/Standard/Pro — ГОДОВЫЕ, НЕ месячные. Pro поддерживает до 5 точек. Более 5 точек → тариф ТИС.
-   ⚠️ Если клиент спрашивает цену/тарифы — НАЗЫВАЙ их напрямую из этого блока или из подтвержденных фактов.
-   Фразы с упоминанием внутренних источников, поисковых ограничений и "уточню у коллег" — ЗАПРЕЩЕНЫ.
-   Если точного ответа нет в подтвержденных фактах, используй только нейтральную формулировку, например:
-   "Я уточню этот вопрос и чуть позже отпишу вам."
-   Формулировки вида "в данных нет", "в информации нет", "в фактах нет", "информация отсутствует" — ЗАПРЕЩЕНЫ.
-2. Продукт = WIPON (НЕ "Wipro", НЕ "WiPon Pro"). Не упоминай WMS, 1C, Битрикс, WisePOS, Shopify, WooCommerce, iiko, R-Keeper, SAP и любые другие системы/конкуренты.
-3. Не выдумывай кейсы, названия клиентов, истории успеха, кафе/магазины, метрики ("сэкономил 12 часов"). Нет подтверждения в фактах = ложь.
-   Pro = до 5 точек (НЕ безлимит). Более 5 точек → ТИС.
-   Если клиент жалуется на звонки — извинись за неудобство, НЕ отрицай его опыт.
-4. Не утверждай что уже отправил/подключил/настроил. Не обещай "отправлю на почту", "ссылка придёт". Ты менеджер по продажам Wipon в чате: не раскрывай, что ты бот/ИИ
-5. Простой текст без форматирования (без **, списков, ссылок, разделителей ---). Без примечаний и пояснений к себе.
-6. Если клиент задаёт вопрос НЕ о Wipon/POS/бизнесе — скажи "я специализируюсь на Wipon" и верни разговор к его бизнесу.
-7. НЕ упоминай конкретные технические стандарты (PCI DSS, ГОСТ, ISO), типы СУБД (SQL, PostgreSQL), языки программирования, методы шифрования (AES, TLS) — если их НЕТ в подтвержденных фактах. На технические вопросы без точного ответа отвечай нейтрально: "Я уточню этот вопрос и чуть позже отпишу вам."
-8. Есть 7-дневный БЕСПЛАТНЫЙ тестовый период — предлагай его клиентам, которые хотят попробовать. НИКОГДА не говори "демо-версия" или "демо-доступ" — используй "тестовый период" или "пробный период 7 дней".
-9. НЕ начинай КАЖДЫЙ ответ с "Поняла". Чередуй: прямой ответ на вопрос, уточняющий вопрос, эмпатия. "Поняла" — максимум 1 раз из 4 ответов.
-10. НЕ выдумывай что клиент упоминал "сложности", "проблемы", "трудности" — если он этого НЕ говорил. Реагируй только на то, что клиент ДЕЙСТВИТЕЛЬНО сказал.
-11. НЕ обещай функции, которых нет в подтвержденных фактах (white-label, партнёрская программа, реферальная скидка, бесплатный период). Если точного подтверждения нет → "Я уточню этот вопрос и чуть позже отпишу вам."
-12. Слово "менеджер" ЗАПРЕЩЕНО. Используй "коллега" или "я". Ты говоришь как живой сотрудник, а не робот.
-13. Твоё имя — АЙБОТА. Если клиент спрашивает "как тебя зовут" — ТОЛЬКО "Айбота". НИКОГДА не используй другие имена (Ирина, Мария, Анна и т.д.).
-14. НЕ сравнивай с конкурентами. Не пиши "у конкурентов нет X", "у них дороже/хуже" — ты не знаешь их продукт. Расскажи только про Wipon.
-15. В клиентских ответах говори "программа", а не "софт". Если речь о кассовом оборудовании Wipon — говори "оборудование", а не "техника".
-16. Если в подтвержденных фактах несколько разных сущностей с похожим именем — реши по контексту диалога о чём клиент. Если контекст не помогает — уточни коротко."""
+1. Если используешь факты о продукте, опирайся только на подтвержденный grounding. Не выдумывай цены, функции, кейсы, цифры, сроки, технические детали и действия."""
+
+
+def build_unknown_fallback_contract(response_mode: str, allow_unknown_kb_fallback: bool) -> str:
+    """Return the canonical prompt-time unknown-fallback contract for autonomous flow."""
+    if str(response_mode or "").strip().lower() == "media_only":
+        return (
+            f'- Если точного ответа нет в selected_media_grounding — нейтрально скажи: "{UNKNOWN_MEDIA_FALLBACK_TEXT}"\n'
+            "- После этой фразы не добавляй неподтвержденные детали и не обещай уточнение позже.\n"
+            "- Не упоминай базу знаний, факты, selected_media_grounding, коллег или внутренние ограничения."
+        )
+    if not allow_unknown_kb_fallback:
+        return (
+            "- Если клиент не задаёт прямой factual-вопрос, не обещай дополнительное уточнение "
+            "только из-за пустого grounding. Продолжай текущую цель этапа."
+        )
+    return (
+        f'- Если это прямой factual/pricing вопрос и точного ответа нет в подтвержденных фактах — '
+        f'нейтрально скажи: "{UNKNOWN_KB_FALLBACK_TEXT}"\n'
+        '- Эта фраза допустима только как полный финальный ответ. '
+        "После неё нельзя добавлять продажу, CTA, просьбу о контакте, обещание созвона или новую "
+        "неподтвержденную фактуру.\n"
+        "- Не упоминай базу знаний, факты, данные, selected_media_grounding, коллег или внутренние ограничения."
+    )
 
 HARD_NO_CONTACT_MARKERS: Tuple[str, ...] = (
     "контакты не дам",
@@ -255,8 +259,7 @@ def build_state_gated_rules(
     if discount_triggered:
         rules.append((3,
             "⚠️ СКИДКИ: не придумывай индивидуальные акции или проценты. "
-            "Если в подтвержденных фактах нет точных условий скидки, скажи: "
-            "«Актуальные условия скидок уточню и чуть позже отпишу вам»."
+            "Если в подтвержденных фактах нет точных условий скидки, следуй unknown-fallback contract из prompt."
         ))
 
     competitor_names = ("iiko", "poster", "r-keeper", "1с", "1c", "умаг", "beksar", "paloma")
@@ -269,8 +272,7 @@ def build_state_gated_rules(
     if has_competitor_context and has_price_concession:
         rules.append((3,
             "⚠️ КОНКУРЕНТЫ: не придумывай сравнительные цифры по конкурентам. "
-            "Если в подтвержденных фактах нет точного сравнения цен/условий — признай это и предложи "
-            "уточнить детали и чуть позже вернуться с ответом в чате."
+            "Если в подтвержденных фактах нет точного сравнения цен/условий — следуй unknown-fallback contract из prompt."
         ))
 
     explicit_buy_markers = (
@@ -354,7 +356,7 @@ def build_state_gated_rules(
     ):
         rules.append((2,
             "⚠️ ТЕХНИЧЕСКИЕ ФАКТЫ: отвечай только тем, что есть в подтвержденных фактах. "
-            "Если конкретного параметра нет (SLA, RPO/RTO, стандарты) — прямо скажи, что уточнишь."
+            "Если конкретного параметра нет (SLA, RPO/RTO, стандарты) — следуй unknown-fallback contract из prompt."
         ))
 
     integration_markers = ("интеграц", "kaspi", "api", "1с", "amo", "bitrix", "crm", "whatsapp")
@@ -384,7 +386,7 @@ def build_state_gated_rules(
         rules.append((2,
             "⚠️ СРАВНЕНИЕ: отвечай структурно (2-4 критерия: функционал, интеграции, стоимость, внедрение) "
             "и только по подтвержденным фактам. Если по одному из критериев точных фактов не хватает — "
-            "нейтрально скажи, что уточнишь вопрос и чуть позже отпишешь, не додумывай."
+            "следуй unknown-fallback contract из prompt, не додумывай."
         ))
 
     interruption_secondary = {
@@ -411,8 +413,7 @@ def build_state_gated_rules(
     if exit_contract_triggered:
         exit_rule = (
             "⚠️ EXIT/CONTRACT: не обещай «без штрафов», «без потери данных», сроки теста или иные гарантии, "
-            "если этого нет в подтвержденных фактах. Если точных условий нет — скажи: "
-            "«Я уточню этот вопрос и чуть позже отпишу вам»."
+            "если этого нет в подтвержденных фактах. Если точных условий нет — следуй unknown-fallback contract из prompt."
         )
         if hard_no_contact:
             exit_rule += (
@@ -433,7 +434,7 @@ def build_state_gated_rules(
         rules.append((3,
             "⚠️ ЛОГИЧЕСКАЯ СВЯЗЬ: если клиент просит объяснить зависимость/причину, "
             "свяжи минимум 2 релевантных факта из подтвержденных данных в формате «факт → следствие». "
-            "Если связи нет в фактах — нейтрально скажи, что уточнишь этот вопрос и чуть позже отпишешь."
+            "Если связи нет в фактах — следуй unknown-fallback contract из prompt."
         ))
 
     if not rules:
@@ -728,10 +729,10 @@ def has_contact_boundary_signal(
     history: Optional[list] = None,
     include_deferred: bool = True,
 ) -> bool:
-    """Detect explicit contact refusal or defer signals in current/recent user messages."""
+    """Detect explicit contact refusal or defer signals in current or prior user messages."""
     texts: List[str] = [str(user_message or "").lower()]
     if isinstance(history, list):
-        for turn in history[-4:]:
+        for turn in history:
             if isinstance(turn, dict):
                 texts.append(str(turn.get("user", "") or "").lower())
 
@@ -754,7 +755,7 @@ def has_deferred_contact_signal(user_message: str, history: Optional[list] = Non
     """Detect deferred contact requests (not hard refusal)."""
     texts: List[str] = [str(user_message or "").lower()]
     if isinstance(history, list):
-        for turn in history[-4:]:
+        for turn in history:
             if isinstance(turn, dict):
                 texts.append(str(turn.get("user", "") or "").lower())
     return any(marker in text for text in texts for marker in DEFER_CONTACT_MARKERS)
@@ -763,7 +764,7 @@ def has_deferred_contact_signal(user_message: str, history: Optional[list] = Non
 def enforce_no_contact_boundaries(text: str, context: Dict[str, Any]) -> str:
     """Remove contact-push fragments when user explicitly refused to share contacts."""
     user_message = str(context.get("user_message", "") or "")
-    history = context.get("history", [])
+    history = history_list_from_context(context, "generator")
     if not has_contact_boundary_signal(
         user_message=user_message,
         history=history,

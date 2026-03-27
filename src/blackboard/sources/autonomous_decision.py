@@ -1150,6 +1150,13 @@ class AutonomousDecisionSource(KnowledgeSource):
             current_media_candidates,
             historical_media_candidates,
         )
+        dialogue_text = ""
+        transcript = getattr(ctx, "transcript", None)
+        if transcript is not None and hasattr(transcript, "decision_dialogue_text"):
+            try:
+                dialogue_text = str(transcript.decision_dialogue_text() or "")
+            except Exception:
+                dialogue_text = ""
 
         prompt = self._build_decision_prompt(
             state=state,
@@ -1173,6 +1180,7 @@ class AutonomousDecisionSource(KnowledgeSource):
             hard_contact_refusal=hard_contact_refusal,
             payment_intent_active=payment_intent_active,
             dialog_history=list(ctx.dialog_history) if hasattr(ctx, 'dialog_history') else [],
+            dialogue_text=dialogue_text,
             attachment_only=bool(getattr(media_turn_context, "attachment_only", False)),
             media_safety_class=media_safety_class,
             media_candidate_mode=media_candidate_mode,
@@ -1418,6 +1426,7 @@ class AutonomousDecisionSource(KnowledgeSource):
         hard_contact_refusal: bool = False,
         payment_intent_active: bool = False,
         dialog_history: list = None,
+        dialogue_text: str = "",
         attachment_only: bool = False,
         media_safety_class: str = "none",
         media_candidate_mode: str = "none",
@@ -1711,7 +1720,10 @@ class AutonomousDecisionSource(KnowledgeSource):
 
         # Dialog history block for decision LLM
         history_block = ""
-        if dialog_history:
+        rendered_dialogue = str(dialogue_text or "").strip()
+        if rendered_dialogue:
+            history_block = "\nПОЛНЫЙ ДИАЛОГ:\n" + rendered_dialogue
+        elif dialog_history:
             h_lines = []
             for i, turn in enumerate(dialog_history, 1):
                 h_lines.append(f"  Ход {i}: Клиент: \"{turn.get('user', '')}\" → Вы: \"{turn.get('bot', '')}\"")
@@ -1902,10 +1914,10 @@ discovery (узнать бизнес клиента) → qualification (потр
     ) -> str:
         """Build merged decision+response prompt from decision and response contexts."""
         variables = dict(response_context.get("variables", {}) or {})
+        route_prompt_variants = self._build_route_prompt_variants(response_context)
         compact_variables = {
             key: variables.get(key)
             for key in (
-                "system",
                 "user_message",
                 "history",
                 "goal",
@@ -1916,12 +1928,17 @@ discovery (узнать бизнес клиента) → qualification (потр
                 "language_instruction",
                 "stress_instruction",
                 "closing_data_request",
-                "safety_rules",
                 "do_not_repeat_responses",
             )
         }
         response_context_json = json.dumps(
             compact_variables,
+            ensure_ascii=False,
+            default=str,
+            indent=2,
+        )
+        route_prompt_variants_json = json.dumps(
+            route_prompt_variants,
             ensure_ascii=False,
             default=str,
             indent=2,
@@ -1952,6 +1969,11 @@ discovery (узнать бизнес клиента) → qualification (потр
             "- media_only -> grounding только по selected_media_card_ids.\n"
             "- hybrid -> grounding по selected_media_card_ids + kb_retrieved_facts.\n"
             "- normal_dialog -> grounding только по kb_retrieved_facts.\n\n"
+            "=== ROUTE-AWARE PROMPT VARIANTS ===\n"
+            "Сначала выбери response_mode, потом используй system и safety_rules "
+            "из route_prompt_variants[response_mode]. Не смешивай system/safety_rules "
+            "из другого режима.\n"
+            f"route_prompt_variants:\n{route_prompt_variants_json}\n\n"
             "=== КОНТЕКСТ ОТВЕТА ===\n"
             f"kb_retrieved_facts:\n{kb_retrieved_facts}\n\n"
             f"media_candidates_compact:\n{media_candidates_compact}\n\n"
@@ -1966,3 +1988,21 @@ discovery (узнать бизнес клиента) → qualification (потр
             "- Не используй ключи reason или next_stage.\n"
             "- Не добавляй ничего вне JSON.\n"
         )
+
+    @staticmethod
+    def _build_route_prompt_variants(response_context: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+        variables = dict(response_context.get("variables", {}) or {})
+        raw_variants = response_context.get("route_prompt_variants") or {}
+        fallback_system = str(variables.get("system", "") or "")
+        fallback_safety_rules = str(variables.get("safety_rules", "") or "")
+
+        variants: Dict[str, Dict[str, str]] = {}
+        for response_mode in ("normal_dialog", "media_only", "hybrid"):
+            raw_variant = raw_variants.get(response_mode, {}) if isinstance(raw_variants, dict) else {}
+            if not isinstance(raw_variant, dict):
+                raw_variant = {}
+            variants[response_mode] = {
+                "system": str(raw_variant.get("system") or fallback_system),
+                "safety_rules": str(raw_variant.get("safety_rules") or fallback_safety_rules),
+            }
+        return variants

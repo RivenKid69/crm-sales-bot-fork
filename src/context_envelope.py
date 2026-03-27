@@ -217,6 +217,8 @@ class ContextEnvelope:
     # === Message text (for mirroring detection) ===
     last_user_message: str = ""     # Current user message text
     last_bot_message: str = ""      # Previous bot response text
+    history: List[Dict[str, str]] = field(default_factory=list)
+    bot_responses: List[str] = field(default_factory=list)
 
     # === Level 3: Episodic Memory ===
     first_objection_type: Optional[str] = None
@@ -577,7 +579,8 @@ class ContextEnvelopeBuilder:
         envelope.last_intent = self.last_intent
 
         # Bridge current_intent to envelope (fixes 1-turn lag for policy)
-        envelope.current_intent = self.current_intent
+        if self.current_intent is not None:
+            envelope.current_intent = self.current_intent
 
         # Compute question density AFTER all fields are set
         persona = (envelope.collected_data or {}).get("persona", "")
@@ -656,6 +659,8 @@ class ContextEnvelopeBuilder:
                 envelope.state = last_turn.next_state or last_turn.state
                 envelope.last_action = last_turn.action
                 envelope.last_intent = last_turn.intent
+                if not envelope.current_intent:
+                    envelope.current_intent = last_turn.intent
 
         # === Level 1: Sliding Window ===
         # NOTE: intent_history, objection_count, total_objections may already be set
@@ -1127,6 +1132,24 @@ class PIIRedactor:
 pii_redactor = PIIRedactor()
 
 
+def normalize_envelope_bot_responses(
+    history: Optional[List[Dict[str, str]]] = None,
+    bot_responses: Optional[List[str]] = None,
+) -> List[str]:
+    """Return canonical recent bot responses, deriving them from history if needed."""
+    if isinstance(bot_responses, list) and bot_responses:
+        return [str(item) for item in bot_responses if str(item or "").strip()]
+
+    derived: List[str] = []
+    for turn in list(history or []):
+        if not isinstance(turn, dict):
+            continue
+        bot_text = str(turn.get("bot", "") or "").strip()
+        if bot_text:
+            derived.append(bot_text)
+    return derived
+
+
 def build_context_envelope(
     state_machine: Any = None,
     context_window: Any = None,
@@ -1139,6 +1162,8 @@ def build_context_envelope(
     classification_result: Optional[Dict] = None,
     user_message: str = "",
     last_bot_message: str = "",
+    history: Optional[List[Dict[str, str]]] = None,
+    bot_responses: Optional[List[str]] = None,
 ) -> ContextEnvelope:
     """
     Удобная функция для создания ContextEnvelope.
@@ -1172,4 +1197,6 @@ def build_context_envelope(
     ).build()
     envelope.last_user_message = user_message
     envelope.last_bot_message = last_bot_message
+    envelope.history = list(history or [])
+    envelope.bot_responses = normalize_envelope_bot_responses(history, bot_responses)
     return envelope

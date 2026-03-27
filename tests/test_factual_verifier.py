@@ -201,6 +201,35 @@ def test_factual_verifier_prompt_includes_generic_completeness_contract():
     assert llm.calls == 1
 
 
+def test_factual_verifier_prompt_prefers_full_dialogue_text():
+    llm = _StructuredLLM([
+        {
+            "verdict": "pass",
+            "checks": [{"claim": "Lite 150 000 ₸/год", "supported": True, "evidence_quote": "Lite 150 000 ₸/год"}],
+            "rewritten_response": "",
+            "confidence": 0.91,
+        }
+    ])
+    verifier = FactualVerifier(llm)
+    verifier.verify_and_rewrite(
+        user_message="А этот тариф сколько стоит?",
+        candidate_response="Lite стоит 150 000 ₸/год.",
+        retrieved_facts="Lite — 150 000 ₸/год.",
+        intent="price_question",
+        state="autonomous_discovery",
+        dialog_history=[{"user": "поздний хвост", "bot": "короткий хвост"}],
+        dialogue_text=(
+            "Клиент: Ранее выбрали тариф Lite\n"
+            "Вы: Зафиксировала, смотрим Lite"
+        ),
+    )
+
+    prompt = llm.prompts[0]
+    assert "ИСТОРИЯ ДИАЛОГА" in prompt
+    assert "Ранее выбрали тариф Lite" in prompt
+    assert "поздний хвост" not in prompt
+
+
 def test_factual_verifier_verify_only_keeps_model_pass_without_domain_override():
     llm = _StructuredLLM([
         {

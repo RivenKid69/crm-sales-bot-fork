@@ -14,7 +14,7 @@ states:
   autonomous_discovery:
     extends: _base_phase
     autonomous: true
-    goal: "Понять бизнес клиента, текущую ситуацию и боли. Успех: знаем тип бизнеса, размер компании, текущие инструменты."
+    goal: "Понять базовый профиль клиента. Успех: понимаем сферу деятельности и город клиента, без обязательного сбора размера компании, текущих инструментов и болей."
     phase: discovery
     kb_categories:
       - products
@@ -25,6 +25,7 @@ states:
     phase_exhaust_threshold: 3
     required_data:
       - business_type
+      - city
     optional_data:
       - company_size
       - current_tools
@@ -44,7 +45,7 @@ states:
   autonomous_qualification:
     extends: _base_phase
     autonomous: true
-    goal: "Квалифицировать клиента: бюджет, полномочия, сроки, потребность (BANT). Успех: понимаем платёжеспособность и срочность."
+    goal: "Уточнить обязательный профильный контекст и квалификацию. Успех: знаем, была ли раньше автоматизация; бюджет, сроки и масштаб остаются дополнительным контекстом."
     phase: qualification
     kb_categories:
       - pricing
@@ -53,11 +54,12 @@ states:
     max_turns_in_state: 6
     phase_exhaust_threshold: 3
     required_data:
-      - company_size
+      - automation_before
     optional_data:
       - budget_range
       - timeline
       - users_count
+      - company_size
       - contact_info
     parameters:
       next_phase_state: autonomous_presentation
@@ -71,7 +73,7 @@ states:
   autonomous_presentation:
     extends: _base_phase
     autonomous: true
-    goal: "Презентовать ценность продукта под конкретные боли клиента. Успех: клиент видит как продукт решает его проблемы."
+    goal: "Презентовать ценность продукта на основе уже собранного базового профиля. Успех: клиент понимает релевантность решения; боли и текущие инструменты можно уточнять только как optional enrichment."
     phase: presentation
     kb_categories:
       - features
@@ -79,9 +81,9 @@ states:
       - analytics
     max_turns_in_state: 6
     phase_exhaust_threshold: 3
-    required_data:
-      - pain_point
+    required_data: []
     optional_data:
+      - pain_point
       - pain_category
       - urgency
       - contact_info
@@ -196,9 +198,6 @@ states:
           - business_type
           - city
           - automation_before
-        required_if_true:
-          automation_before:
-            - current_tools
       video_call_scheduled:
         required_any:
           - contact_name
@@ -207,9 +206,6 @@ states:
           - business_type
           - city
           - automation_before
-        required_if_true:
-          automation_before:
-            - current_tools
     terminal_states:
       - payment_ready
       - video_call_scheduled

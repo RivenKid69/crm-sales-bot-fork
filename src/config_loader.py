@@ -1680,6 +1680,8 @@ class ConfigLoader:
 
         Loads base templates from templates/_base/ and merges with
         flow-specific templates from templates/{flow_name}/.
+        Autonomous flow is an exception: it uses only its own prompts.yaml
+        as the single source of truth for LLM templates.
 
         Args:
             flow_name: Name of the flow
@@ -1688,6 +1690,14 @@ class ConfigLoader:
             Dict of template_name -> template_config
         """
         templates = {}
+
+        # Autonomous flow uses only flow-local templates as SSoT.
+        if flow_name == "autonomous":
+            flow_templates_file = self.config_dir / "templates" / flow_name / "prompts.yaml"
+            if flow_templates_file.exists():
+                flow_data = self._load_yaml(f"templates/{flow_name}/prompts.yaml", required=False)
+                templates.update(flow_data.get("templates", {}))
+            return templates
 
         # Load base templates
         base_templates_file = self.config_dir / "templates" / "_base" / "prompts.yaml"

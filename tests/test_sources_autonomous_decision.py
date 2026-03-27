@@ -31,12 +31,10 @@ CLOSING_TERMINAL_REQUIREMENTS = {
     "payment_ready": {
         "required_any": ["contact_name", "client_name"],
         "required_all": ["business_type", "city", "automation_before"],
-        "required_if_true": {"automation_before": ["current_tools"]},
     },
     "video_call_scheduled": {
         "required_any": ["contact_name", "client_name"],
         "required_all": ["business_type", "city", "automation_before"],
-        "required_if_true": {"automation_before": ["current_tools"]},
     },
 }
 
@@ -274,6 +272,38 @@ class TestLLMFallback:
 
         assert len(bb._transition_proposals) == 1
         assert bb._transition_proposals[0]["next_state"] == "autonomous_qualification"
+
+    @patch("src.feature_flags.flags")
+    def test_decision_prompt_uses_full_transcript_dialogue(self, mock_flags):
+        mock_flags.is_enabled.return_value = True
+
+        decision = AutonomousDecision(
+            next_state="autonomous_qualification",
+            action="autonomous_respond",
+            reasoning="нужно ответить по текущему вопросу",
+            should_transition=False,
+        )
+        llm = make_llm(decision)
+        source = AutonomousDecisionSource(llm=llm)
+        bb = make_blackboard(
+            intent="question_features",
+            user_message="А этот тариф подойдет?",
+        )
+        ctx = bb.get_context.return_value
+        ctx.dialog_history = [{"user": "короткий хвост", "bot": "короткий ответ"}]
+        ctx.transcript = SimpleNamespace(
+            decision_dialogue_text=lambda: (
+                "Клиент: Ранее клиент выбрал Lite\n"
+                "Вы: Зафиксировала, продолжаем по Lite"
+            )
+        )
+
+        source.contribute(bb)
+
+        prompt = llm.generate_structured.call_args.kwargs["prompt"]
+        assert "ПОЛНЫЙ ДИАЛОГ" in prompt
+        assert "Ранее клиент выбрал Lite" in prompt
+        assert "короткий хвост" not in prompt
 
 
 # =============================================================================
@@ -514,7 +544,6 @@ class TestDecisionPromptEnrichment:
                 "payment_ready": {
                     "required_any": ["contact_name", "client_name"],
                     "required_all": ["business_type", "city", "automation_before"],
-                    "required_if_true": {"automation_before": ["current_tools"]},
                 }
             },
         )
@@ -526,6 +555,7 @@ class TestDecisionPromptEnrichment:
         assert "business_type ✅" in prompt
         assert "city ❌" in prompt
         assert "automation_before ❌" in prompt
+        assert "current_tools" not in prompt
 
     def test_structured_terminal_requirements_treat_false_boolean_as_collected_in_prompt(self):
         source = AutonomousDecisionSource(llm=Mock())
@@ -548,7 +578,6 @@ class TestDecisionPromptEnrichment:
                 "video_call_scheduled": {
                     "required_any": ["contact_name", "client_name"],
                     "required_all": ["business_type", "city", "automation_before"],
-                    "required_if_true": {"automation_before": ["current_tools"]},
                 }
             },
         )
@@ -700,6 +729,45 @@ class TestMediaRoutingSafety:
         assert len(bb._action_proposals) == 1
         assert bb._action_proposals[0]["metadata"]["response_mode"] == "media_only"
         assert bb._action_proposals[0]["metadata"]["route_source"] == "fallback"
+
+    def test_merged_prompt_uses_route_prompt_variants_instead_of_frozen_normal_dialog_fields(self):
+        source = AutonomousDecisionSource(llm=Mock())
+
+        prompt = source._build_merged_prompt(
+            decision_prompt="DECISION",
+            response_context={
+                "variables": {
+                    "system": "STALE SYSTEM",
+                    "safety_rules": "STALE SAFETY",
+                    "user_message": "что в документе?",
+                    "history": "",
+                    "state_gated_rules": "STATE RULES",
+                },
+                "route_prompt_variants": {
+                    "normal_dialog": {
+                        "system": "NORMAL SYSTEM",
+                        "safety_rules": "NORMAL SAFETY",
+                    },
+                    "media_only": {
+                        "system": "MEDIA SYSTEM",
+                        "safety_rules": "MEDIA SAFETY",
+                    },
+                    "hybrid": {
+                        "system": "HYBRID SYSTEM",
+                        "safety_rules": "HYBRID SAFETY",
+                    },
+                },
+                "kb_retrieved_facts": "KB FACT",
+                "media_candidates_compact": "MEDIA CANDIDATE",
+                "grounding_contract_version": 2,
+            },
+        )
+
+        assert "route_prompt_variants[response_mode]" in prompt
+        assert "MEDIA SYSTEM" in prompt
+        assert "MEDIA SAFETY" in prompt
+        assert "STALE SYSTEM" not in prompt
+        assert "STALE SAFETY" not in prompt
 
 
 # =============================================================================
@@ -940,7 +1008,6 @@ class TestClosingDeterministicCompletion:
                 "business_type": "магазин",
                 "city": "Астана",
                 "automation_before": True,
-                "current_tools": "Excel",
             },
         )
 
@@ -1227,7 +1294,6 @@ class TestMergedContactFastPath:
                 "business_type": "магазин",
                 "city": "Астана",
                 "automation_before": True,
-                "current_tools": "Excel",
             },
         )
 

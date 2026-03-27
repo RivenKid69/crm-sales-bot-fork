@@ -142,7 +142,7 @@ def test_autonomous_prompt_renders_pain_context_before_main_facts(monkeypatch):
     rendered = template.format_map(SafeDict(prepared["variables"]))
 
     pain_pos = rendered.find("PAIN_BLOCK")
-    facts_pos = rendered.find("=== ФАКТЫ О ПРОДУКТЕ ===")
+    facts_pos = rendered.find("=== FINAL GROUNDING FACTS ===")
 
     assert pain_pos != -1
     assert facts_pos != -1

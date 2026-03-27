@@ -196,15 +196,17 @@ class DialoguePolicy:
         self._validate_action_templates()
 
     def _validate_action_templates(self):
-        """Cross-check all policy action mappings against available templates (YAML + Python)."""
+        """Cross-check all policy action mappings against available template sources."""
         from src.config import PROMPT_TEMPLATES
+        from src.response_routing_contract import AUTONOMOUS_RESPONSE_TEMPLATE_KEYS
 
         all_actions = set(self.REPAIR_ACTIONS.values()) | set(self.OBJECTION_ACTIONS.values())
         missing = []
         for a in all_actions:
             in_yaml = self._flow and self._flow.get_template(a)
             in_python = a in PROMPT_TEMPLATES
-            if not in_yaml and not in_python:
+            in_autonomous_ssot = a in AUTONOMOUS_RESPONSE_TEMPLATE_KEYS
+            if not in_yaml and not in_python and not in_autonomous_ssot:
                 missing.append(a)
 
         if missing:

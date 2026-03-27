@@ -187,6 +187,9 @@ class TestSalesBotSnapshot:
         restored = SalesBot.from_snapshot(snapshot, llm=mock_llm)
 
         assert restored.history == bot.history[-4:]
+        assert restored.transcript_status == "partial"
+        assert restored.transcript_provenance == "history_tail"
+        assert restored.degraded_continuity is True
 
     def test_generator_response_history_survives_snapshot_restore(self, mock_llm):
         bot = SalesBot(llm=mock_llm)
@@ -219,10 +222,11 @@ class TestSalesBotSnapshot:
 
         assert snapshot["autonomous_decision_history"] == [{"decision": "payment_ready"}]
 
-    def test_restore_falls_back_to_context_window_when_snapshot_has_no_history_tail(self, mock_llm):
+    def test_restore_does_not_reconstruct_history_from_context_window_when_tail_missing(self, mock_llm):
         bot = SalesBot(llm=mock_llm)
         snapshot = bot.to_snapshot()
         snapshot.pop("history_tail", None)
+        snapshot.pop("transcript_tail", None)
         snapshot["context_window"] = [
             {"user_message": "u1", "bot_response": "b1"},
             {"user_message": "u2", "bot_response": "b2"},
@@ -230,10 +234,38 @@ class TestSalesBotSnapshot:
 
         restored = SalesBot.from_snapshot(snapshot, llm=mock_llm)
 
-        assert restored.history == [
+        assert restored.history == []
+        assert restored.transcript_status == "empty"
+        assert restored.transcript_provenance == "explicit_restore_payload"
+        assert restored.degraded_continuity is False
+
+    def test_snapshot_exposes_transcript_metadata(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        bot.history = [
             {"user": "u1", "bot": "b1"},
             {"user": "u2", "bot": "b2"},
         ]
+
+        snapshot = bot.to_snapshot(compact_history=True, history_tail_size=1)
+
+        assert snapshot["transcript_status"] == "full"
+        assert snapshot["transcript_provenance"] == "explicit_restore_payload"
+        assert snapshot["degraded_continuity"] is False
+        assert snapshot["transcript_tail"] == [{"user": "u2", "bot": "b2"}]
+
+    def test_restore_with_zero_tail_does_not_claim_full_transcript(self, mock_llm):
+        bot = SalesBot(llm=mock_llm)
+        bot.history = [
+            {"user": "u1", "bot": "b1"},
+        ]
+
+        snapshot = bot.to_snapshot(compact_history=False, history_tail_size=0)
+        restored = SalesBot.from_snapshot(snapshot, llm=mock_llm)
+
+        assert restored.history == []
+        assert restored.transcript_status == "empty"
+        assert restored.transcript_provenance == "explicit_restore_payload"
+        assert restored.degraded_continuity is False
 
     def test_generator_last_generation_meta_survives_snapshot_restore(self, mock_llm):
         bot = SalesBot(llm=mock_llm)

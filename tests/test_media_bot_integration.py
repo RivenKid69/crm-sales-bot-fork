@@ -270,6 +270,69 @@ def test_hybrid_media_route_keeps_kb_and_selected_media_separate(monkeypatch):
     assert "У клиента 3 магазина." in generated["context"]["retrieved_facts"]
 
 
+def test_pre_generated_media_only_path_preserves_route_aware_template(monkeypatch):
+    bot = SalesBot(llm=_MediaBotLLM(), flow_name="autonomous")
+
+    monkeypatch.setattr(bot.classifier, "classify", lambda *_args, **_kwargs: _mock_classification())
+    monkeypatch.setattr(bot, "_analyze_tone", lambda *_args, **_kwargs: _mock_tone())
+    monkeypatch.setattr(
+        bot.generator,
+        "prepare_response_context",
+        lambda *_args, **_kwargs: _prepared_response_context("KB FACT"),
+    )
+    monkeypatch.setattr(
+        bot._orchestrator,
+        "process_turn",
+        lambda **_kwargs: _FakeDecision(
+            _sm_result(
+                winning_action_metadata={
+                    "response_mode": "media_only",
+                    "selected_media_card_ids": ["card-1"],
+                    "route_reasoning": "selected current attachment",
+                    "route_source": "llm",
+                }
+            )
+        ),
+    )
+    monkeypatch.setattr(bot._orchestrator.blackboard, "get_pre_generated_response", lambda: "Ответ по media")
+
+    captured = {}
+
+    def _post_process_only(response, context, requested_action, selected_template_key, retrieved_facts):
+        captured["response"] = response
+        captured["context"] = context
+        captured["requested_action"] = requested_action
+        captured["selected_template_key"] = selected_template_key
+        captured["retrieved_facts"] = retrieved_facts
+        return response, []
+
+    monkeypatch.setattr(bot.generator, "post_process_only", _post_process_only)
+
+    bot.set_pending_media_meta(
+        {
+            "source_user_text": "что в документе?",
+            "knowledge_cards": [
+                {
+                    "knowledge_id": "card-1",
+                    "attachment_fingerprint": "fp-1",
+                    "file_name": "doc.pdf",
+                    "media_kind": "document",
+                    "summary": "Это документ компании Альфа Логистик.",
+                    "facts": ["Компания Альфа Логистик."],
+                    "answer_context": "Это документ компании Альфа Логистик.",
+                }
+            ],
+            "media_facts": ["Компания Альфа Логистик."],
+        }
+    )
+
+    bot.process("что в документе?")
+
+    assert captured["requested_action"] == "autonomous_respond"
+    assert captured["selected_template_key"] == "autonomous_media_only"
+    assert captured["context"]["response_mode"] == "media_only"
+
+
 def test_structural_action_ignores_media_route_for_generation(monkeypatch):
     bot = SalesBot(llm=_MediaBotLLM(), flow_name="autonomous")
 

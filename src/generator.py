@@ -13,6 +13,7 @@ import re
 from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Any, Set, Tuple
 from pydantic import BaseModel, Field
 from src.config import SYSTEM_PROMPT, PROMPT_TEMPLATES, KNOWLEDGE
+from src.contact_payload_parser import parse_inline_contact_payload
 from src.knowledge.retriever import get_retriever
 from src.settings import settings
 from src.logger import logger
@@ -38,6 +39,7 @@ from src.generator_autonomous import (
     build_state_gated_rules,
     build_autonomous_objection_instructions,
     should_suppress_followup_question_for_interrupt,
+    build_unknown_fallback_contract,
     build_address_instruction,
     count_name_mentions_in_history,
     has_address_question_in_history,
@@ -51,12 +53,22 @@ from src.generator_autonomous import (
     format_client_card,
 )
 from src.media_turn_context import MediaTurnContext, freeze_media_turn_context
+from src.response_routing_contract import (
+    build_response_routing_context,
+    is_autonomous_response_context,
+    normalize_response_mode,
+)
 from src.unknown_kb_fallbacks import (
     LEGACY_KB_FALLBACK_RE,
     UNKNOWN_KB_FALLBACK_VARIANTS,
     is_approved_unknown_kb_fallback,
     is_pure_approved_unknown_kb_fallback,
     pick_unknown_kb_fallback,
+)
+from src.dialog_transcript import (
+    history_list_from_context,
+    project_history_from_context,
+    render_dialogue_from_context,
 )
 
 if TYPE_CHECKING:
@@ -67,6 +79,10 @@ if TYPE_CHECKING:
 class ApprovedUnknownFallbackFollowupResult(BaseModel):
     use_followup: bool = False
     question: str = Field(default="", max_length=120)
+
+
+class TemplateConfigurationError(RuntimeError):
+    """Raised when flow template configuration is incomplete for runtime."""
 
 
 # =============================================================================
@@ -99,6 +115,7 @@ PERSONALIZATION_DEFAULTS: Dict[str, str] = {
     "style_full_instruction": "",
     "adaptive_style_instruction": "",
     "adaptive_tactical_instruction": "",
+    "terminal_status": "",
 
     # Business context (bc_* prefix)
     "size_category": "small",
@@ -138,6 +155,51 @@ PERSONALIZATION_DEFAULTS: Dict[str, str] = {
     "final_grounding_facts": "",
     "media_route_instruction": "",
 }
+
+TERMINAL_FIELD_LABELS: Dict[str, str] = {
+    "contact_info": "номер телефона",
+    "kaspi_phone": "номер Kaspi (для Kaspi Pay)",
+    "iin": "ИИН",
+    "preferred_call_time": "удобное время для созвона",
+    "company_name": "название компании",
+    "contact_name": "имя клиента",
+    "client_name": "имя клиента",
+    "business_type": "сфера деятельности",
+    "city": "город",
+    "automation_before": "была ли раньше автоматизация",
+    "current_tools": "какая была автоматизация",
+}
+
+AUTONOMOUS_PROFILE_SLOT_LABELS: Dict[str, str] = {
+    "name": "имя клиента",
+    "business_type": "сфера деятельности",
+    "city": "город",
+    "automation_before": "была ли раньше автоматизация",
+}
+
+AUTONOMOUS_PROFILE_SLOT_QUESTIONS: Dict[str, str] = {
+    "name": "Кстати, как к вам лучше обращаться?",
+    "business_type": "Чтобы точнее подсказать, в какой сфере вы работаете?",
+    "city": "Подскажите, пожалуйста, в каком вы городе?",
+    "automation_before": "Коротко уточню: раньше автоматизация у вас уже была?",
+}
+
+# Autonomous blackboard can emit a small set of structural actions that do not
+# resolve through LLM templates. They must stay valid for ProposalValidator even
+# when autonomous LLM templates are locked to autonomous/prompts.yaml.
+AUTONOMOUS_NON_TEMPLATE_ACTIONS: frozenset[str] = frozenset({
+    "ask_clarification",
+    "offer_options",
+    "guard_rephrase",
+    "guard_offer_options",
+    "guard_skip_phase",
+    "guard_soft_close",
+    "redirect_after_repetition",
+    "escalate_repeated_content",
+    "acknowledge_go_back",
+    "go_back_limit_reached",
+    "objection_limit_reached",
+})
 
 # Actions exempt from trailing question stripping (probe/transition templates need "?")
 QUESTION_STRIP_EXEMPT_ACTIONS: set = {
@@ -844,6 +906,70 @@ class ResponseGenerator:
                 lines.append(f"Вы: {turn['bot']}")
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _history_projection(
+        context: Dict[str, Any],
+        projection: str = "prompt_window",
+        *,
+        max_turns: Optional[int] = None,
+    ) -> List[Dict[str, str]]:
+        return project_history_from_context(context, projection, max_turns=max_turns)
+
+    @staticmethod
+    def _history_list(
+        context: Dict[str, Any],
+        consumer: str = "generator",
+        *,
+        max_turns: Optional[int] = None,
+    ) -> List[Dict[str, str]]:
+        return history_list_from_context(context, consumer, max_turns=max_turns)
+
+    @staticmethod
+    def _dialogue_text(
+        context: Dict[str, Any],
+        consumer: str = "generator",
+        *,
+        max_chars: Optional[int] = None,
+    ) -> str:
+        return render_dialogue_from_context(context, consumer, max_chars=max_chars)
+
+    @classmethod
+    def _prompt_history(
+        cls,
+        context: Dict[str, Any],
+        *,
+        max_turns: Optional[int] = None,
+    ) -> List[Dict[str, str]]:
+        return cls._history_list(context, "generator", max_turns=max_turns)
+
+    @classmethod
+    def _fit_history_to_autonomous_prompt(
+        cls,
+        *,
+        template: str,
+        variables: Dict[str, Any],
+        context: Dict[str, Any],
+        max_prompt_chars: int,
+    ) -> str:
+        history_text = str(variables.get("history", "") or "")
+        if not history_text:
+            return history_text
+
+        rendered_prompt = template.format_map(SafeDict(variables))
+        if len(rendered_prompt) <= max_prompt_chars:
+            return history_text
+
+        prompt_without_history = rendered_prompt.replace(history_text, "", 1)
+        history_budget = max(0, max_prompt_chars - len(prompt_without_history))
+        trimmed_history = cls._dialogue_text(
+            context,
+            "generator",
+            max_chars=history_budget,
+        )
+        if trimmed_history != history_text:
+            variables["history"] = trimmed_history
+        return str(variables.get("history", "") or "")
     
     def _format_client_card(self, collected: dict) -> str:
         """Форматирует collected_data как читаемую карточку клиента для промпта."""
@@ -1906,7 +2032,7 @@ class ResponseGenerator:
 
     def _get_template(self, template_key: str) -> str:
         """
-        Get template by key, with FlowConfig fallback to PROMPT_TEMPLATES.
+        Get template by key.
 
         Args:
             template_key: Template name (e.g., 'spin_situation', 'deflect_and_continue')
@@ -1920,12 +2046,17 @@ class ResponseGenerator:
             if template:
                 return template
 
+        if self._flow and self._flow.name == "autonomous":
+            raise TemplateConfigurationError(
+                "Autonomous template configuration error: "
+                f"'{template_key}' is missing from src/yaml_config/templates/autonomous/prompts.yaml"
+            )
+
         # Fallback to Python PROMPT_TEMPLATES
         result = PROMPT_TEMPLATES.get(template_key)
         if result:
             return result
 
-        from src.logger import logger
         logger.warning(
             "Template not found, falling back to continue_current_goal",
             requested_template=template_key,
@@ -1940,9 +2071,14 @@ class ResponseGenerator:
 
         This is the SSOT for action validity — used by ProposalValidator
         to catch invalid actions at proposal time instead of at generation time.
-        Mirrors the resolution logic of _get_template(): FlowConfig first,
-        then PROMPT_TEMPLATES fallback.
+        For autonomous flow this includes:
+        - flow-local LLM template keys from autonomous/prompts.yaml
+        - structural blackboard actions handled outside generator/template lookup
         """
+        if self._flow and getattr(self._flow, "name", "") == "autonomous":
+            template_actions = set(self._flow.templates.keys()) if hasattr(self._flow, "templates") else set()
+            return template_actions | set(AUTONOMOUS_NON_TEMPLATE_ACTIONS)
+
         actions = set(PROMPT_TEMPLATES.keys())
         if self._flow and hasattr(self._flow, 'templates'):
             actions.update(self._flow.templates.keys())
@@ -2199,23 +2335,110 @@ class ResponseGenerator:
             "Если вопрос общий про тарифы, дай полный структурированный перечень тарифов из фактов.",
             "Для каждого тарифа указывай цену и период оплаты строго по фактам.",
             "Для запроса вида 'для N точек' подбирай минимально подходящий тариф по лимитам из фактов.",
-            "Если в фактах не хватает данных, нейтрально скажи: «Я уточню этот вопрос и чуть позже отпишу вам». Не упоминай базу знаний, факты или данные. Формулировки «в данных нет», «информация отсутствует», «в фактах нет» запрещены.",
+            "Если в фактах не хватает данных, следуй unknown-fallback contract, уже добавленному в prompt. Не упоминай базу знаний, факты или данные. Формулировки «в данных нет», «информация отсутствует», «в фактах нет» запрещены.",
         ]
         if self._is_broad_tariff_list_request(user_message):
             rules.append("Запрос про полный перечень: не сокращай ответ до общего описания, перечисли все тарифы.")
         return "\n".join(rules)
 
+    @staticmethod
+    def _build_safety_rules(response_mode: str) -> str:
+        _ = normalize_response_mode(response_mode)
+        return SAFETY_RULES_V2
+
+    def _build_turn_safety_rules(
+        self,
+        *,
+        response_mode: str,
+        allow_unknown_kb_fallback: bool,
+    ) -> str:
+        _ = allow_unknown_kb_fallback
+        return self._build_safety_rules(response_mode)
+
+    @staticmethod
+    def _build_unknown_fallback_contract(
+        *,
+        response_mode: str,
+        allow_unknown_kb_fallback: bool,
+    ) -> str:
+        return build_unknown_fallback_contract(
+            response_mode=normalize_response_mode(response_mode),
+            allow_unknown_kb_fallback=allow_unknown_kb_fallback,
+        )
+
+    @staticmethod
+    def _build_unknown_kb_instruction(
+        *,
+        response_mode: str,
+        allow_unknown_kb_fallback: bool,
+    ) -> str:
+        return ResponseGenerator._build_unknown_fallback_contract(
+            response_mode=response_mode,
+            allow_unknown_kb_fallback=allow_unknown_kb_fallback,
+        )
+
+    @staticmethod
+    def _build_system_prompt(
+        *,
+        tone_instruction: str,
+        style_instruction: str,
+        response_mode: str,
+    ) -> str:
+        _ = normalize_response_mode(response_mode)
+        return SYSTEM_PROMPT.format(
+            tone_instruction=tone_instruction,
+            style_instruction=style_instruction,
+        )
+
+    def _build_route_prompt_variants(
+        self,
+        *,
+        tone_instruction: str,
+        style_instruction: str,
+    ) -> Dict[str, Dict[str, str]]:
+        variants: Dict[str, Dict[str, str]] = {}
+        for response_mode in ("normal_dialog", "media_only", "hybrid"):
+            variants[response_mode] = {
+                "system": self._build_system_prompt(
+                    tone_instruction=tone_instruction,
+                    style_instruction=style_instruction,
+                    response_mode=response_mode,
+                ),
+                "safety_rules": self._build_safety_rules(response_mode),
+            }
+        return variants
+
     def _factual_llm_guardrails(self, intent: str, user_message: str) -> str:
+        return self._build_factual_guardrails(
+            intent=intent,
+            user_message=user_message,
+            response_mode="normal_dialog",
+        )
+
+    def _build_factual_guardrails(self, intent: str, user_message: str, response_mode: str) -> str:
         """General LLM-only factual constraints replacing deterministic semantic rewrites."""
+        response_mode = normalize_response_mode(response_mode)
         rules = [
             "КРИТИЧЕСКИЕ ПРАВИЛА ФАКТОЛОГИИ:",
-            "Отвечай только по доступным grounding-фактам. Если точного факта нет, нейтрально скажи: «Я уточню этот вопрос и чуть позже отпишу вам». Не упоминай базу знаний, факты или данные. Формулировки «в данных нет», «информация отсутствует», «в фактах нет» запрещены.",
-            "Не подменяй названия тарифов, модулей, интеграций и продуктов.",
-            "Не отрицай поддержку функции/интеграции, если в фактах есть подтверждение.",
-            "Не подтверждай поддержку функции/интеграции, если в фактах этого нет.",
-            "Не добавляй технические детали (версии, стандарты, сроки), которых нет в фактах.",
-            "Если вопрос прямой factual, сначала дай прямой ответ, без ухода в discovery.",
         ]
+        if response_mode == "media_only":
+            rules.append(
+                "Отвечай только по selected_media_grounding. Если нужного факта там нет, следуй unknown-fallback contract, уже добавленному в prompt. Не ссылайся на базу знаний и не обещай уточнение позже."
+            )
+        else:
+            rules.append(
+                "Отвечай только по доступным grounding-фактам. Если точного факта нет, следуй unknown-fallback contract, уже добавленному в prompt. Не упоминай базу знаний, факты или данные. Формулировки «в данных нет», «информация отсутствует», «в фактах нет» запрещены."
+            )
+        rules.extend(
+            [
+                "Не подменяй названия тарифов, модулей, интеграций и продуктов.",
+                "Не отрицай поддержку функции/интеграции, если в фактах есть подтверждение.",
+                "Не подтверждай поддержку функции/интеграции, если в фактах этого нет.",
+                "Не добавляй технические детали (версии, стандарты, сроки), которых нет в фактах.",
+                "Если в фактах несколько похожих сущностей и контекст не снимает неоднозначность, задай короткое уточнение вместо догадки.",
+                "Если вопрос прямой factual, сначала дай прямой ответ, без ухода в discovery.",
+            ]
+        )
         if self._is_tariff_or_pricing_query(intent, user_message):
             rules.append("Для тарифа/цены строго соблюдай соответствие: тариф -> цена -> период оплаты.")
         if re.search(r"(?:тестов\w+|пробн\w+|trial)", str(user_message or ""), re.IGNORECASE):
@@ -2628,7 +2851,11 @@ class ResponseGenerator:
         is_autonomous_flow = bool(
             self._flow
             and self._flow.name == "autonomous"
-            and (state.startswith("autonomous_") or state in {"greeting", "handle_objection", "soft_close"})
+            and is_autonomous_response_context(
+                context=context,
+                state=state,
+                requested_action=action,
+            )
         )
 
         # ContentRepetitionGuard actions — dedicated templates, never remap (I19)
@@ -2639,12 +2866,11 @@ class ResponseGenerator:
             # In soft_close state, use soft_close template — don't keep pitching after refusal
             if state == "soft_close":
                 return "soft_close"
-            # answer_with_facts is only valid for NON-autonomous flow.
-            # In autonomous flow, autonomous_respond already injects {retrieved_facts} alongside
-            # {spin_phase}, {goal}, {collected_data}, {missing_data} and all dynamic variables.
-            # Switching to answer_with_facts strips all client context and turns the bot into a
-            # stateless FAQ responder mid-dialog (BUG: any ? + factual keyword triggered this).
-            # The FactualVerifier still runs post-generation via _is_factual_scope (unchanged).
+            if is_autonomous_flow and intent == "greeting" and state == "greeting":
+                return "greet_back"
+            # Don't auto-switch autonomous_respond into answer_with_facts based on
+            # factual cues. Autonomous flow keeps the full-context template unless an
+            # upstream source explicitly requested another autonomous template.
             if (
                 not is_autonomous_flow
                 and intent != "greeting"
@@ -2655,9 +2881,12 @@ class ResponseGenerator:
 
         # Autonomous flow: always use autonomous_respond template (except greeting).
         # Pricing/fact content is injected via retrieved_facts; template routing should
-        # not override the autonomous LLM action.
+        # not override the autonomous LLM action unless an upstream source explicitly
+        # selected an autonomous template.
         if is_autonomous_flow:
             passthrough_actions = {
+                "continue_current_goal",
+                "answer_with_facts",
                 "soft_close",
                 "close",
                 "escalate_to_human",
@@ -2743,7 +2972,12 @@ class ResponseGenerator:
                 )
 
         spin_phase = context.get("spin_phase", "")
-        if template_key == "continue_current_goal" and spin_phase and intent not in self.PRICE_RELATED_INTENTS:
+        if (
+            not is_autonomous_flow
+            and template_key == "continue_current_goal"
+            and spin_phase
+            and intent not in self.PRICE_RELATED_INTENTS
+        ):
             spin_template_key = f"spin_{spin_phase}"
             if self._flow and self._flow.get_template(spin_template_key):
                 template_key = spin_template_key
@@ -2780,10 +3014,7 @@ class ResponseGenerator:
 
     @staticmethod
     def _normalize_media_route_mode(value: Any) -> str:
-        mode = str(value or "normal_dialog").strip().lower()
-        if mode in {"media_only", "hybrid"}:
-            return mode
-        return "normal_dialog"
+        return normalize_response_mode(value)
 
     @staticmethod
     def _default_media_route_instruction(
@@ -2853,7 +3084,9 @@ class ResponseGenerator:
 
     @classmethod
     def _is_route_aware_media_factual_turn(cls, context: Dict[str, Any]) -> bool:
-        media_route_mode = cls._normalize_media_route_mode(context.get("media_route_mode"))
+        media_route_mode = cls._normalize_media_route_mode(
+            context.get("response_mode", context.get("media_route_mode"))
+        )
         selected_media_grounding = str(context.get("selected_media_grounding", "") or "").strip()
         if media_route_mode not in {"media_only", "hybrid"} or not selected_media_grounding:
             return False
@@ -2871,7 +3104,9 @@ class ResponseGenerator:
         if selected_template_key not in {"autonomous_respond", "continue_current_goal"}:
             return selected_template_key
 
-        media_route_mode = ResponseGenerator._normalize_media_route_mode(context.get("media_route_mode"))
+        media_route_mode = ResponseGenerator._normalize_media_route_mode(
+            context.get("response_mode", context.get("media_route_mode"))
+        )
         selected_media_grounding = str(context.get("selected_media_grounding", "") or "").strip()
         if media_route_mode == "media_only" and selected_media_grounding:
             return "autonomous_media_only"
@@ -2879,23 +3114,53 @@ class ResponseGenerator:
             return "autonomous_respond"
         return selected_template_key
 
+    @classmethod
+    def _resolve_postprocess_template_key(
+        cls,
+        *,
+        requested_action: str,
+        selected_template_key: Optional[str],
+        context: Dict[str, Any],
+    ) -> str:
+        template_key = str(selected_template_key or "").strip() or str(requested_action or "").strip()
+        if not template_key:
+            return ""
+        return cls._apply_route_aware_template_override(
+            requested_action=str(requested_action or "").strip(),
+            selected_template_key=template_key,
+            context=context,
+        )
+
     def prepare_response_context(self, state: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare autonomous response variables/facts without an LLM generation call."""
         intent = str(context.get("intent", "") or "")
         user_message = str(context.get("user_message", "") or "")
         action = str(context.get("action", "autonomous_respond") or "autonomous_respond")
-        history = context.get("history", []) or []
+        history = self._prompt_history(context)
+        retrieval_history = self._history_list(context, "retrieval")
+        retrieval_dialogue = self._dialogue_text(context, "retrieval")
         user_message = self._resolve_fact_disambiguation_user_message(user_message, history)
         collected = context.get("collected_data", {}) or {}
         working_context = dict(context)
         working_context["state"] = state
         working_context["user_message"] = user_message
+        working_context = build_response_routing_context(
+            context=working_context,
+            state=state,
+            requested_action=action,
+            selected_template_key=self._resolve_postprocess_template_key(
+                requested_action=action,
+                selected_template_key=working_context.get("selected_template_key"),
+                context=working_context,
+            ),
+            response_mode=working_context.get("response_mode", working_context.get("media_route_mode")),
+        )
         media_turn_context = freeze_media_turn_context(working_context.get("media_turn_context"))
 
         _is_autonomous = bool(
             self._flow
             and self._flow.name == "autonomous"
-            and (state.startswith("autonomous_") or state in {"handle_objection", "greeting"})
+            and is_autonomous_response_context(context=working_context)
         )
 
         _fact_keys: List[str] = []
@@ -2920,7 +3185,8 @@ class ResponseGenerator:
                     flow_config=self._flow,
                     kb=_kb,
                     recently_used_keys=recently_used,
-                    history=history,
+                    history=retrieval_history,
+                    dialogue_text=retrieval_dialogue,
                     secondary_intents=self._get_secondary_intents(working_context),
                     semantic_frame=self._get_semantic_frame(working_context),
                     collected_data=working_context.get("collected_data", {}),
@@ -2959,10 +3225,12 @@ class ResponseGenerator:
 
         tone_instruction = working_context.get("tone_instruction", "")
         style_instruction = working_context.get("style_instruction", "")
-        system_prompt = SYSTEM_PROMPT.format(
+        response_mode = normalize_response_mode(working_context.get("response_mode", "normal_dialog"))
+        route_prompt_variants = self._build_route_prompt_variants(
             tone_instruction=tone_instruction,
             style_instruction=style_instruction,
         )
+        system_prompt = route_prompt_variants[response_mode]["system"]
 
         objection_info = working_context.get("objection_info") or {}
         objection_type = objection_info.get("objection_type", "")
@@ -2980,14 +3248,14 @@ class ResponseGenerator:
         variables.update({
             "system": system_prompt,
             "user_message": user_message,
-            "history": self.format_history(history, use_full=_is_autonomous),
+            "history": self._dialogue_text(working_context, "generator"),
             "goal": working_context.get("goal", ""),
             "collected_data": self._format_client_card(collected) if _is_autonomous else str(collected),
             "missing_data": ", ".join(working_context.get("missing_data", [])) or "всё собрано",
             "company_size": collected.get("company_size") or "не указан",
             "pain_point": pain_point_value,
             "product_overview": product_overview,
-            "retrieved_facts": retrieved_facts or "Информация по этому вопросу будет уточнена.",
+            "retrieved_facts": retrieved_facts or "",
             "retrieved_urls": formatted_urls,
             "company_info": company_info,
             "current_tools": collected.get("current_tools", "не указано"),
@@ -3008,7 +3276,7 @@ class ResponseGenerator:
             "objection_instructions": "",
             "question_instruction": "Задай ОДИН вопрос по цели этапа.",
             "closing_data_request": "",
-            "safety_rules": SAFETY_RULES_V2,
+            "safety_rules": route_prompt_variants[response_mode]["safety_rules"],
             "state_gated_rules": "",
             "address_instruction": self._build_address_instruction(
                 collected=collected,
@@ -3024,7 +3292,24 @@ class ResponseGenerator:
                 frustration_level=working_context.get("frustration_level", 0),
                 user_message=user_message,
             ),
+            "unknown_fallback_contract": "",
+            "unknown_kb_instruction": "",
         })
+
+        allow_unknown_kb_fallback = bool(
+            self._is_direct_factual_request(intent, user_message)
+            or self._is_tariff_or_pricing_query(intent, user_message)
+            or self._is_route_aware_media_factual_turn(working_context)
+        )
+        variables["safety_rules"] = self._build_turn_safety_rules(
+            response_mode=response_mode,
+            allow_unknown_kb_fallback=allow_unknown_kb_fallback,
+        )
+        variables["unknown_fallback_contract"] = self._build_unknown_fallback_contract(
+            response_mode=response_mode,
+            allow_unknown_kb_fallback=allow_unknown_kb_fallback,
+        )
+        variables["unknown_kb_instruction"] = variables["unknown_fallback_contract"]
 
         secondary_intents = self._get_secondary_intents(working_context)
         variables["state_gated_rules"] = self._build_state_gated_rules(
@@ -3056,6 +3341,18 @@ class ResponseGenerator:
             )
             variables["missing_data"] = ""
             variables["available_questions"] = ""
+
+        self._apply_autonomous_closing_prompt_context(
+            variables=variables,
+            context=working_context,
+            collected=collected,
+            intent=intent,
+            user_message=user_message,
+            history=history,
+            hard_no_contact=hard_no_contact,
+            deferred_contact=deferred_contact,
+            is_autonomous=_is_autonomous,
+        )
 
         if intent.startswith("objection_"):
             variables["objection_instructions"] = self._build_autonomous_objection_instructions(intent)
@@ -3092,10 +3389,13 @@ class ResponseGenerator:
             "state": state,
             "intent": intent,
             "requested_action": action,
-            "selected_template_key": action,
+            "selected_template_key": str(working_context.get("selected_template_key") or action),
+            "response_mode": working_context.get("response_mode", "normal_dialog"),
+            "media_route_mode": working_context.get("response_mode", "normal_dialog"),
             "retrieved_facts": retrieved_facts,
             "retrieved_urls": formatted_urls,
             "fact_keys": _fact_keys,
+            "route_prompt_variants": route_prompt_variants,
             "variables": variables,
         }
         if _is_autonomous and media_turn_context is not None:
@@ -3107,6 +3407,253 @@ class ResponseGenerator:
                 }
             )
         return response_context
+
+    @staticmethod
+    def _terminal_field_label(field_name: str) -> str:
+        return TERMINAL_FIELD_LABELS.get(str(field_name), str(field_name))
+
+    def _build_terminal_status_prompt_block(
+        self,
+        *,
+        collected: Dict[str, Any],
+        terminal_reqs: Dict[str, Any],
+        intent: str,
+        user_message: str,
+    ) -> str:
+        if not isinstance(terminal_reqs, dict) or not terminal_reqs:
+            return ""
+
+        def _has_terminal_field(field: str) -> bool:
+            return is_terminal_field_present(collected.get(field))
+
+        missing_by_terminal: Dict[str, List[str]] = {}
+        for terminal_name, spec in terminal_reqs.items():
+            missing_by_terminal[str(terminal_name)] = missing_terminal_fields(
+                spec,
+                has_field=_has_terminal_field,
+                get_value=collected.get,
+            )
+
+        reachable = [name for name, missing in missing_by_terminal.items() if not missing]
+        not_reachable = [name for name, missing in missing_by_terminal.items() if missing]
+        not_reachable.sort(key=lambda name: len(missing_by_terminal.get(name, [])))
+
+        target_terminal = not_reachable[0] if not_reachable else (reachable[0] if reachable else None)
+        if (
+            target_terminal
+            and self._is_payment_closing_signal(intent, user_message)
+            and "payment_ready" in not_reachable
+        ):
+            target_terminal = "payment_ready"
+
+        lines = ["СТАТУС ТЕРМИНАЛЬНЫХ СТЕЙТОВ:"]
+        for terminal_name, missing in missing_by_terminal.items():
+            if missing:
+                readable = ", ".join(self._terminal_field_label(field) for field in missing)
+                lines.append(f"- {terminal_name}: НЕ ГОТОВО — нужно собрать: {readable}")
+            else:
+                lines.append(f"- {terminal_name}: ГОТОВО")
+
+        if target_terminal:
+            lines.append(f"Приоритетный следующий terminal state: {target_terminal}.")
+            target_missing = missing_by_terminal.get(target_terminal, [])
+            if target_missing:
+                readable = ", ".join(self._terminal_field_label(field) for field in target_missing)
+                lines.append(f"Для перехода сейчас не хватает: {readable}.")
+            else:
+                lines.append("Переход уже достижим — не запрашивай лишние данные.")
+
+        return "\n".join(lines)
+
+    def _apply_autonomous_closing_prompt_context(
+        self,
+        *,
+        variables: Dict[str, Any],
+        context: Dict[str, Any],
+        collected: Dict[str, Any],
+        intent: str,
+        user_message: str,
+        history: List[Dict[str, Any]],
+        hard_no_contact: bool,
+        deferred_contact: bool,
+        is_autonomous: bool,
+    ) -> None:
+        state = str(context.get("state", "") or "")
+        terminal_reqs: Dict[str, Any] = context.get("terminal_state_requirements", {}) or {}
+        variables["terminal_status"] = self._build_terminal_status_prompt_block(
+            collected=collected,
+            terminal_reqs=terminal_reqs,
+            intent=intent,
+            user_message=user_message,
+        )
+
+        if not (is_autonomous and state == "autonomous_closing"):
+            return
+
+        if hard_no_contact or deferred_contact:
+            variables["closing_data_request"] = (
+                "⚠️ Клиент не готов к передаче контактов сейчас: НЕ собирай номер телефона/ИИН в этом сообщении. "
+                "Дай полезный ответ по запросу и оставь нейтральный следующий шаг без давления."
+            )
+            return
+
+        _AUTONOMOUS_BLOCKED_CONTACT_FIELDS = {
+            "contact_info",
+            "phone",
+            "email",
+            "kaspi_phone",
+            "contact",
+        }
+
+        def _has_terminal_field(field: str) -> bool:
+            return is_terminal_field_present(collected.get(field))
+
+        _has_contact = (
+            collected.get("contact_info")
+            or collected.get("kaspi_phone")
+            or collected.get("phone")
+            or collected.get("email")
+        )
+        if not _has_contact:
+            _no_contact_hint = (
+                "⚠️ КОНТАКТ НЕ ПОЛУЧЕН: клиент ещё не давал номер телефона.\n"
+                "   КАТЕГОРИЧЕСКИ НЕЛЬЗЯ называть, угадывать или подтверждать "
+                "выдуманный номер телефона. Не пиши никаких контактных данных.\n"
+                "   Не проси номер телефона или email в автономном режиме. "
+                "Продолжай консультацию в чате, пока клиент сам не предложит контакт."
+            )
+            _existing_dna = variables.get("do_not_ask", "")
+            variables["do_not_ask"] = (
+                f"{_existing_dna}\n{_no_contact_hint}" if _existing_dna else _no_contact_hint
+            )
+        if not collected.get("iin"):
+            _no_iin_hint = (
+                "⚠️ ИИН НЕ ПОЛУЧЕН: клиент ещё не давал ИИН.\n"
+                "   КАТЕГОРИЧЕСКИ НЕЛЬЗЯ называть, угадывать или «подтверждать» "
+                "выдуманный ИИН (12-значное число). Не пиши никаких 12-значных чисел.\n"
+                "   Если нужен ИИН — просто попроси: 'Укажите, пожалуйста, ваш ИИН.'"
+            )
+            _existing_dna = variables.get("do_not_ask", "")
+            variables["do_not_ask"] = (
+                f"{_existing_dna}\n{_no_iin_hint}" if _existing_dna else _no_iin_hint
+            )
+
+        if not terminal_reqs:
+            return
+
+        soften_closing_request = self._should_soften_closing_request(
+            intent=intent,
+            frustration_level=context.get("frustration_level", 0),
+            user_message=user_message,
+        )
+        reachable = [
+            terminal_name
+            for terminal_name, spec in terminal_reqs.items()
+            if terminal_requirements_satisfied(
+                spec,
+                has_field=_has_terminal_field,
+                get_value=collected.get,
+            )
+        ]
+        not_reachable = [terminal_name for terminal_name in terminal_reqs if terminal_name not in reachable]
+        not_reachable.sort(
+            key=lambda terminal_name: len(
+                missing_terminal_fields(
+                    terminal_reqs.get(terminal_name, []),
+                    has_field=_has_terminal_field,
+                    get_value=collected.get,
+                )
+            )
+        )
+
+        target_terminal = not_reachable[0] if not_reachable else None
+        if (
+            target_terminal
+            and self._is_payment_closing_signal(intent, user_message)
+            and "payment_ready" in not_reachable
+        ):
+            target_terminal = "payment_ready"
+        urgent_fields = missing_terminal_fields(
+            terminal_reqs.get(target_terminal, []) if target_terminal else [],
+            has_field=_has_terminal_field,
+            get_value=collected.get,
+        )
+        blocked_contact_fields = [
+            field_name for field_name in urgent_fields if field_name in _AUTONOMOUS_BLOCKED_CONTACT_FIELDS
+        ]
+        if blocked_contact_fields:
+            urgent_fields = [
+                field_name
+                for field_name in urgent_fields
+                if field_name not in _AUTONOMOUS_BLOCKED_CONTACT_FIELDS
+            ]
+
+        _just_provided_payment_data = self._client_just_provided_payment_data(user_message)
+
+        if blocked_contact_fields and not urgent_fields:
+            variables["closing_data_request"] = (
+                "⚠️ Автономный режим: не запрашивай номер телефона, email или другой контакт.\n"
+                "   Ответь по сути и оставь нейтральный следующий шаг без созвона.\n"
+            )
+        elif urgent_fields and not reachable:
+            if _just_provided_payment_data:
+                variables["closing_data_request"] = (
+                    "💡 Клиент только что предоставил платёжные данные (ИИН и телефон Kaspi).\n"
+                    "   Поблагодари и подтверди получение. Не спрашивай снова то, что уже дали.\n"
+                    "   Следующий шаг: подтверди, что всё принято, и нейтрально скажи: "
+                    "'Чуть позже вам перезвонят.'\n"
+                )
+            elif (
+                soften_closing_request
+                and not self._is_payment_closing_signal(intent, user_message)
+            ):
+                variables["closing_data_request"] = (
+                    "⚠️ Клиент сейчас не готов к оформлению или просит без давления.\n"
+                    "   Сначала коротко ответь по сути запроса.\n"
+                    "   Затем мягко предложи вернуться к оформлению позже, "
+                    "без требования ИИН/телефона в этом же сообщении.\n"
+                )
+            elif (
+                target_terminal == "video_call_scheduled"
+                and set(urgent_fields) <= {"contact_info", "preferred_call_time"}
+                and not self._is_payment_closing_signal(intent, user_message)
+            ):
+                variables["closing_data_request"] = (
+                    "⚠️ Автономный режим: не запрашивай номер телефона, email или другой контакт.\n"
+                    "   Ответь по сути и оставь нейтральный следующий шаг без созвона.\n"
+                )
+            else:
+                readable_fields = ", ".join(
+                    self._terminal_field_label(field_name) for field_name in urgent_fields
+                )
+                variables["closing_data_request"] = (
+                    "⚠️ ОБЯЗАТЕЛЬНО: твой ответ ДОЛЖЕН содержать вопрос про "
+                    + readable_fields
+                    + ".\n"
+                    "   Это единственный способ продвинуться к оформлению.\n"
+                    "   Попроси кратко и естественно. Пример: '...Оставьте, пожалуйста, номер телефона.'\n"
+                )
+        elif urgent_fields and reachable:
+            if soften_closing_request:
+                variables["closing_data_request"] = (
+                    "💡 Клиент в напряжении: не форсируй сбор данных.\n"
+                    "   При уместности кратко предложи вернуться к оформлению, когда будет удобно.\n"
+                )
+            elif (
+                set(urgent_fields) <= {"contact_info", "preferred_call_time"}
+                and not self._is_payment_closing_signal(intent, user_message)
+            ):
+                variables["closing_data_request"] = ""
+            else:
+                readable_fields = ", ".join(
+                    self._terminal_field_label(field_name) for field_name in urgent_fields
+                )
+                variables["closing_data_request"] = (
+                    "💡 Если уместно, уточни: "
+                    + readable_fields
+                    + ".\n"
+                    "   Спроси в конце ответа, только если это не выглядит навязчиво.\n"
+                )
 
     def generate(self, action: str, context: Dict, max_retries: int = None) -> str:
         """Генерируем ответ с retry при китайских символах"""
@@ -3134,7 +3681,9 @@ class ResponseGenerator:
         intent = context.get("intent", "")
         state = context.get("state", "")
         user_message = context.get("user_message", "")
-        history = context.get("history", []) or []
+        history = self._prompt_history(context)
+        retrieval_history = self._history_list(context, "retrieval")
+        retrieval_dialogue = self._dialogue_text(context, "retrieval")
         resolved_user_message = self._resolve_fact_disambiguation_user_message(user_message, history)
         if resolved_user_message and resolved_user_message != user_message:
             context = dict(context)
@@ -3164,7 +3713,11 @@ class ResponseGenerator:
         _is_autonomous = bool(
             self._flow
             and self._flow.name == "autonomous"
-            and (state.startswith("autonomous_") or state in {"handle_objection", "greeting"})
+            and is_autonomous_response_context(
+                context=context,
+                state=state,
+                requested_action=action,
+            )
         )
         use_context_grounding = bool(context.get("_skip_retrieval"))
         _fact_keys: List[str] = list(context.get("fact_keys", []) or [])
@@ -3198,7 +3751,8 @@ class ResponseGenerator:
                     flow_config=self._flow,
                     kb=_kb,
                     recently_used_keys=recently_used,
-                    history=context.get("history", []),
+                    history=retrieval_history,
+                    dialogue_text=retrieval_dialogue,
                     secondary_intents=self._get_secondary_intents(context),
                     semantic_frame=self._get_semantic_frame(context),
                     collected_data=context.get("collected_data", {}),
@@ -3292,12 +3846,7 @@ class ResponseGenerator:
             )
         selected_template_key = template_key
 
-        # Mirror real template selection when fallback is triggered in _get_template().
-        has_flow_template = bool(self._flow and self._flow.get_template(template_key))
-        if not has_flow_template and template_key not in PROMPT_TEMPLATES:
-            selected_template_key = "continue_current_goal"
-
-        # Get template using the new method with FlowConfig fallback
+        # Get template using the configured runtime source(s)
         template = self._get_template(template_key)
 
         # Собираем переменные
@@ -3316,11 +3865,26 @@ class ResponseGenerator:
         # Tone and style instructions из контекста (Phase 2: Естественность диалога)
         tone_instruction = context.get("tone_instruction", "")
         style_instruction = context.get("style_instruction", "")
+        media_route_mode = self._normalize_media_route_mode(
+            context.get("response_mode", context.get("media_route_mode"))
+        )
+        selected_media_grounding = str(context.get("selected_media_grounding", "") or "")
+        kb_retrieved_facts = str(context.get("kb_retrieved_facts", "") or "")
+        final_grounding_facts = str(context.get("final_grounding_facts", "") or retrieved_facts or "")
+        media_route_instruction = str(
+            context.get("media_route_instruction")
+            or self._default_media_route_instruction(
+                media_route_mode=media_route_mode,
+                selected_media_grounding=selected_media_grounding,
+            )
+            or ""
+        )
 
         # Формируем SYSTEM_PROMPT с tone_instruction и style_instruction
-        system_prompt = SYSTEM_PROMPT.format(
+        system_prompt = self._build_system_prompt(
             tone_instruction=tone_instruction,
-            style_instruction=style_instruction
+            style_instruction=style_instruction,
+            response_mode=media_route_mode,
         )
 
         # Phase 3: Objection context
@@ -3341,22 +3905,10 @@ class ResponseGenerator:
         variables = dict(PERSONALIZATION_DEFAULTS)
 
         # === Добавляем базовые переменные (перезаписывают fallback при наличии) ===
-        media_route_mode = self._normalize_media_route_mode(context.get("media_route_mode"))
-        selected_media_grounding = str(context.get("selected_media_grounding", "") or "")
-        kb_retrieved_facts = str(context.get("kb_retrieved_facts", "") or "")
-        final_grounding_facts = str(context.get("final_grounding_facts", "") or retrieved_facts or "")
-        media_route_instruction = str(
-            context.get("media_route_instruction")
-            or self._default_media_route_instruction(
-                media_route_mode=media_route_mode,
-                selected_media_grounding=selected_media_grounding,
-            )
-            or ""
-        )
         variables.update({
             "system": system_prompt,
             "user_message": user_message,
-            "history": self.format_history(context.get("history", []), use_full=_is_autonomous),
+            "history": self._dialogue_text(context, "generator"),
             "goal": context.get("goal", ""),
             "collected_data": self._format_client_card(collected) if _is_autonomous else str(collected),
             "missing_data": ", ".join(context.get("missing_data", [])) or "всё собрано",
@@ -3364,7 +3916,7 @@ class ResponseGenerator:
             "pain_point": pain_point_value,
             "product_overview": product_overview,
             # База знаний
-            "retrieved_facts": retrieved_facts or "Информация по этому вопросу будет уточнена.",
+            "retrieved_facts": retrieved_facts or "",
             "retrieved_urls": formatted_urls,  # NEW: Structured URLs for documentation links
             "company_info": _company_info,
             # SPIN-специфичные данные
@@ -3393,14 +3945,17 @@ class ResponseGenerator:
             "question_instruction": "Задай ОДИН вопрос по цели этапа.",
             # Closing-specific data request (injected below)
             "closing_data_request": "",
+            "terminal_status": "",
             # Layer 1: shared safety rules for autonomous templates
-            "safety_rules": SAFETY_RULES_V2,
+            "safety_rules": self._build_safety_rules(media_route_mode),
             # Layer 2: dynamic state/intent rules (computed below)
             "state_gated_rules": "",
+            "unknown_fallback_contract": "",
+            "unknown_kb_instruction": "",
             # Hotel-staff politeness: ask name at most once, then stop repeating
             "address_instruction": self._build_address_instruction(
                 collected=collected,
-                history=context.get("history", []),
+                history=history,
                 intent=intent,
                 frustration_level=context.get("frustration_level", 0),
                 state=context.get("state", ""),
@@ -3423,7 +3978,7 @@ class ResponseGenerator:
             state=context.get("state", ""),
             intent=intent,
             user_message=user_message,
-            history=context.get("history", []),
+            history=history,
             collected=collected,
             secondary_intents=_secondary_intents,
             semantic_frame=self._get_semantic_frame(context),
@@ -3439,7 +3994,7 @@ class ResponseGenerator:
                 "в этом сообщении. Заверши коротким мостом к цели этапа."
             )
             variables["available_questions"] = ""
-        _history = context.get("history", [])
+        _history = history
         _hard_no_contact = self._has_hard_no_contact_signal(user_message, _history)
         _deferred_contact = self._has_deferred_contact_signal(user_message, _history)
         if _is_autonomous and (_hard_no_contact or _deferred_contact):
@@ -3469,205 +4024,17 @@ class ResponseGenerator:
                 f"{existing_no_ask}\n{no_contact_rule}" if existing_no_ask else no_contact_rule
             )
 
-        # Human-readable labels for terminal data fields (used in closing_data_request).
-        _FIELD_LABELS: dict = {
-            "contact_info": "номер телефона",
-            "kaspi_phone": "номер Kaspi (для Kaspi Pay)",
-            "iin": "ИИН",
-            "preferred_call_time": "удобное время для созвона",
-            "company_name": "название компании",
-            "contact_name": "имя клиента",
-            "client_name": "имя клиента",
-            "business_type": "сфера деятельности",
-            "city": "город",
-            "automation_before": "была ли раньше автоматизация",
-            "current_tools": "какая была автоматизация",
-        }
-
-        def _field_label(f: str) -> str:
-            return _FIELD_LABELS.get(f, f)
-
-        _AUTONOMOUS_BLOCKED_CONTACT_FIELDS = {
-            "contact_info",
-            "phone",
-            "email",
-            "kaspi_phone",
-            "contact",
-        }
-
-        # === Autonomous closing: inject data-collection instruction ===
-        # Reads terminal_state_requirements from YAML (via context) — no hardcoded field names.
-        # Tiered urgency:
-        #   URGENT  (⚠️ ПРЯМО ПОПРОСИ) — NO terminal is reachable yet; bot must collect.
-        #   SOFT    (💡 желательно) — at least one terminal is reachable; bot may upgrade.
-        #   SILENT  (empty string) — all terminals already reachable; nothing to ask.
-        if (
-            _is_autonomous
-            and context.get("state") == "autonomous_closing"
-            and not (_hard_no_contact or _deferred_contact)
-        ):
-            # Anti-contact-hallucination: if we don't have contact_info yet, warn LLM
-            # not to fabricate a phone number.
-            _has_contact = (
-                collected.get("contact_info")
-                or collected.get("kaspi_phone")
-                or collected.get("phone")
-                or collected.get("email")
-            )
-            if not _has_contact:
-                _no_contact_hint = (
-                    "⚠️ КОНТАКТ НЕ ПОЛУЧЕН: клиент ещё не давал номер телефона.\n"
-                    "   КАТЕГОРИЧЕСКИ НЕЛЬЗЯ называть, угадывать или подтверждать "
-                    "выдуманный номер телефона. Не пиши никаких контактных данных.\n"
-                    "   Не проси номер телефона или email в автономном режиме. "
-                    "Продолжай консультацию в чате, пока клиент сам не предложит контакт."
-                )
-                _existing_dna = variables.get("do_not_ask", "")
-                variables["do_not_ask"] = f"{_existing_dna}\n{_no_contact_hint}" if _existing_dna else _no_contact_hint
-            # Anti-IIN-hallucination: if no IIN yet, explicitly forbid mentioning any 12-digit number
-            if not collected.get("iin"):
-                _no_iin_hint = (
-                    "⚠️ ИИН НЕ ПОЛУЧЕН: клиент ещё не давал ИИН.\n"
-                    "   КАТЕГОРИЧЕСКИ НЕЛЬЗЯ называть, угадывать или «подтверждать» "
-                    "выдуманный ИИН (12-значное число). Не пиши никаких 12-значных чисел.\n"
-                    "   Если нужен ИИН — просто попроси: 'Укажите, пожалуйста, ваш ИИН.'"
-                )
-                _existing_dna = variables.get("do_not_ask", "")
-                variables["do_not_ask"] = f"{_existing_dna}\n{_no_iin_hint}" if _existing_dna else _no_iin_hint
-            terminal_reqs: dict = context.get("terminal_state_requirements", {})
-            if terminal_reqs:
-                def _has_terminal_field(field: str) -> bool:
-                    return is_terminal_field_present(collected.get(field))
-
-                soften_closing_request = self._should_soften_closing_request(
-                    intent=intent,
-                    frustration_level=context.get("frustration_level", 0),
-                    user_message=user_message,
-                )
-                # Evaluate each terminal: reachable = all required fields present in collected_data
-                reachable = [
-                    t for t, spec in terminal_reqs.items()
-                    if terminal_requirements_satisfied(
-                        spec,
-                        has_field=_has_terminal_field,
-                        get_value=collected.get,
-                    )
-                ]
-                not_reachable = [t for t in terminal_reqs if t not in reachable]
-
-                # Iterate easiest terminal first (fewest required fields) so the
-                # bot asks for the simplest blocking fields before harder ones.
-                # e.g. video_call_scheduled (1 field) before payment_ready (2 fields).
-                not_reachable.sort(
-                    key=lambda t: len(
-                        missing_terminal_fields(
-                            terminal_reqs.get(t, []),
-                            has_field=_has_terminal_field,
-                            get_value=collected.get,
-                        )
-                    )
-                )
-
-                # Ask only for one target terminal at a time.
-                # Default = easiest terminal (usually video_call_scheduled/contact).
-                target_terminal = not_reachable[0] if not_reachable else None
-                if (
-                    target_terminal
-                    and self._is_payment_closing_signal(intent, user_message)
-                    and "payment_ready" in not_reachable
-                ):
-                    target_terminal = "payment_ready"
-                urgent_fields = missing_terminal_fields(
-                    terminal_reqs.get(target_terminal, []) if target_terminal else [],
-                    has_field=_has_terminal_field,
-                    get_value=collected.get,
-                )
-                blocked_contact_fields = [
-                    f for f in urgent_fields
-                    if f in _AUTONOMOUS_BLOCKED_CONTACT_FIELDS
-                ]
-                if blocked_contact_fields:
-                    urgent_fields = [
-                        f for f in urgent_fields
-                        if f not in _AUTONOMOUS_BLOCKED_CONTACT_FIELDS
-                    ]
-
-                # Snapshot isolation guard: if client JUST provided payment data in
-                # this turn's message, don't ask for it again — DataExtractor will
-                # extract it after response. Acknowledge receipt instead.
-                _just_provided_payment_data = self._client_just_provided_payment_data(user_message)
-
-                if blocked_contact_fields and not urgent_fields:
-                    variables["closing_data_request"] = (
-                        "⚠️ Автономный режим: не запрашивай номер телефона, email или другой контакт.\n"
-                        "   Ответь по сути и оставь нейтральный следующий шаг без созвона.\n"
-                    )
-                elif urgent_fields and not reachable:
-                    if _just_provided_payment_data:
-                        # Client provided IIN+phone in this message — acknowledge, don't re-ask
-                        variables["closing_data_request"] = (
-                            "💡 Клиент только что предоставил платёжные данные (ИИН и телефон Kaspi).\n"
-                            "   Поблагодари и подтверди получение. Не спрашивай снова то, что уже дали.\n"
-                            "   Следующий шаг: подтверди что всё принято и коллега позвонит.\n"
-                        )
-                    # URGENT: no terminal reachable — collect blocking fields,
-                    # but do not force hard asks when client is in stress mode.
-                    elif (
-                        soften_closing_request
-                        and not self._is_payment_closing_signal(intent, user_message)
-                    ):
-                        variables["closing_data_request"] = (
-                            "⚠️ Клиент сейчас не готов к оформлению или просит без давления.\n"
-                            "   Сначала коротко ответь по сути запроса.\n"
-                            "   Затем мягко предложи вернуться к оформлению позже, "
-                            "без требования ИИН/телефона в этом же сообщении.\n"
-                        )
-                    elif (
-                        target_terminal == "video_call_scheduled"
-                        and set(urgent_fields) <= {"contact_info", "preferred_call_time"}
-                        and not self._is_payment_closing_signal(intent, user_message)
-                    ):
-                        variables["closing_data_request"] = (
-                            "⚠️ Автономный режим: не запрашивай номер телефона, email или другой контакт.\n"
-                            "   Ответь по сути и оставь нейтральный следующий шаг без созвона.\n"
-                        )
-                    else:
-                        readable_fields = ", ".join(_field_label(f) for f in urgent_fields)
-                        variables["closing_data_request"] = (
-                            "⚠️ ОБЯЗАТЕЛЬНО: твой ответ ДОЛЖЕН содержать вопрос про "
-                            + readable_fields + ".\n"
-                            "   Это единственный способ продвинуться к оформлению.\n"
-                            "   Попроси кратко и естественно. Пример: '...Оставьте, пожалуйста, номер телефона.'\n"
-                        )
-                elif urgent_fields and reachable:
-                    # SOFT: at least one terminal reachable — suggest upgrade without forcing
-                    if soften_closing_request:
-                        variables["closing_data_request"] = (
-                            "💡 Клиент в напряжении: не форсируй сбор данных.\n"
-                            "   При уместности кратко предложи вернуться к оформлению, когда будет удобно.\n"
-                        )
-                    elif (
-                        set(urgent_fields) <= {"contact_info", "preferred_call_time"}
-                        and not self._is_payment_closing_signal(intent, user_message)
-                    ):
-                        variables["closing_data_request"] = ""
-                    else:
-                        readable_fields = ", ".join(_field_label(f) for f in urgent_fields)
-                        variables["closing_data_request"] = (
-                            "💡 Если уместно, уточни: "
-                            + readable_fields + ".\n"
-                            "   Спроси в конце ответа, только если это не выглядит навязчиво.\n"
-                        )
-                # else: all terminals reachable — closing_data_request stays empty
-        elif (
-            _is_autonomous
-            and context.get("state") == "autonomous_closing"
-            and (_hard_no_contact or _deferred_contact)
-        ):
-            variables["closing_data_request"] = (
-                "⚠️ Клиент не готов к передаче контактов сейчас: НЕ собирай номер телефона/ИИН в этом сообщении. "
-                "Дай полезный ответ по запросу и оставь нейтральный следующий шаг без давления."
-            )
+        self._apply_autonomous_closing_prompt_context(
+            variables=variables,
+            context=context,
+            collected=collected,
+            intent=intent,
+            user_message=user_message,
+            history=_history,
+            hard_no_contact=_hard_no_contact,
+            deferred_contact=_deferred_contact,
+            is_autonomous=_is_autonomous,
+        )
 
         # === Autonomous flow: inject objection-specific framework instructions ===
         if _is_autonomous and intent.startswith("objection_"):
@@ -3712,8 +4079,9 @@ class ResponseGenerator:
             intent in price_related
             or (repeated_question in price_related and has_price_signal)
         ):
+            prompt_history = self._prompt_history(context)
             same_user_repeat_count = self._count_recent_same_user_message(
-                context.get("history", []),
+                prompt_history,
                 user_message,
             )
             variables["question_instruction"] = (
@@ -3741,7 +4109,7 @@ class ResponseGenerator:
                     if existing_no_repeat
                     else repeat_hint
                 )
-            prior_price_hint = self._get_last_bot_price_hint(context.get("history", []))
+            prior_price_hint = self._get_last_bot_price_hint(prompt_history)
             if prior_price_hint:
                 consistency_hint = (
                     "⚠️ Держи консистентность цен в диалоге: "
@@ -3899,7 +4267,7 @@ class ResponseGenerator:
                 phase=spin_phase,
                 intent=intent,
                 collected_data=collected,
-                history=context.get("history", []),
+                history=self._prompt_history(context),
                 question_instruction=variables.get("question_instruction", ""),
                 frustration_level=context.get("frustration_level", 0),
             )
@@ -3912,7 +4280,7 @@ class ResponseGenerator:
         # Question dedup: extract questions from last 3 full bot turns and inject into do_not_ask
         # Done OUTSIDE response_directives block so it always fires when history exists.
         # This prevents the LLM from repeating "Хотите посмотреть?" or similar CTA questions.
-        _full_history_for_dedup = context.get("history", [])
+        _full_history_for_dedup = self._prompt_history(context)
         _recent_questions = self._extract_question_phrases_from_history(_full_history_for_dedup, n_turns=3)
         if _recent_questions:
             _q_lines = "\n".join(f"- {q}" for q in _recent_questions)
@@ -3934,6 +4302,23 @@ class ResponseGenerator:
             self._is_direct_factual_request(intent, user_message)
             or route_aware_media_factual_turn
         )
+        response_mode = normalize_response_mode(context.get("response_mode", context.get("media_route_mode")))
+        _is_direct_factual_turn = _is_autonomous and direct_or_media_factual_turn
+        _is_pricing_turn = self._is_tariff_or_pricing_query(intent, user_message)
+        allow_unknown_kb_fallback = bool(
+            selected_template_key == "answer_with_facts"
+            or _is_direct_factual_turn
+            or _is_pricing_turn
+        )
+        variables["safety_rules"] = self._build_turn_safety_rules(
+            response_mode=response_mode,
+            allow_unknown_kb_fallback=allow_unknown_kb_fallback,
+        )
+        variables["unknown_fallback_contract"] = self._build_unknown_fallback_contract(
+            response_mode=response_mode,
+            allow_unknown_kb_fallback=allow_unknown_kb_fallback,
+        )
+        variables["unknown_kb_instruction"] = variables["unknown_fallback_contract"]
         if _is_autonomous and direct_or_media_factual_turn:
             variables["question_instruction"] = (
                 "⚠️ DIRECT FACTUAL MODE: сначала дай прямой ответ по доступным grounding-фактам. "
@@ -3970,7 +4355,10 @@ class ResponseGenerator:
         # Expose pain_context to post-processing (verifier + boundary validator).
         context["_pain_context"] = variables.get("pain_context", "")
 
-        for var in CRITICAL_TEMPLATE_VARS:
+        critical_vars = set(CRITICAL_TEMPLATE_VARS)
+        if not allow_unknown_kb_fallback:
+            critical_vars.discard("retrieved_facts")
+        for var in critical_vars:
             if var not in variables or not variables[var]:
                 logger.warning(
                     "Critical template var missing/empty",
@@ -3982,17 +4370,22 @@ class ResponseGenerator:
         # Подставляем в шаблон с безопасной подстановкой
         # SafeDict возвращает пустую строку для отсутствующих ключей,
         # предотвращая KeyError и показ {переменных} клиенту
+        if _is_autonomous:
+            self._fit_history_to_autonomous_prompt(
+                template=template,
+                variables=variables,
+                context=context,
+                max_prompt_chars=MAX_PROMPT_CHARS,
+            )
         prompt = template.format_map(SafeDict(variables))
-        _is_direct_factual_turn = _is_autonomous and direct_or_media_factual_turn
-        _is_pricing_turn = self._is_tariff_or_pricing_query(intent, user_message)
         if _is_direct_factual_turn:
-            prompt = f"{prompt}\n\n{self._factual_llm_guardrails(intent, user_message)}"
+            prompt = f"{prompt}\n\n{self._build_factual_guardrails(intent, user_message, response_mode)}"
         if _is_pricing_turn:
             prompt = f"{prompt}\n\n{self._pricing_llm_guardrails(user_message)}"
 
         # Генерируем с retry при китайских символах
         best_response = ""
-        history = context.get("history", [])
+        history = self._prompt_history(context)
 
         # Intervention actions have dedicated templates — skip dedup to preserve semantics (I20)
         DEDUP_EXEMPT_ACTIONS = {"redirect_after_repetition", "escalate_repeated_content",
@@ -4068,12 +4461,12 @@ class ResponseGenerator:
             ) and len(response.split()) < 30:
                 logger.info("discovery_dodge_on_question", attempt=attempt, response=response[:80])
                 prompt += (
-                    "\n\nВАЖНО: Клиент задал КОНКРЕТНЫЙ ВОПРОС: \""
-                    + user_message[:120]
-                    + "\". Не уклоняйся фразой 'Расскажите подробнее о вашем бизнесе'."
-                    " Ответь ПРЯМО на вопрос клиента, используя подтвержденные факты."
-                    " Если точного ответа не хватает — нейтрально скажи: «Я уточню этот вопрос и чуть позже отпишу вам»."
-                )
+                        "\n\nВАЖНО: Клиент задал КОНКРЕТНЫЙ ВОПРОС: \""
+                        + user_message[:120]
+                        + "\". Не уклоняйся фразой 'Расскажите подробнее о вашем бизнесе'."
+                        " Ответь ПРЯМО на вопрос клиента, используя подтвержденные факты."
+                        " Если точного ответа не хватает — следуй unknown-fallback contract, уже добавленному в prompt."
+                    )
                 continue
 
             # Factual-template guard: prevent discovery deflection and force grounded answer.
@@ -4814,7 +5207,7 @@ class ResponseGenerator:
         is_greeting_turn: bool,
     ) -> str:
         """Enforce invariant: self-introduction is allowed only once per conversation."""
-        history = context.get("history", []) or []
+        history = cls._prompt_history(context)
         is_first_bot_reply = bool(context.get("is_first_bot_reply", False))
         if is_first_bot_reply:
             return response
@@ -4857,6 +5250,18 @@ class ResponseGenerator:
         verifier_completed = False
         verified_response_snapshot: Optional[str] = None
         semantic_post_verifier_changes: List[str] = []
+        selected_template_key = self._resolve_postprocess_template_key(
+            requested_action=requested_action,
+            selected_template_key=selected_template_key,
+            context=context,
+        )
+        routing_context = build_response_routing_context(
+            context=context,
+            requested_action=requested_action,
+            selected_template_key=selected_template_key,
+            response_mode=context.get("response_mode", context.get("media_route_mode")),
+        )
+        context = routing_context
 
         def _track_step(
             rule_id: str,
@@ -4898,31 +5303,36 @@ class ResponseGenerator:
 
         def _build_boundary_context() -> Dict[str, Any]:
             boundary_facts = str(retrieved_facts or "")
-            boundary_pain = str(context.get("_pain_context", "") or "").strip()
+            boundary_pain = str(routing_context.get("_pain_context", "") or "").strip()
             if boundary_pain:
                 boundary_facts = (
                     f"{boundary_facts}\n\n{boundary_pain}"
                     if boundary_facts
                     else boundary_pain
                 )
-            return {
-                **context,
-                "retrieved_facts": boundary_facts,
-                "factual_verified_grounded": (
-                    self._last_factual_verifier_meta.get("factual_verifier_verdict") == "pass"
-                ),
-                "fact_disambiguated": fact_disambiguated,
-            }
+            return build_response_routing_context(
+                context={
+                    **routing_context,
+                    "retrieved_facts": boundary_facts,
+                    "factual_verified_grounded": (
+                        self._last_factual_verifier_meta.get("factual_verifier_verdict") == "pass"
+                    ),
+                    "fact_disambiguated": fact_disambiguated,
+                },
+                requested_action=requested_action,
+                selected_template_key=selected_template_key,
+                response_mode=routing_context.get("response_mode"),
+            )
 
         _apply_step(
             "limit_client_name_reuse",
-            lambda text: self._suppress_repeated_client_name(text, context),
+            lambda text: self._suppress_repeated_client_name(text, routing_context),
         )
-        _apply_step("apply_diversity", lambda text: self._apply_diversity(text, context))
-        _apply_step("ensure_apology", lambda text: self._ensure_apology(text, context))
+        _apply_step("apply_diversity", lambda text: self._apply_diversity(text, routing_context))
+        _apply_step("ensure_apology", lambda text: self._ensure_apology(text, routing_context))
 
         should_attempt_disambiguation = self._should_attempt_fact_disambiguation(
-            context=context,
+            context=routing_context,
             requested_action=requested_action,
             retrieved_facts=str(retrieved_facts or ""),
             is_autonomous=_is_autonomous,
@@ -4937,7 +5347,7 @@ class ResponseGenerator:
                 decision = detect_fact_disambiguation(
                     user_message=str(context.get("user_message", "") or ""),
                     retrieved_facts=str(retrieved_facts or ""),
-                    history=context.get("history", []),
+                    history=self._prompt_history(context),
                 )
                 if decision.should_disambiguate and decision.clarification_text:
                     processed = decision.clarification_text
@@ -5209,6 +5619,8 @@ class ResponseGenerator:
             and _has_verifier_coverage
             and grounding_facts.strip()
         )
+        verifier_history = self._history_list(context, "verifier")
+        verifier_dialogue = self._dialogue_text(context, "verifier")
         if verifier_applicable:
             verifier = self._ensure_factual_verifier()
             if verifier is not None and verifier.is_enabled():
@@ -5219,7 +5631,8 @@ class ResponseGenerator:
                     retrieved_facts=grounding_facts,
                     intent=str(context.get("intent", "") or ""),
                     state=str(context.get("state", "") or ""),
-                    dialog_history=context.get("history", []) or [],
+                    dialog_history=verifier_history,
+                    dialogue_text=verifier_dialogue,
                 )
                 self._last_factual_verifier_meta = {
                     "factual_verifier_used": vr.verifier_used,
@@ -5515,7 +5928,8 @@ class ResponseGenerator:
                         retrieved_facts=grounding_facts,
                         intent=str(context.get("intent", "") or ""),
                         state=str(context.get("state", "") or ""),
-                        dialog_history=context.get("history", []) or [],
+                        dialog_history=verifier_history,
+                        dialogue_text=verifier_dialogue,
                     )
                     if verify_only_result is not None:
                         verify_only_verdict = str(verify_only_result.verdict)
@@ -5706,7 +6120,7 @@ class ResponseGenerator:
             enabled=True,
             extra={
                 "history_contains_intro": self._history_contains_self_intro(
-                    context.get("history", []) or []
+                    self._prompt_history(context)
                 ),
                 "is_first_bot_reply": bool(context.get("is_first_bot_reply", False)),
                 "user_asked_name": self._is_bot_name_request(
@@ -5952,6 +6366,91 @@ class ResponseGenerator:
         text = str(value).strip()
         return bool(text) and text != "0" and text != "?"
 
+    @classmethod
+    def _missing_autonomous_profile_slots(
+        cls,
+        collected_data: Dict[str, Any],
+        missing_data: List[str],
+    ) -> List[str]:
+        collected = collected_data or {}
+        missing = set(missing_data or [])
+        slots: List[str] = []
+
+        has_name = (
+            cls._has_collected_profile_value(collected.get("contact_name"))
+            or cls._has_collected_profile_value(collected.get("client_name"))
+        )
+        if not has_name:
+            slots.append("name")
+
+        for field_name in ("business_type", "city", "automation_before"):
+            if field_name in missing or not cls._has_collected_profile_value(collected.get(field_name)):
+                slots.append(field_name)
+
+        return slots
+
+    @staticmethod
+    def _format_followup_questions_block(questions: List[str]) -> str:
+        cleaned = [str(question).strip() for question in questions if str(question).strip()]
+        if not cleaned:
+            return ""
+        return "Выбери ОДИН вопрос из доступных:\n" + "\n".join(
+            f'- "{question}"' for question in cleaned
+        )
+
+    @classmethod
+    def _build_autonomous_profile_followup_guidance(
+        cls,
+        *,
+        collected_data: Dict[str, Any],
+        missing_data: List[str],
+    ) -> Dict[str, str]:
+        missing_slots = cls._missing_autonomous_profile_slots(collected_data, missing_data)
+        available_questions = cls._format_followup_questions_block(
+            [AUTONOMOUS_PROFILE_SLOT_QUESTIONS[slot_name] for slot_name in missing_slots]
+        )
+
+        do_not_ask_lines: List[str] = []
+        if cls._has_collected_profile_value(collected_data.get("contact_name")) or cls._has_collected_profile_value(
+            collected_data.get("client_name")
+        ):
+            do_not_ask_lines.append("- имя клиента: уже собрано")
+        for field_name in ("business_type", "city", "automation_before"):
+            if cls._has_collected_profile_value(collected_data.get(field_name)):
+                do_not_ask_lines.append(
+                    f"- {AUTONOMOUS_PROFILE_SLOT_LABELS[field_name]}: уже собрано"
+                )
+        do_not_ask = (
+            "Не переспрашивай уже собранный обязательный профиль:\n" + "\n".join(do_not_ask_lines)
+            if do_not_ask_lines
+            else ""
+        )
+
+        if missing_slots:
+            readable_slots = ", ".join(
+                AUTONOMOUS_PROFILE_SLOT_LABELS.get(slot_name, slot_name)
+                for slot_name in missing_slots
+            )
+            followup_guidance = (
+                "Текущий безопасный профильный фокус autonomous: собери только один из обязательных "
+                f"профильных слотов ({readable_slots}). "
+                "Не уводи followup в optional enrichment или legacy SPIN-поля."
+            )
+            missing_data_block = readable_slots
+        else:
+            followup_guidance = (
+                "Обязательный профиль autonomous уже собран. "
+                "Не добавляй followup про optional enrichment или legacy SPIN-поля."
+            )
+            missing_data_block = "обязательный профиль autonomous уже собран"
+
+        return {
+            "missing_data": missing_data_block,
+            "available_questions": available_questions,
+            "do_not_ask": do_not_ask,
+            "followup_guidance": followup_guidance,
+        }
+
     @staticmethod
     def _resolve_unknown_fallback_followup_phase(
         state: str,
@@ -5967,6 +6466,11 @@ class ResponseGenerator:
                 field in missing or not ResponseGenerator._has_collected_profile_value(collected.get(field))
                 for field in fields
             )
+
+        if state_text.startswith("autonomous_"):
+            if ResponseGenerator._missing_autonomous_profile_slots(collected, list(missing)):
+                return "autonomous_profile"
+            return ""
 
         if _missing_any(("company_size", "current_tools", "business_type")):
             return "situation"
@@ -5994,29 +6498,40 @@ class ResponseGenerator:
 
         available_questions = ""
         do_not_ask = ""
+        missing_block = ", ".join(missing) if missing else "state-machine missing_data пусто"
         followup_guidance = "Если безопасный discovery/qualification вопрос неуместен, не добавляй его."
         if phase:
-            try:
-                dedup_context = question_dedup_engine.get_prompt_context(phase, collected, None)
-                available_questions = str(dedup_context.get("available_questions", "") or "").strip()
-                do_not_ask = str(dedup_context.get("do_not_ask", "") or "").strip()
-                followup_guidance = (
-                    f"Текущий безопасный профильный фокус: {phase}. "
-                    "Если нужен встречный вопрос, предпочти вопрос по этой цели и не повторяй уже заданное."
+            if phase == "autonomous_profile":
+                autonomous_guidance = self._build_autonomous_profile_followup_guidance(
+                    collected_data=collected,
+                    missing_data=missing,
                 )
-            except Exception as exc:
-                logger.warning(
-                    "unknown_fallback_followup_guidance_failed",
-                    error=str(exc),
-                    phase=phase,
-                )
+                missing_block = autonomous_guidance["missing_data"]
+                available_questions = autonomous_guidance["available_questions"]
+                do_not_ask = autonomous_guidance["do_not_ask"]
+                followup_guidance = autonomous_guidance["followup_guidance"]
+            else:
+                try:
+                    dedup_context = question_dedup_engine.get_prompt_context(phase, collected, None)
+                    available_questions = str(dedup_context.get("available_questions", "") or "").strip()
+                    do_not_ask = str(dedup_context.get("do_not_ask", "") or "").strip()
+                    followup_guidance = (
+                        f"Текущий безопасный профильный фокус: {phase}. "
+                        "Если нужен встречный вопрос, предпочти вопрос по этой цели и не повторяй уже заданное."
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "unknown_fallback_followup_guidance_failed",
+                        error=str(exc),
+                        phase=phase,
+                    )
 
         recent_bot_questions = self._extract_question_phrases_from_history(history or [], n_turns=4)
         recent_block = "\n".join(f"- {item}" for item in recent_bot_questions) if recent_bot_questions else "(нет)"
 
         return {
             "client_profile_card": self._format_client_card(collected) if collected else "пока ничего не собрано",
-            "missing_data": ", ".join(missing) if missing else "state-machine missing_data пусто",
+            "missing_data": missing_block,
             "followup_guidance": followup_guidance,
             "available_questions": available_questions or "(нет подсказок)",
             "do_not_ask": do_not_ask or "(нет)",
@@ -6047,7 +6562,7 @@ class ResponseGenerator:
             user_message=str(context.get("user_message", "") or ""),
             intent=str(context.get("intent", "") or ""),
             state=str(context.get("state", "") or ""),
-            history=context.get("history", []) or [],
+            history=self._prompt_history(context),
             context_collected_data=context.get("collected_data", {}) or {},
             context_missing_data=context.get("missing_data", []) or [],
             question_mode=meta["question_mode"],
@@ -6098,12 +6613,7 @@ class ResponseGenerator:
     @staticmethod
     def _suppress_autonomous_contact_requests(text: str, context: Dict[str, Any]) -> str:
         """Strip proactive contact requests from autonomous replies outside payment path."""
-        state = str(context.get("state", "") or "").lower()
-        selected_template = str(context.get("selected_template", "") or "").lower()
-        if not (
-            state.startswith("autonomous_")
-            or selected_template in {"autonomous_respond", "continue_current_goal", "autonomous_media_only"}
-        ):
+        if not is_autonomous_response_context(context=context):
             return text
 
         intent = str(context.get("intent", "") or "").lower()
@@ -6154,7 +6664,7 @@ class ResponseGenerator:
                 return response
 
             repeat_count = self._count_recent_same_user_message(
-                context.get("history", []),
+                self._prompt_history(context),
                 context.get("user_message", ""),
             )
             if repeat_count < 2:
@@ -6172,12 +6682,12 @@ class ResponseGenerator:
             return response
 
     def _extract_points_from_context(self, context: Dict[str, Any]) -> int:
-        """Extract declared point count from current user message and recent history."""
+        """Extract declared point count from current user message and full transcript-backed history."""
         user_message = str(context.get("user_message", "") or "")
-        history = context.get("history", [])
+        history = self._prompt_history(context)
         chunks: List[str] = [user_message]
         if isinstance(history, list):
-            for turn in history[-6:]:
+            for turn in history:
                 if isinstance(turn, dict):
                     chunks.append(str(turn.get("user", "") or ""))
         source = " ".join(chunks).lower()
@@ -6315,29 +6825,25 @@ class ResponseGenerator:
             result,
             flags=re.IGNORECASE,
         )
-        # Replace "менеджер"/"специалист" → "коллега" to sound like a real person
-        result = re.sub(r'[Мм]енеджер\s+свяжется', 'коллега позвонит', result)
-        result = re.sub(r'[Мм]енеджер\s+перезвонит', 'коллега позвонит', result)
-        result = re.sub(r'[Мм]енеджер\s+позвонит', 'коллега позвонит', result)
-        result = re.sub(r'менеджеру', 'коллеге', result)
-        result = re.sub(r'Менеджеру', 'Коллеге', result)
-        result = re.sub(r'менеджер(?=\s+(?:помо|подбер|уточн|рассчит|объясн|ответ|расскаж))', 'коллега', result)
-        result = re.sub(r'Менеджер(?=\s+(?:помо|подбер|уточн|рассчит|объясн|ответ|расскаж))', 'Коллега', result)
-        # Catch-all: any remaining "менеджер*" → "коллег*" (all declensions)
-        result = re.sub(r'\bменеджером\b', 'коллегой', result, flags=re.IGNORECASE)
-        result = re.sub(r'\bменеджеру\b', 'коллеге', result, flags=re.IGNORECASE)
-        result = re.sub(r'\bменеджера\b', 'коллегу', result, flags=re.IGNORECASE)
-        result = re.sub(r'\bменеджеры\b', 'коллеги', result, flags=re.IGNORECASE)
-        result = re.sub(r'\bменеджеров\b', 'коллег', result, flags=re.IGNORECASE)
-        result = re.sub(r'\bменеджер\b', 'коллега', result, flags=re.IGNORECASE)
-        result = re.sub(r'\bМенеджер\b', 'Коллега', result)
-        # Replace "специалист" → "коллега" (common forms)
-        result = re.sub(r'\b[Сс]пециалист\b', 'коллега', result)
-        result = re.sub(r'\b[Сс]пециалисту\b', 'коллеге', result)
-        result = re.sub(r'\b[Сс]пециалиста\b', 'коллегу', result)
-        result = re.sub(r'\b[Сс]пециалистом\b', 'коллегой', result)
-        result = re.sub(r'\b[Сс]пециалисте\b', 'коллеге', result)
-        result = re.sub(r'\b[Нн]аш\s+специалист', 'коллега', result, flags=re.IGNORECASE)
+        # Normalize role-based handoff language to neutral delayed follow-up.
+        result = re.sub(
+            r'\b(?:менеджер|коллега|специалист)\s+(?:свяжется|перезвонит|позвонит)(?:\s+(?:вам|с\s+вами))?',
+            'Чуть позже вам перезвонят',
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r'\b(?:мой|наш)\s+(?:менеджер|коллега|специалист)\b',
+            '',
+            result,
+            flags=re.IGNORECASE,
+        )
+        result = re.sub(
+            r'\b(?:передам|передаю|передадим|передадут)\s+(?:это\s+)?(?:вопрос|данные|информацию)?\s*(?:коллеге|менеджеру|специалисту)\b',
+            'уточню этот вопрос',
+            result,
+            flags=re.IGNORECASE,
+        )
         # Remove meta-commentary in parentheses: "(Спросила, чтобы...)", "(Потому что...)"
         result = re.sub(
             r'\s*\([^)]*(?:спросил\w*|потому\s+что|чтобы\s+понять|для\s+того|важно\s+понять|уточн\w+)[^)]*\)\s*',
@@ -6350,15 +6856,15 @@ class ResponseGenerator:
             '',
             result,
         )
-        # Bot can't call/email anyone — replace "я свяжусь/позвоню" with "коллега позвонит"
+        # Bot can't promise direct calling/emailing — normalize to neutral delayed follow-up.
         result = re.sub(
             r'я\s+(?:сейчас\s+)?(?:свяжусь|позвоню|перезвоню)\s+с\s+вами',
-            'коллега позвонит вам',
+            'чуть позже вам перезвонят',
             result, flags=re.IGNORECASE,
         )
         result = re.sub(
             r'(?:свяжусь|позвоню|перезвоню|звоню)\s+(?:вам|с\s+вами|в\s+это\s+время|именно\s+тогда|в\s+\w+\s+время|завтра|сегодня)',
-            'коллега позвонит вам',
+            'чуть позже вам перезвонят',
             result, flags=re.IGNORECASE,
         )
         # Strip emoji (bot should never use emoji)
@@ -7181,7 +7687,7 @@ class ResponseGenerator:
                     return True
 
         # 2. Проверяем историю диалога
-        for turn in history[-3:]:
+        for turn in history:
             bot_response = turn.get("bot", "")
             if bot_response:
                 # Stage 1: Fast Jaccard similarity
@@ -7227,7 +7733,7 @@ class ResponseGenerator:
         Returns:
             Новый уникальный ответ или лучший из попыток
         """
-        history = context.get("history", [])
+        history = self._prompt_history(context)
 
         # Собираем предыдущие ответы для инструкции (диалог + внутренний кеш)
         # Увеличиваем лимит символов для лучшего контекста
@@ -7281,7 +7787,7 @@ class ResponseGenerator:
                 max_sim = 0.0
                 
                 # Сравниваем с историей диалога
-                for turn in history[-3:]:
+                for turn in history:
                     if turn.get("bot"):
                         sim = self._compute_similarity(cleaned, turn["bot"])
                         max_sim = max(max_sim, sim)
@@ -7473,7 +7979,7 @@ class ResponseGenerator:
 
         cleaned = cls._strip_client_name_at_start(str(response or ""), name)
         recent_mentions = count_name_mentions_in_history(
-            context.get("history", []) or [],
+            cls._prompt_history(context),
             name,
             recent_bot_turns=4,
         )
@@ -7544,12 +8050,8 @@ class ResponseGenerator:
         Used to avoid re-asking for data that was literally just provided.
         Snapshot isolation means DataExtractor hasn't run yet — trust the message.
         """
-        import re
-        msg = str(user_message or "")
-        has_iin = bool(re.search(r'ИИН\s*:?\s*\d{12}', msg, re.IGNORECASE))
-        has_kaspi = bool(re.search(r'(?:kaspi|каспи|касса)\s*:?\s*[+\d]{10,}', msg, re.IGNORECASE))
-        has_plain_iin = bool(re.search(r'\b\d{12}\b', msg))  # 12 consecutive digits = IIN
-        return (has_iin or has_plain_iin) and (has_kaspi or bool(re.search(r'\b8\d{9}\b', msg)))
+        payload = parse_inline_contact_payload(user_message)
+        return payload.has_payment_payload
 
     @staticmethod
     def _should_soften_closing_request(

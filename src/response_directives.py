@@ -27,7 +27,11 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any
 from enum import Enum
 
-from src.context_envelope import ContextEnvelope, ReasonCode
+from src.context_envelope import (
+    ContextEnvelope,
+    ReasonCode,
+    normalize_envelope_bot_responses,
+)
 from src.yaml_config.constants import get_persona_question_thresholds
 
 
@@ -332,6 +336,10 @@ class ResponseDirectivesBuilder:
             config: Опциональный конфиг (по умолчанию из get_config())
         """
         self.envelope = envelope
+        self.envelope.bot_responses = normalize_envelope_bot_responses(
+            getattr(envelope, "history", []),
+            getattr(envelope, "bot_responses", []),
+        )
 
         # Загружаем конфиг response_directives
         if config is None:
@@ -428,6 +436,10 @@ class ResponseDirectivesBuilder:
         if envelope.first_objection_type:
             return ResponseTone.EMPATHETIC
 
+        # Some callers only populate objection_types_seen without first_objection_type.
+        if getattr(envelope, "objection_types_seen", None):
+            return ResponseTone.EMPATHETIC
+
         # Repair mode → поддерживающий
         if envelope.has_reason(ReasonCode.POLICY_REPAIR_MODE):
             return ResponseTone.SUPPORTIVE
@@ -453,6 +465,7 @@ class ResponseDirectivesBuilder:
             directives.be_brief = True
         elif envelope.has_reason(ReasonCode.POLICY_REPAIR_MODE):
             directives.max_words = max_words.get("repair_mode", 50)
+            directives.be_brief = True
         else:
             directives.max_words = max_words.get("default", 60)
 
@@ -688,15 +701,8 @@ class ResponseDirectivesBuilder:
             Список последних ответов бота (первые 100 символов каждого)
         """
         responses = []
-
-        # Пытаемся получить из envelope.bot_responses (если есть)
         if hasattr(self.envelope, 'bot_responses') and self.envelope.bot_responses:
             responses = self.envelope.bot_responses[-n:]
-        # Fallback: пытаемся получить из history
-        elif hasattr(self.envelope, 'history') and self.envelope.history:
-            for turn in self.envelope.history[-n:]:
-                if isinstance(turn, dict) and turn.get("bot"):
-                    responses.append(turn["bot"])
 
         # Ограничиваем длину каждого ответа для краткости
         return [r[:100] for r in responses if r]

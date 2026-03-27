@@ -23,6 +23,7 @@ DEFAULTS = {
         "base_url": "http://localhost:11434",  # Ollama native API
         "api_format": "ollama",  # "ollama" or "openai" (llama-server, vLLM)
         "timeout": 600,  # Increased for larger structured-output calls
+        "num_ctx": 16384,
         "stream": False,
     },
     "retriever": {
@@ -172,6 +173,11 @@ def validate_settings(settings: DotDict) -> List[str]:
         errors.append("llm.base_url не указан")
     if settings.llm.timeout <= 0:
         errors.append("llm.timeout должен быть > 0")
+    num_ctx = settings.llm.get("num_ctx")
+    if isinstance(num_ctx, bool) or not isinstance(num_ctx, int):
+        errors.append("llm.num_ctx должен быть целым числом")
+    elif num_ctx < 2048:
+        errors.append("llm.num_ctx должен быть >= 2048")
 
     # Retriever thresholds
     for name in ["exact", "lemma", "semantic"]:

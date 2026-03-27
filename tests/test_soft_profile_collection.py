@@ -32,11 +32,9 @@ profile_collection:
       question: "Подскажите, пожалуйста, в каком вы городе?"
       markers: ["в каком вы городе", "из какого города"]
     automation:
-      required_all: [automation_before, automation_now]
-      required_if_true:
-        automation_now: [current_tools]
-      question: "Коротко уточню: раньше автоматизация была, и чем пользуетесь сейчас?"
-      markers: ["автоматизац", "чем пользуетесь сейчас"]
+      required_all: [automation_before]
+      question: "Коротко уточню: раньше автоматизация у вас уже была?"
+      markers: ["автоматизац", "раньше была"]
   blockers:
     question_instruction_markers:
       - "не задавай"
@@ -104,17 +102,16 @@ def test_soft_profile_avoids_recent_duplicate_slot(tmp_path):
     assert "как к вам лучше обращаться" not in instruction.lower()
 
 
-def test_soft_profile_automation_requires_current_tool_when_now_true(tmp_path):
+def test_soft_profile_automation_slot_is_complete_once_automation_before_is_known(tmp_path):
     engine = _build_engine(tmp_path)
     base = {
         "contact_name": "Алексей",
         "business_type": "ритейл",
         "city": "Алматы",
         "automation_before": False,
-        "automation_now": True,
     }
 
-    instruction_missing_tool = engine.get_soft_profile_instruction(
+    instruction_complete = engine.get_soft_profile_instruction(
         phase="qualification",
         intent="info_provided",
         collected_data=base,
@@ -122,19 +119,21 @@ def test_soft_profile_automation_requires_current_tool_when_now_true(tmp_path):
         question_instruction="",
         frustration_level=0,
     )
-    assert "чем пользуетесь сейчас" in instruction_missing_tool.lower()
+    assert instruction_complete == ""
 
-    complete = dict(base)
-    complete["current_tools"] = "Excel"
-    instruction_complete = engine.get_soft_profile_instruction(
+    missing_automation = engine.get_soft_profile_instruction(
         phase="qualification",
         intent="info_provided",
-        collected_data=complete,
+        collected_data={
+            "contact_name": "Алексей",
+            "business_type": "ритейл",
+            "city": "Алматы",
+        },
         history=[],
         question_instruction="",
         frustration_level=0,
     )
-    assert instruction_complete == ""
+    assert "раньше автоматизация" in missing_automation.lower()
 
 
 def test_soft_profile_skips_objection_intent_prefix(tmp_path):

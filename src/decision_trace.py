@@ -550,6 +550,7 @@ class LLMTrace:
     tokens_output: int = 0
     latency_ms: float = 0.0
     model_used: str = ""
+    num_ctx_requested: int = 0
     circuit_breaker_state: str = "closed"
     retry_count: int = 0
     success: bool = True
@@ -570,6 +571,7 @@ class LLMTrace:
             "tokens_output": self.tokens_output,
             "latency_ms": round(self.latency_ms, 2),
             "model_used": self.model_used,
+            "num_ctx_requested": self.num_ctx_requested,
             "circuit_breaker_state": self.circuit_breaker_state,
             "retry_count": self.retry_count,
             "success": self.success,
@@ -587,6 +589,7 @@ class LLMTrace:
                 if self.last_cleaned_structured_response else ""
             ),
             "latency_ms": round(self.latency_ms, 2),
+            "num_ctx_requested": self.num_ctx_requested,
             "success": self.success,
         }
 

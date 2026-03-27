@@ -368,6 +368,8 @@ class ContextSnapshot:
     frustration_level: int = 0
     # Dialog history for decision LLM (last N turns: [{user: str, bot: str}])
     dialog_history: tuple = field(default_factory=tuple)
+    transcript: Any = None
+    history_projections: Dict[str, Any] = field(default_factory=dict)
     media_turn_context: Optional[MediaTurnContext] = None
 
     # Computed properties for convenience

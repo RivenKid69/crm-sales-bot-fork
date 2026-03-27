@@ -170,6 +170,19 @@ class TestResponseDirectivesBuilder:
         assert directives.repair_mode is False
         assert directives.validate is False
 
+    def test_builder_derives_bot_responses_from_legacy_history(self):
+        envelope = ContextEnvelope(
+            history=[
+                {"user": "u1", "bot": "Первый ответ"},
+                {"user": "u2", "bot": "Второй ответ"},
+            ],
+            bot_responses=[],
+        )
+
+        builder = ResponseDirectivesBuilder(envelope)
+
+        assert builder.envelope.bot_responses == ["Первый ответ", "Второй ответ"]
+
     def test_determine_tone_empathetic_frustration(self):
         """Проверить определение эмпатичного тона при фрустрации."""
         envelope = ContextEnvelope(frustration_level=self._empathetic_threshold())

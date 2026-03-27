@@ -533,11 +533,9 @@ profile_collection:
       question: "Подскажите, пожалуйста, в каком вы городе?"
       markers: ["в каком городе", "из какого города", "какой город"]
     automation:
-      required_all: [automation_before, automation_now]
-      required_if_true:
-        automation_now: [current_tools]
-      question: "Коротко уточню: раньше автоматизация была, и чем пользуетесь сейчас?"
-      markers: ["автоматизац", "чем пользуетесь сейчас", "раньше была"]
+      required_all: [automation_before]
+      question: "Коротко уточню: раньше автоматизация у вас уже была?"
+      markers: ["автоматизац", "раньше была", "была ли автоматизация"]
   blockers:
     question_instruction_markers:
       - "не задавай"

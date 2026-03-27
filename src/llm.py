@@ -217,6 +217,7 @@ class OllamaClient:
             purpose=purpose,
             prompt_user=prompt,
             model_used=self.model,
+            num_ctx_requested=0 if self._is_openai_api else self._resolve_num_ctx(),
             circuit_breaker_state=self._circuit_breaker.status,
         )
 
@@ -264,6 +265,7 @@ class OllamaClient:
                     )
                 else:
                     # Ollama native structured output через format
+                    num_ctx = self._resolve_num_ctx()
                     response = requests.post(
                         f"{base_url_normalized}/api/chat",
                         json={
@@ -275,7 +277,7 @@ class OllamaClient:
                             "options": {
                                 "temperature": attempt_temp,
                                 "num_predict": num_predict,
-                                "num_ctx": 8192,
+                                "num_ctx": num_ctx,
                             }
                         },
                         timeout=self.timeout
@@ -413,6 +415,7 @@ class OllamaClient:
             purpose=purpose,
             prompt_user=prompt,
             model_used=self.model,
+            num_ctx_requested=0 if self._is_openai_api else self._resolve_num_ctx(),
             circuit_breaker_state=self._circuit_breaker.status,
         )
 
@@ -539,6 +542,7 @@ class OllamaClient:
             purpose=purpose,
             prompt_user=prompt,
             model_used=self.model,
+            num_ctx_requested=0 if self._is_openai_api else self._resolve_num_ctx(),
             circuit_breaker_state=self._circuit_breaker.status,
         )
 
@@ -641,6 +645,10 @@ class OllamaClient:
             return factual_temperature, factual_num_predict
         return default_temperature, default_num_predict
 
+    def _resolve_num_ctx(self) -> int:
+        """Resolve Ollama runtime context window from settings."""
+        return int(settings.get_nested("llm.num_ctx", 8192))
+
     def _call_llm(
         self,
         prompt: str,
@@ -670,6 +678,7 @@ class OllamaClient:
             )
         else:
             # Ollama native API
+            num_ctx = self._resolve_num_ctx()
             response = requests.post(
                 f"{base_url_normalized}/api/chat",
                 json={
@@ -680,7 +689,7 @@ class OllamaClient:
                     "options": {
                         "temperature": temperature,
                         "num_predict": num_predict,
-                        "num_ctx": 8192,
+                        "num_ctx": num_ctx,
                     }
                 },
                 timeout=self.timeout
@@ -726,6 +735,7 @@ class OllamaClient:
                 timeout=self.timeout,
             )
         else:
+            num_ctx = self._resolve_num_ctx()
             response = requests.post(
                 f"{base_url_normalized}/api/chat",
                 json={
@@ -742,7 +752,7 @@ class OllamaClient:
                     "options": {
                         "temperature": temperature,
                         "num_predict": num_predict,
-                        "num_ctx": 8192,
+                        "num_ctx": num_ctx,
                     },
                 },
                 timeout=self.timeout,

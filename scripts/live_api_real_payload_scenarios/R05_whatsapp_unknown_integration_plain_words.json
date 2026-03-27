@@ -1,0 +1,104 @@
+{
+  "scenario_id": "R05",
+  "name": "WhatsApp unknown KB + Kaspi/Halyk + простые слова + мобильный сценарий",
+  "notes": "Собрано из реального вопроса про WhatsApp и соседних паттернов, где клиент требует прямого ответа, спрашивает про Kaspi/Halyk, роли и старт без оборудования.",
+  "grounding": {
+    "source_files": [
+      "диалоги/photo_2026-03-23_17-00-12.jpg",
+      "диалоги/TXT.txt"
+    ],
+    "observed_patterns": [
+      "Есть интеграция с вотсап",
+      "Интеграция с WhatsApp в КБ не указана",
+      "Поддерживаем синхронизацию заказов с Kaspi и Halyk Market",
+      "Через телефон или ноутбук",
+      "У вас общение интересно, но непонятно"
+    ]
+  },
+  "events": [
+    {
+      "id": "evt_r05_001",
+      "timestamp": 1774364000000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Здравствуйте",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_002",
+      "timestamp": 1774364060000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Есть интеграция с вотсап?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_003",
+      "timestamp": 1774364120000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Если нет, тогда что по Kaspi и Halyk Market?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_004",
+      "timestamp": 1774364180000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Заказы оттуда автоматически подтягиваются?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_005",
+      "timestamp": 1774364240000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Через телефон или ноутбук можно работать?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_006",
+      "timestamp": 1774364300000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Сканер и принтер сразу обязательно нужны?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_007",
+      "timestamp": 1774364360000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Если в вашей базе WhatsApp не указан, вы это честно сразу скажете?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_008",
+      "timestamp": 1774364420000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Мне не нужен общий рассказ, ответьте простыми словами",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_009",
+      "timestamp": 1774364480000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "У вас общение интересно, но непонятно, скажите простыми словами",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_010",
+      "timestamp": 1774364540000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Если без дополнительного оборудования начать, это нормально?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_011",
+      "timestamp": 1774364600000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "Если подойдет, тестовый период сразу дадите?",
+      "cleint_phone": "77770010005"
+    },
+    {
+      "id": "evt_r05_012",
+      "timestamp": 1774364660000,
+      "session": "BOT_REAL_R05_TEST",
+      "client_text": "ИИН и номер сразу отправлять или лучше рабочий телефон указать?",
+      "cleint_phone": "77770010005"
+    }
+  ]
+}

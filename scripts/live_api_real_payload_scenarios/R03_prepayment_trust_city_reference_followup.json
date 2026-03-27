@@ -1,0 +1,107 @@
+{
+  "scenario_id": "R03",
+  "name": "Предоплата, доверие, клиенты в городе и follow-up после паузы",
+  "notes": "Собрано из реального кейса с отказом от оплаты при получении, недоверием к предоплате, вопросами про Astana Hub, Instagram, клиентов в городе и продолжением диалога позже.",
+  "grounding": {
+    "source_files": [
+      "диалоги/TXT.txt",
+      "диалоги/photo_2026-03-23_16-56-49.jpg",
+      "диалоги/photo_2026-03-23_16-56-49 (2).jpg"
+    ],
+    "observed_patterns": [
+      "При получении оплатить не получится",
+      "После оплаты мы можем пропасть",
+      "Крупная IT-компания в Astana Hub",
+      "Есть Instagram и официальный сайт",
+      "Какой магазин ваш клиент в нашем городе",
+      "Информация является конфиденциальной",
+      "Что решили с подключением"
+    ]
+  },
+  "events": [
+    {
+      "id": "evt_r03_001",
+      "timestamp": 1774362000000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Стандарт+ интересует, можно в наш город доставить?",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_002",
+      "timestamp": 1774362060000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Если оформим, при получении оплатить можно?",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_003",
+      "timestamp": 1774362120000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Мне заранее оплачивать некомфортно",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_004",
+      "timestamp": 1774362180000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Вы же поймите, вдруг после оплаты пропадете",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_005",
+      "timestamp": 1774362240000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Вы зарегистрированы где вообще?",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_006",
+      "timestamp": 1774362300000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Instagram или сайт есть?",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_007",
+      "timestamp": 1774362360000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "С клиентами с нашего города уже работали?",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_008",
+      "timestamp": 1774362420000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Какой магазин ваш клиент в нашем городе?",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_009",
+      "timestamp": 1774362480000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Если это конфиденциально, хотя бы скажите давно с регионом работаете?",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_010",
+      "timestamp": 1774535280000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Добрый день",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_011",
+      "timestamp": 1774535340000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Я еще думаю",
+      "cleint_phone": "77770010003"
+    },
+    {
+      "id": "evt_r03_012",
+      "timestamp": 1774535400000,
+      "session": "BOT_REAL_R03_TEST",
+      "client_text": "Если решусь, сколько по времени займет отправка после оплаты?",
+      "cleint_phone": "77770010003"
+    }
+  ]
+}

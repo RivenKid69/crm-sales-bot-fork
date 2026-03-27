@@ -149,6 +149,26 @@ class TestQueryRewriter:
         assert result == message
         llm.generate.assert_not_called()
 
+    def test_rewrite_uses_full_dialogue_text_when_provided(self):
+        llm = MagicMock()
+        llm.generate.return_value = "Сколько стоит тариф Lite?"
+        rewriter = QueryRewriter(llm=llm, rewrite_min_words=4)
+
+        result = rewriter.rewrite(
+            user_message="А сколько это стоит?",
+            history=[{"user": "Что по срокам?", "bot": "Сроки зависят от города."}],
+            dialogue_text=(
+                "Клиент: Мы рассматриваем именно тариф Lite\n"
+                "Вы: Хорошо, зафиксировала Lite\n"
+                "Клиент: Пока просто сравниваю варианты"
+            ),
+        )
+
+        assert result == "Сколько стоит тариф Lite?"
+        prompt = llm.generate.call_args.args[0]
+        assert "рассматриваем именно тариф Lite" in prompt
+        assert "Что по срокам?" not in prompt
+
     def test_numeric_selection_resolved_deterministically(self):
         llm = MagicMock()
         rewriter = QueryRewriter(llm=llm, rewrite_min_words=4)

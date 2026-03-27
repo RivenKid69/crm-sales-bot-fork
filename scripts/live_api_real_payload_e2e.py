@@ -70,6 +70,7 @@ DEFAULT_WAIT_READY_POLL_SECONDS = float(
     os.environ.get("E2E_WAIT_READY_POLL_SECONDS", "5")
 )
 DEFAULT_OUTPUT_ROOT = Path(os.environ.get("E2E_OUTPUT_DIR", "results/live_api_real_payload"))
+TIMESTAMP_FORMAT = "%Y%m%d_%H%M%S"
 DEFAULT_USER_AGENT = os.environ.get(
     "E2E_USER_AGENT",
     "CRM-Sales-Bot-Live-E2E/1.0 (+real-payload-sula)",
@@ -210,7 +211,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         default="",
-        help="Куда сохранить trace. По умолчанию results/live_api_real_payload/<timestamp>",
+        help=(
+            "Базовое имя/путь для trace. Timestamp `YYYYMMDD_HHMMSS` добавляется всегда: "
+            "по умолчанию как имя каталога, при `--output-dir` как suffix последнего сегмента пути."
+        ),
     )
     parser.add_argument(
         "--skip-preflight",
@@ -267,7 +271,7 @@ def default_sula_process_url(process_url: str) -> str:
 
 
 def make_run_id() -> str:
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now().strftime(TIMESTAMP_FORMAT)
     return f"{stamp}_{uuid.uuid4().hex[:8]}"
 
 
@@ -429,10 +433,11 @@ def fetch_json_or_text(response: requests.Response) -> Any:
 
 
 def ensure_output_dir(path_arg: str) -> Path:
+    stamp = datetime.now().strftime(TIMESTAMP_FORMAT)
     if path_arg:
-        out_dir = Path(path_arg)
+        requested = Path(path_arg)
+        out_dir = requested.with_name(f"{requested.name}_{stamp}")
     else:
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         out_dir = DEFAULT_OUTPUT_ROOT / stamp
     out_dir.mkdir(parents=True, exist_ok=True)
     return out_dir
@@ -599,6 +604,12 @@ def render_markdown(
     events: list[dict[str, Any]],
     trace: list[dict[str, Any]],
 ) -> str:
+    preflight_skipped = bool(preflight_data.get("skipped"))
+    health_status = preflight_data.get("health_status", "skipped")
+    ready_status = preflight_data.get("ready_status", "skipped")
+    health_payload = preflight_data.get("health_payload", {"skipped": True})
+    ready_payload = preflight_data.get("ready_payload", {"skipped": True})
+
     lines: list[str] = [
         "# Live API Real-Payload E2E",
         "",
@@ -609,10 +620,11 @@ def render_markdown(
         "",
         "## Preflight",
         "",
-        f"- /health status: `{preflight_data['health_status']}`",
-        f"- /ready status: `{preflight_data['ready_status']}`",
-        f"- /health payload: `{json.dumps(preflight_data['health_payload'], ensure_ascii=False)}`",
-        f"- /ready payload: `{json.dumps(preflight_data['ready_payload'], ensure_ascii=False)}`",
+        f"- skipped: `{preflight_skipped}`",
+        f"- /health status: `{health_status}`",
+        f"- /ready status: `{ready_status}`",
+        f"- /health payload: `{json.dumps(health_payload, ensure_ascii=False)}`",
+        f"- /ready payload: `{json.dumps(ready_payload, ensure_ascii=False)}`",
         "",
         "## Transcript",
         "",

@@ -251,7 +251,48 @@ def test_followup_prompt_includes_llm_guidance_from_missing_client_context():
     assert "AVAILABLE_QUESTIONS:" in prompt
     assert "DO_NOT_ASK:" in prompt
     assert "RECENT_BOT_QUESTIONS:" in prompt
-    assert "Сколько человек" in prompt or "Чем сейчас пользуетесь" in prompt
+    assert "как к вам лучше обращаться" in prompt.lower()
+    assert "в какой сфере вы работаете" in prompt.lower()
+    assert "в каком вы городе" in prompt.lower()
+    assert "раньше автоматизация у вас уже была" in prompt.lower()
+    assert "company_size" not in prompt
+    assert "current_tools" not in prompt
+    assert "pain_point" not in prompt
+
+
+def test_autonomous_unknown_followup_ignores_legacy_missing_fields_when_profile_complete():
+    phase = ResponseGenerator._resolve_unknown_fallback_followup_phase(
+        "autonomous_discovery",
+        {
+            "contact_name": "Айдана",
+            "business_type": "магазин",
+            "city": "Алматы",
+            "automation_before": False,
+        },
+        ["company_size", "current_tools", "pain_point"],
+    )
+
+    assert phase == ""
+
+
+def test_autonomous_unknown_followup_guidance_uses_only_unified_profile_questions():
+    generator = _make_generator(_StructuredLLM([]))
+
+    guidance = generator._build_unknown_fallback_followup_guidance(
+        state="autonomous_discovery",
+        collected_data={},
+        missing_data=["company_size", "current_tools", "pain_point", "desired_outcome"],
+        history=[],
+    )
+
+    combined = " ".join(guidance.values()).lower()
+    assert "как к вам лучше обращаться" in combined
+    assert "в какой сфере вы работаете" in combined
+    assert "в каком вы городе" in combined
+    assert "раньше автоматизация у вас уже была" in combined
+    assert "company_size" not in combined
+    assert "current_tools" not in combined
+    assert "pain_point" not in combined
 
 
 def test_factual_verifier_safe_minimal_fallback_can_gain_same_followup(monkeypatch):

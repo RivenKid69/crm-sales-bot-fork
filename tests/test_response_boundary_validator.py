@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from src.dialog_transcript import DialogTranscript
 from src.feature_flags import flags
 from src.response_boundary_validator import ResponseBoundaryValidator
 
@@ -248,3 +249,32 @@ def test_autonomous_payment_fallback_does_not_request_phone_or_email():
     assert "номер" not in low
     assert "email" not in low
     assert "оплат" in low
+
+
+def test_contact_pressure_after_early_refusal_is_detected_from_full_transcript():
+    validator = ResponseBoundaryValidator()
+    transcript = DialogTranscript.from_legacy_history(
+        [
+            {"user": "Пока без звонков и без контактов", "bot": "Хорошо, всё дам в чате."},
+            {"user": "Расскажите про тарифы", "bot": "Есть Mini, Lite, Standard и Pro."},
+            {"user": "А что по Lite?", "bot": "Lite стоит 150 000 ₸/год."},
+            {"user": "Спасибо", "bot": "Пожалуйста."},
+            {"user": "И еще вопрос", "bot": "Слушаю вас."},
+        ]
+    )
+
+    result = validator.validate_response(
+        "Оставьте, пожалуйста, номер телефона, и я отправлю детали.",
+        context={
+            "intent": "price_question",
+            "state": "autonomous_discovery",
+            "selected_template": "autonomous_respond",
+            "action": "continue_current_goal",
+            "user_message": "Напомните цену Lite",
+            "transcript": transcript,
+        },
+        llm=None,
+    )
+
+    assert "contact_pressure_after_refusal" in result.violations
+    assert "номер телефона" not in result.response.lower()

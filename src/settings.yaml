@@ -27,6 +27,9 @@ llm:
   # Таймаут запроса в секундах
   timeout: 600
 
+  # Размер runtime context window для Ollama-вызовов
+  num_ctx: 16384
+
   # Режим стриминга (false для structured output)
   stream: false
 
