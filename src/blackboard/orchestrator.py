@@ -20,8 +20,8 @@ from src.blackboard.event_bus import (
     StateTransitionedEvent,
     ErrorOccurredEvent,
 )
-from src.blackboard.models import ResolvedDecision
-from src.blackboard.enums import Priority
+from src.blackboard.models import Proposal, ResolvedDecision
+from src.blackboard.enums import Priority, ProposalType
 from src.blackboard.decision_sanitizer import (
     DecisionSanitizer,
     SanitizedTransitionResult,
@@ -40,10 +40,15 @@ from src.blackboard.protocols import (
 from src.blackboard.source_registry import BUILTIN_SOURCE_NAMES, SourceRegistry
 
 # Import intent categories for objection tracking
-from src.yaml_config.constants import OBJECTION_INTENTS, POSITIVE_INTENTS
+from src.yaml_config.constants import INTENT_CATEGORIES, OBJECTION_INTENTS, POSITIVE_INTENTS
 
 logger = logging.getLogger(__name__)
 trace_logger = logging.getLogger("blackboard.trace")
+
+ANSWERABLE_INTENTS = frozenset(INTENT_CATEGORIES.get("question", ())) | frozenset(
+    INTENT_CATEGORIES.get("price_related", ())
+)
+TERMINAL_HARD_STOP_INTENTS = frozenset({"rejection", "farewell"})
 
 class DialogueOrchestrator:
     """
@@ -226,6 +231,96 @@ class DialogueOrchestrator:
                 return True
         return False
 
+    def _get_current_turn_intents(self) -> Set[str]:
+        """Return current-turn intents using the existing intent taxonomy SSOT."""
+        ctx = self._blackboard.get_context()
+        intents: Set[str] = set()
+
+        if ctx.current_intent:
+            intents.add(ctx.current_intent)
+
+        envelope = ctx.context_envelope
+        raw_secondary = getattr(envelope, "secondary_intents", []) if envelope else []
+        if isinstance(raw_secondary, (list, tuple, set, frozenset)):
+            intents.update(str(intent) for intent in raw_secondary if intent)
+
+        return intents
+
+    def _should_block_terminal_soft_close(self) -> bool:
+        """Answerable turns must not be overridden by terminal soft-close routing."""
+        ctx = self._blackboard.get_context()
+        if ctx.current_intent in TERMINAL_HARD_STOP_INTENTS:
+            return False
+        return bool(self._get_current_turn_intents() & ANSWERABLE_INTENTS)
+
+    @staticmethod
+    def _serialize_proposal_for_trace(proposal: Proposal) -> Dict[str, Any]:
+        return {
+            "type": proposal.type.name,
+            "value": proposal.value,
+            "priority": proposal.priority.name,
+            "source_name": proposal.source_name,
+            "reason_code": proposal.reason_code,
+            "combinable": proposal.combinable,
+        }
+
+    def _suppress_terminal_soft_close_proposals(
+        self,
+        proposals: List[Proposal],
+        turn_number: int,
+    ) -> Tuple[List[Proposal], Optional[Dict[str, Any]]]:
+        """Remove terminal soft-close proposals on answerable turns before resolution."""
+        if not self._should_block_terminal_soft_close():
+            return proposals, None
+
+        soft_close_transitions = [
+            proposal
+            for proposal in proposals
+            if proposal.type == ProposalType.TRANSITION and proposal.value == "soft_close"
+        ]
+        if not soft_close_transitions:
+            return proposals, None
+
+        blocked_pairs = {
+            (proposal.source_name, proposal.reason_code)
+            for proposal in soft_close_transitions
+        }
+        suppressed: List[Proposal] = []
+        filtered: List[Proposal] = []
+
+        for proposal in proposals:
+            is_soft_close_transition = (
+                proposal.type == ProposalType.TRANSITION and proposal.value == "soft_close"
+            )
+            is_companion_action = (
+                proposal.type == ProposalType.ACTION
+                and (proposal.source_name, proposal.reason_code) in blocked_pairs
+            )
+            if is_soft_close_transition or is_companion_action:
+                suppressed.append(proposal)
+                continue
+            filtered.append(proposal)
+
+        if not suppressed:
+            return proposals, None
+
+        suppression_trace = {
+            "diagnostic": "soft_close_blocked_answerable_turn",
+            "current_intent": self._blackboard.current_intent,
+            "turn_intents": sorted(self._get_current_turn_intents()),
+            "suppressed_proposals": [
+                self._serialize_proposal_for_trace(proposal)
+                for proposal in suppressed
+            ],
+        }
+        trace_logger.info(
+            "soft_close_blocked_answerable_turn turn=%s intents=%s suppressed=%s",
+            turn_number,
+            suppression_trace["turn_intents"],
+            suppression_trace["suppressed_proposals"],
+        )
+        return filtered, suppression_trace
+
     def get_source(self, source_name: str) -> Optional[KnowledgeSource]:
         """
         Get a Knowledge Source by name.
@@ -380,7 +475,13 @@ class DialogueOrchestrator:
                         turn_number=turn_number,
                     )
 
-            # === STEP 4: Resolve Conflicts ===
+            # === STEP 5: Enforce Routing Guardrails ===
+            proposals, suppression_trace = self._suppress_terminal_soft_close_proposals(
+                proposals=proposals,
+                turn_number=turn_number,
+            )
+
+            # === STEP 6: Resolve Conflicts ===
             resolve_start_time = time.time()
 
             # Get fallback transition (from "any" trigger)
@@ -426,6 +527,8 @@ class DialogueOrchestrator:
                 turn_number=turn_number,
                 result=sanitizer_result,
             )
+            if suppression_trace:
+                decision.resolution_trace["soft_close_blocked_answerable_turn"] = suppression_trace
             if fallback_sanitization:
                 decision.resolution_trace["fallback_transition_sanitization"] = (
                     fallback_sanitization.diagnostic

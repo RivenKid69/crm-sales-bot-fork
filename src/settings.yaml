@@ -9,14 +9,14 @@
 # -----------------------------------------------------------------------------
 # Запуск Ollama сервера:
 #   ollama serve
-#   ollama pull ministral-3:14b-instruct-2512-q8_0
+#   ollama pull gemma4:31b
 #
 # Или через скрипт:
 #   ./scripts/start_ollama.sh
 #
 llm:
-  # Модель Qwen 3.5 27B Q4_K_M через Ollama
-  model: "qwen3.5:27b"
+  # Модель Gemma 4 31B Q4_K_M через Ollama
+  model: "gemma4:31b"
 
   # URL Ollama сервера
   base_url: "http://host.docker.internal:8080"

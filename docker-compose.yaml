@@ -10,6 +10,7 @@ services:
       - DB_PATH=/app/data/conversations.db
       - EMBEDDING_CACHE_DIR=/app/data/embeddings-cache
       - OLLAMA_BASE_URL=http://host.docker.internal:8080
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:31b}
       - TEI_EMBED_URL=http://host.docker.internal:8081
       - TEI_RERANK_URL=http://host.docker.internal:8082
     extra_hosts:

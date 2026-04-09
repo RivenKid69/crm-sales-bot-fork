@@ -236,7 +236,7 @@ class TestFrustrationTrackerIntensity:
         assert tracker.level > old_level + 1  # More than single signal
 
     def test_pre_intervention_triggered(self):
-        """Test pre_intervention_triggered property."""
+        """Test pre_intervention_triggered property is turn-local."""
         from src.tone_analyzer.frustration_tracker import FrustrationTracker
         from src.tone_analyzer.models import Tone
 
@@ -248,6 +248,10 @@ class TestFrustrationTrackerIntensity:
         # RUSHED with high intensity should trigger pre-intervention
         tracker.update(Tone.RUSHED, signal_count=3)
         assert tracker.pre_intervention_triggered
+
+        # Next calm turn should clear turn-local pre-intervention
+        tracker.update(Tone.NEUTRAL, signal_count=1)
+        assert not tracker.pre_intervention_triggered
 
     def test_should_offer_exit(self):
         """Test should_offer_exit method."""
@@ -262,6 +266,26 @@ class TestFrustrationTrackerIntensity:
         # After RUSHED with high intensity = should offer exit
         tracker.update(Tone.RUSHED, signal_count=3)
         assert tracker.should_offer_exit()
+
+        # On the next normal turn, tone-only exit hint should clear
+        tracker.update(Tone.NEUTRAL, signal_count=1)
+        assert not tracker.pre_intervention_triggered
+
+    def test_pre_intervention_reset_preserves_frustration_accumulation(self):
+        """Turn-local pre-intervention reset must not zero accumulated frustration."""
+        from src.tone_analyzer.frustration_tracker import FrustrationTracker
+        from src.tone_analyzer.models import Tone
+
+        tracker = FrustrationTracker()
+
+        tracker.update(Tone.RUSHED, signal_count=3)
+        level_after_rushed = tracker.level
+
+        tracker.update(Tone.NEUTRAL, signal_count=1)
+
+        assert tracker.level <= level_after_rushed
+        assert tracker.level > 0
+        assert not tracker.pre_intervention_triggered
 
     def test_get_intervention_urgency(self):
         """Test get_intervention_urgency method."""

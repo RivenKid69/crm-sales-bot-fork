@@ -19,7 +19,7 @@ SETTINGS_FILE = Path(__file__).parent / "settings.yaml"
 # Значения по умолчанию (используются если параметр не указан в YAML)
 DEFAULTS = {
     "llm": {
-        "model": "ministral-3:14b-instruct-2512-q8_0",  # Ollama model (Ministral 3 14B Q8_0)
+        "model": "gemma4:31b",  # Ollama model (Gemma 4 31B Q4_K_M)
         "base_url": "http://localhost:11434",  # Ollama native API
         "api_format": "ollama",  # "ollama" or "openai" (llama-server, vLLM)
         "timeout": 600,  # Increased for larger structured-output calls

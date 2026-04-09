@@ -1892,6 +1892,178 @@ class TestObjectionLimits:
         # Should NOT go to soft_close
         assert decision.next_state != "soft_close" or decision.action != "objection_limit_reached"
 
+
+class TestAnswerableTurnSoftCloseSuppression:
+    """Answerable turns must win over tone/guard-driven soft_close proposals."""
+
+    @staticmethod
+    def _make_orchestrator():
+        sm = MockStateMachine(state="spin_problem")
+        fc = MockFlowConfig(states={
+            "spin_problem": {
+                "goal": "Handle follow-up questions",
+                "phase": "problem",
+                "required_data": [],
+                "is_final": False,
+                "transitions": {},
+            },
+            "soft_close": {
+                "goal": "Graceful exit",
+                "is_final": True,
+                "transitions": {},
+            },
+        })
+
+        orch = DialogueOrchestrator(
+            state_machine=sm,
+            flow_config=fc,
+            enable_validation=True,
+        )
+        orch._sources.clear()
+        return orch
+
+    def test_answerable_primary_intent_blocks_soft_close_and_companion_action(self):
+        """Primary factual question should suppress soft_close proposals before resolver."""
+        orch = self._make_orchestrator()
+
+        class GuardSoftCloseSource(KnowledgeSource):
+            def contribute(self, blackboard):
+                blackboard.propose_action(
+                    action="guard_soft_close",
+                    priority=Priority.CRITICAL,
+                    combinable=True,
+                    reason_code="conversation_guard_soft_close",
+                    source_name=self.name,
+                )
+                blackboard.propose_transition(
+                    next_state="soft_close",
+                    priority=Priority.CRITICAL,
+                    reason_code="conversation_guard_soft_close",
+                    source_name=self.name,
+                )
+
+        class AnswerSource(KnowledgeSource):
+            def contribute(self, blackboard):
+                blackboard.propose_action(
+                    action="answer_with_facts",
+                    priority=Priority.HIGH,
+                    combinable=True,
+                    reason_code="factual_answer",
+                    source_name=self.name,
+                )
+
+        orch.add_source(GuardSoftCloseSource("GuardSoftCloseSource"))
+        orch.add_source(AnswerSource("AnswerSource"))
+
+        decision = orch.process_turn(
+            intent="question_features",
+            extracted_data={},
+        )
+
+        assert decision.action == "answer_with_facts"
+        assert decision.next_state == "spin_problem"
+        suppression = decision.resolution_trace["soft_close_blocked_answerable_turn"]
+        assert suppression["diagnostic"] == "soft_close_blocked_answerable_turn"
+        assert {
+            (item["type"], item["value"])
+            for item in suppression["suppressed_proposals"]
+        } == {
+            ("ACTION", "guard_soft_close"),
+            ("TRANSITION", "soft_close"),
+        }
+
+    def test_answerable_secondary_intent_blocks_soft_close(self):
+        """Secondary factual intent should also block terminal soft_close routing."""
+        orch = self._make_orchestrator()
+
+        class GuardSoftCloseSource(KnowledgeSource):
+            def contribute(self, blackboard):
+                blackboard.propose_action(
+                    action="objection_limit_reached",
+                    priority=Priority.CRITICAL,
+                    combinable=False,
+                    reason_code="objection_limit_exceeded",
+                    source_name=self.name,
+                )
+                blackboard.propose_transition(
+                    next_state="soft_close",
+                    priority=Priority.CRITICAL,
+                    reason_code="objection_limit_exceeded",
+                    source_name=self.name,
+                )
+
+        class AnswerSource(KnowledgeSource):
+            def contribute(self, blackboard):
+                blackboard.propose_action(
+                    action="answer_with_facts",
+                    priority=Priority.HIGH,
+                    combinable=True,
+                    reason_code="factual_answer",
+                    source_name=self.name,
+                )
+
+        class Envelope:
+            secondary_intents = ["question_features"]
+
+        orch.add_source(GuardSoftCloseSource("GuardSoftCloseSource"))
+        orch.add_source(AnswerSource("AnswerSource"))
+
+        decision = orch.process_turn(
+            intent="objection_no_time",
+            extracted_data={},
+            context_envelope=Envelope(),
+        )
+
+        assert decision.action == "answer_with_facts"
+        assert decision.next_state == "spin_problem"
+        assert decision.resolution_trace["soft_close_blocked_answerable_turn"]["turn_intents"] == [
+            "objection_no_time",
+            "question_features",
+        ]
+
+    def test_hard_stop_primary_intent_keeps_soft_close(self):
+        """Explicit rejection/farewell must keep terminal soft_close routing."""
+        orch = self._make_orchestrator()
+
+        class GuardSoftCloseSource(KnowledgeSource):
+            def contribute(self, blackboard):
+                blackboard.propose_action(
+                    action="guard_soft_close",
+                    priority=Priority.CRITICAL,
+                    combinable=True,
+                    reason_code="conversation_guard_soft_close",
+                    source_name=self.name,
+                )
+                blackboard.propose_transition(
+                    next_state="soft_close",
+                    priority=Priority.CRITICAL,
+                    reason_code="conversation_guard_soft_close",
+                    source_name=self.name,
+                )
+
+        class AnswerSource(KnowledgeSource):
+            def contribute(self, blackboard):
+                blackboard.propose_action(
+                    action="answer_with_facts",
+                    priority=Priority.HIGH,
+                    combinable=True,
+                    reason_code="factual_answer",
+                    source_name=self.name,
+                )
+
+        orch.add_source(GuardSoftCloseSource("GuardSoftCloseSource"))
+        orch.add_source(AnswerSource("AnswerSource"))
+
+        decision = orch.process_turn(
+            intent="rejection",
+            extracted_data={},
+            context_envelope=type("Envelope", (), {"secondary_intents": ["question_features"]})(),
+        )
+
+        assert decision.action == "guard_soft_close"
+        assert decision.next_state == "soft_close"
+        assert "soft_close_blocked_answerable_turn" not in decision.resolution_trace
+
 # -----------------------------------------------------------------------------
 # FACTORY FUNCTION TESTS (Extended)
 # -----------------------------------------------------------------------------

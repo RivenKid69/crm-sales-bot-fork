@@ -564,6 +564,20 @@ def _bootstrap_bot_memory(bot: SalesBot, *, user_id: str) -> None:
         bot.hydrate_external_memory(profile_data=profile_data, media_cards=media_cards)
 
 
+def _normalize_request_channel(channel: str | None) -> str:
+    return str(channel or "").strip().lower()
+
+
+def _should_use_cross_session_memory(channel: str | None) -> bool:
+    """
+    API test traffic must stay session-scoped even when user_id is reused.
+
+    Persistent cross-session memory remains enabled for real transport channels
+    such as whatsapp/sula, but generic API calls are isolated by session_id.
+    """
+    return _normalize_request_channel(channel) != "api"
+
+
 # ── Production flag setup ─────────────────────────────
 
 def _setup_production_flags():
@@ -909,7 +923,8 @@ def _process_message_request(req: ProcessRequest) -> dict:
             assume_locked=True,
         )
         bot = acquire.bot
-        if acquire.source == "new":
+        use_cross_session_memory = _should_use_cross_session_memory(req.channel)
+        if acquire.source == "new" and use_cross_session_memory:
             _bootstrap_bot_memory(bot, user_id=req.user_id)
 
         media_turn_context = prepared_message.media_turn_context
@@ -932,8 +947,9 @@ def _process_message_request(req: ProcessRequest) -> dict:
             client_id=req.user_id,
             is_final=bot.state_machine.is_final(),
         )
-        _save_user_profile(req.session_id, req.user_id, bot)
-        _save_media_knowledge(req.session_id, req.user_id, bot)
+        if use_cross_session_memory:
+            _save_user_profile(req.session_id, req.user_id, bot)
+            _save_media_knowledge(req.session_id, req.user_id, bot)
         return result, processing_ms
 
     result, processing_ms = _session_manager.run_session_job(

@@ -707,3 +707,54 @@ class TestApiActiveRuntime:
                 {"count": 3, "idle_seconds": api_mod.ACTIVE_SESSION_FINAL_IDLE_SECONDS},
             )
         ]
+
+    def test_process_request_channel_api_disables_cross_session_memory(self, monkeypatch):
+        _ensure_fastapi_stubs()
+        import src.api as api_mod
+
+        bot = _FakeApiBot()
+        manager = _FakeApiManager(bot, acquire_source_sequence=["new"])
+        bootstrap_calls = []
+        saved_profiles = []
+        saved_media = []
+
+        monkeypatch.setattr(api_mod, "_session_manager", manager)
+        monkeypatch.setattr(api_mod, "_llm", object())
+        monkeypatch.setattr(api_mod, "_bootstrap_bot_memory", lambda *_args, **_kwargs: bootstrap_calls.append(True))
+        monkeypatch.setattr(
+            api_mod,
+            "_save_user_profile",
+            lambda session_id, user_id, _bot: saved_profiles.append((session_id, user_id)),
+        )
+        monkeypatch.setattr(
+            api_mod,
+            "_save_media_knowledge",
+            lambda session_id, user_id, _bot: saved_media.append((session_id, user_id)),
+        )
+        monkeypatch.setattr(
+            api_mod,
+            "prepare_autonomous_incoming_message",
+            lambda **_kwargs: PreparedMessage(
+                text="Здравствуйте",
+                media_used=False,
+                used_attachments=[],
+                skipped_attachments=[],
+                media_meta={},
+                media_turn_context=None,
+            ),
+        )
+
+        req = api_mod.ProcessRequest(
+            channel="api",
+            session_id="test_10",
+            user_id="77710993639@c.us",
+            message=api_mod.MessagePayload(text="Здравствуйте, это Адиль тест"),
+        )
+
+        result = api_mod._process_message_request(req)
+
+        assert result["answer"] == "echo:Здравствуйте"
+        assert manager.run_jobs == [("test_10", "77710993639@c.us")]
+        assert bootstrap_calls == []
+        assert saved_profiles == []
+        assert saved_media == []

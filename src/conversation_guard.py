@@ -96,7 +96,7 @@ class GuardState:
     # Track intents to detect informative responses
     intent_history: List[str] = field(default_factory=list)
     last_intent: str = ""
-    # Pre-intervention flag (WARNING level 5-6 with certain conditions)
+    # Last seen turn-local pre-intervention flag (tone metadata only).
     pre_intervention_triggered: bool = False
     # TIER_2 self-loop escalation (moved from FallbackHandler)
     consecutive_tier_2_count: int = 0
@@ -164,7 +164,7 @@ class ConversationGuard:
         collected_data: Dict,
         frustration_level: Optional[int] = None,
         last_intent: str = "",  # Accept intent for informative check
-        pre_intervention_triggered: bool = False  # Pre-intervention at WARNING level (5-6)
+        pre_intervention_triggered: bool = False
     ) -> Tuple[bool, Optional[str]]:
         """
         Проверить состояние диалога и определить нужна ли интервенция.
@@ -175,8 +175,9 @@ class ConversationGuard:
             collected_data: Собранные данные о клиенте
             frustration_level: Уровень раздражения (0-10), если None - используется внутренний
             last_intent: Предыдущий intent клиента (для проверки информативности)
-            pre_intervention_triggered: Whether pre-intervention was triggered at WARNING level
-                                        (5-6 frustration with RUSHED/FRUSTRATED tone)
+            pre_intervention_triggered: Current-turn tone urgency marker.
+                                        Stored for observability only; does not
+                                        drive terminal routing.
 
         Returns:
             Tuple[can_continue, intervention_action]
@@ -196,6 +197,7 @@ class ConversationGuard:
         # Обновляем frustration если передан
         if frustration_level is not None:
             self._state.frustration_level = frustration_level
+        self._state.pre_intervention_triggered = bool(pre_intervention_triggered)
 
         # Record intent history for informative response detection
         if last_intent:
@@ -223,15 +225,13 @@ class ConversationGuard:
             )
             return False, self.TIER_4
 
-        # 3. Проверка высокого раздражения ИЛИ pre_intervention_triggered
-        # Pre-intervention срабатывает при WARNING уровне (5-6) с определёнными условиями
-        # (RUSHED tone, multiple frustration signals), поэтому нужно проверять оба флага
-        #
+        # 3. Проверка высокого раздражения.
+        # Tone pre-intervention stays as response-style metadata and must not
+        # escalate the dialogue into terminal routing on its own.
         # IMPORTANT: Don't give up on early turns even if client is aggressive.
         # A good salesperson handles objections, not abandons after 4 messages.
         _min_turns_before_frustration_close = 6
-        if (self._state.frustration_level >= self.config.high_frustration_threshold
-                or pre_intervention_triggered):
+        if self._state.frustration_level >= self.config.high_frustration_threshold:
             # If client is engaged (asking questions, objecting, providing data),
             # offer structured options (TIER_2) instead of skipping phase (TIER_3).
             if self._is_engagement_intent():
@@ -252,9 +252,8 @@ class ConversationGuard:
                 return True, self.TIER_2
 
             logger.warning(
-                "High frustration or pre-intervention triggered",
+                "High frustration detected",
                 frustration_level=self._state.frustration_level,
-                pre_intervention=pre_intervention_triggered,
                 turns=self._state.turn_count
             )
             # Не прерываем, но рекомендуем мягкий подход

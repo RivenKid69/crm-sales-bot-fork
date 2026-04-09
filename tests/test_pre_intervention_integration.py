@@ -108,13 +108,13 @@ class TestFallbackContextPropagation:
         ctx = FallbackContext.create_test_context(pre_intervention_triggered=True)
         assert ctx.pre_intervention_triggered is True
 
-    def test_needs_immediate_escalation_with_pre_intervention(self):
-        """needs_immediate_escalation should return True with pre_intervention."""
+    def test_needs_immediate_escalation_ignores_pre_intervention(self):
+        """needs_immediate_escalation should not escalate on tone-only pre_intervention."""
         ctx = FallbackContext.create_test_context(
             frustration_level=3,  # Below HIGH threshold (7)
             pre_intervention_triggered=True,
         )
-        assert needs_immediate_escalation(ctx) is True
+        assert needs_immediate_escalation(ctx) is False
 
     def test_needs_immediate_escalation_without_flags(self):
         """needs_immediate_escalation should use normal logic without flags."""
@@ -125,13 +125,13 @@ class TestFallbackContextPropagation:
         )
         assert needs_immediate_escalation(ctx) is False
 
-    def test_should_offer_graceful_exit_with_pre_intervention(self):
-        """should_offer_graceful_exit should return True with pre_intervention."""
+    def test_should_offer_graceful_exit_ignores_pre_intervention(self):
+        """should_offer_graceful_exit should not fire on tone-only pre_intervention."""
         ctx = FallbackContext.create_test_context(
             frustration_level=2,  # Well below WARNING threshold
             pre_intervention_triggered=True,
         )
-        assert should_offer_graceful_exit(ctx) is True
+        assert should_offer_graceful_exit(ctx) is False
 
 class TestPersonalizationContextPropagation:
     """Test pre_intervention propagation through PersonalizationContext."""
@@ -182,7 +182,7 @@ class TestConversationGuardPropagation:
     """Test pre_intervention handling in ConversationGuard."""
 
     def test_guard_check_with_pre_intervention(self):
-        """ConversationGuard.check() should respond to pre_intervention."""
+        """ConversationGuard.check() should not route on pre_intervention alone."""
         guard = ConversationGuard(GuardConfig())
         can_continue, intervention = guard.check(
             state="presentation",
@@ -191,8 +191,7 @@ class TestConversationGuardPropagation:
             frustration_level=3,  # Below threshold
             pre_intervention_triggered=True,
         )
-        # Should return tier_3 (high frustration handling)
-        assert intervention == "fallback_tier_3"
+        assert intervention is None
 
     def test_guard_check_without_pre_intervention(self):
         """ConversationGuard.check() should work normally without pre_intervention."""
@@ -237,8 +236,8 @@ class TestApologySSoTPropagation:
 class TestEndToEndScenario:
     """Test complete end-to-end scenarios."""
 
-    def test_pre_intervention_triggers_all_protective_measures(self):
-        """When pre_intervention is triggered, all protective measures activate."""
+    def test_pre_intervention_triggers_style_guards_but_not_terminal_routing(self):
+        """Pre-intervention should affect tone/style, not fallback/guard terminal routing."""
         # Simulate FrustrationIntensityCalculator setting pre_intervention
         tone_info = {
             "frustration_level": 5,  # WARNING level
@@ -266,7 +265,7 @@ class TestEndToEndScenario:
             frustration_level=envelope.frustration_level,
             pre_intervention_triggered=envelope.pre_intervention_triggered,
         )
-        assert needs_immediate_escalation(fallback_ctx) is True
+        assert needs_immediate_escalation(fallback_ctx) is False
         assert should_offer_graceful_exit(fallback_ctx) is True
 
         # Personalization context
@@ -287,7 +286,7 @@ class TestEndToEndScenario:
             frustration_level=envelope.frustration_level,
             pre_intervention_triggered=envelope.pre_intervention_triggered,
         )
-        assert intervention == "fallback_tier_3"
+        assert intervention is None
 
         # Apology SSoT
         assert should_offer_exit(

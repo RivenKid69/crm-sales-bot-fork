@@ -22,7 +22,7 @@
   docker run --rm --network crm-sales-bot-fork_default \
     -e API_KEY=change-me-in-production \
     -v "$PWD":/app -w /app crm-sales-bot-fork-bot \
-    python3 -u scripts/live_api_real_payload_e2e.py
+    python3 -u live_api_real_payload_e2e.py
 
 Если бот-контейнер уже собран в той же сети и использует:
   OLLAMA_BASE_URL=http://ollama:11434
@@ -58,7 +58,7 @@ def _parse_timeout(value: Any) -> float | None:
 
 
 DEFAULT_PROCESS_URL = os.environ.get("BOT_PROCESS_URL", "http://bot:8000/api/v1/process")
-DEFAULT_EXPECTED_MODEL = os.environ.get("EXPECTED_MODEL", "qwen3.5:27b")
+DEFAULT_EXPECTED_MODEL = os.environ.get("EXPECTED_MODEL", "gemma4:31b")
 DEFAULT_API_KEY = os.environ.get("API_KEY", "change-me-in-production")
 DEFAULT_TIMEOUT_SECONDS_RAW = os.environ.get("E2E_HTTP_TIMEOUT_SECONDS", "180")
 DEFAULT_TIMEOUT_SECONDS = _parse_timeout(DEFAULT_TIMEOUT_SECONDS_RAW)
@@ -76,6 +76,8 @@ DEFAULT_USER_AGENT = os.environ.get(
     "CRM-Sales-Bot-Live-E2E/1.0 (+real-payload-sula)",
 )
 DEFAULT_CLIENT_IP = os.environ.get("E2E_CLIENT_IP", "203.0.113.77")
+DEBUG_TRACE_HEADER = "X-E2E-Debug-Trace"
+DEBUG_TRACE_ENABLED_VALUE = "1"
 
 
 # Сюда можно вставить конкретный диалог, если не использовать --events-file.
@@ -343,6 +345,7 @@ def build_base_headers(args: argparse.Namespace) -> dict[str, str]:
         "Content-Type": "application/json",
         "Accept": "application/json",
         "User-Agent": args.user_agent,
+        DEBUG_TRACE_HEADER: DEBUG_TRACE_ENABLED_VALUE,
     }
     client_ip = str(args.client_ip or "").strip()
     if client_ip:
@@ -563,6 +566,17 @@ def extract_ai_text(response_payload: Any) -> str:
     return ""
 
 
+def extract_debug_payload(response_payload: Any) -> dict[str, Any]:
+    candidate = None
+    if isinstance(response_payload, list) and response_payload:
+        item = response_payload[-1]
+        if isinstance(item, dict):
+            candidate = item.get("_debug")
+    elif isinstance(response_payload, dict):
+        candidate = response_payload.get("_debug")
+    return candidate if isinstance(candidate, dict) else {}
+
+
 def post_with_heartbeat(
     session: requests.Session,
     *,
@@ -711,6 +725,13 @@ def main() -> int:
             )
             response_payload = fetch_json_or_text(response)
             ai_text = extract_ai_text(response_payload)
+            debug_payload = extract_debug_payload(response_payload)
+            decision_trace = debug_payload.get("decision_trace")
+            factual_pipeline = {}
+            if isinstance(decision_trace, dict):
+                response_trace = decision_trace.get("response")
+                if isinstance(response_trace, dict):
+                    factual_pipeline = response_trace.get("factual_pipeline") or {}
             received_at = datetime.now().isoformat(timespec="seconds")
 
             trace_item = {
@@ -725,6 +746,12 @@ def main() -> int:
                 "response_payload": response_payload,
                 "ai_text": ai_text,
             }
+            if debug_payload:
+                trace_item["debug_payload"] = debug_payload
+            if isinstance(decision_trace, dict):
+                trace_item["decision_trace"] = decision_trace
+            if isinstance(factual_pipeline, dict) and factual_pipeline:
+                trace_item["factual_pipeline"] = factual_pipeline
             trace.append(trace_item)
 
             print(f"[turn {turn_number:02d}] status={response.status_code} latency_ms={latency_ms}")

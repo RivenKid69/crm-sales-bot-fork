@@ -50,6 +50,7 @@ class FrustrationTracker:
         self._consecutive_negative_turns: int = 0
         self._last_tone: Optional[Tone] = None
         self._intensity_calculator = None  # Lazy load to avoid circular imports
+        # Turn-local signal: recomputed on every update, not sticky across session.
         self._pre_intervention_triggered: bool = False
         self._last_decay_amount: int = 0  # Track last decay for structural frustration undo
 
@@ -95,6 +96,9 @@ class FrustrationTracker:
         Returns:
             Новый уровень frustration
         """
+        # Pre-intervention is turn-local; reset before processing current turn.
+        self._pre_intervention_triggered = False
+
         # Use intensity-based calculation if available and signal_count > 1
         calculator = self._get_intensity_calculator()
         if calculator is not None and signal_count > 1:
@@ -142,6 +146,11 @@ class FrustrationTracker:
                 "signal_count": signal_count,
             })
 
+        self._refresh_pre_intervention_flag(
+            tone=tone,
+            signal_count=signal_count,
+        )
+
         return self._level
 
     def update_with_intensity(self, tone: Tone, signal_count: int) -> int:
@@ -165,6 +174,8 @@ class FrustrationTracker:
             # Fallback to standard update
             return self.update(tone, signal_count=1)
 
+        # Pre-intervention is turn-local; reset before processing current turn.
+        self._pre_intervention_triggered = False
         old_level = self._level
 
         # Track consecutive negative turns
@@ -188,16 +199,6 @@ class FrustrationTracker:
         # Apply delta
         self._level = max(0, min(MAX_FRUSTRATION, self._level + delta))
 
-        # Check for pre-intervention
-        if calculator.should_pre_intervene(tone, signal_count, self._level):
-            self._pre_intervention_triggered = True
-            logger.info(
-                "Pre-intervention triggered: tone=%s signal_count=%s frustration_level=%s",
-                tone.value,
-                signal_count,
-                self._level,
-            )
-
         # Record history
         actual_delta = self._level - old_level
         if actual_delta != 0:
@@ -213,7 +214,33 @@ class FrustrationTracker:
                 "urgency": urgency,
             })
 
+        self._refresh_pre_intervention_flag(
+            tone=tone,
+            signal_count=signal_count,
+        )
+
         return self._level
+
+    def _refresh_pre_intervention_flag(self, tone: Tone, signal_count: int) -> None:
+        """Recompute pre-intervention for the current turn only."""
+        calculator = self._get_intensity_calculator()
+        if calculator is None:
+            self._pre_intervention_triggered = False
+            return
+
+        should_pre_intervene = calculator.should_pre_intervene(
+            tone,
+            signal_count,
+            self._level,
+        )
+        self._pre_intervention_triggered = should_pre_intervene
+        if should_pre_intervene:
+            logger.info(
+                "Pre-intervention triggered: tone=%s signal_count=%s frustration_level=%s",
+                tone.value,
+                signal_count,
+                self._level,
+            )
 
     def get_intervention_urgency(self) -> str:
         """
