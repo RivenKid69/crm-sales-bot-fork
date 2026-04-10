@@ -253,19 +253,11 @@ def test_answer_gate_accepts_survey_answer_and_proposes_answer_accepted_transiti
     assert transitions[0].priority == Priority.NORMAL
 
 
-def test_answer_gate_falls_back_to_heuristic_when_llm_verdict_is_uninformative():
+def test_answer_gate_accepts_required_verdict_payload_from_llm():
     bb, _, _ = _blackboard(
-        message="В целом зарегистрировать кассу и подключить систему было легко, только шаг с подтверждением кассы сначала был непонятен.",
+        message="Было легко, проблем не было.",
     )
-    source = PilotSurveyAnswerGateSource(
-        llm=FakeGateLLM(
-            PilotSurveyAnswerGateResult(
-                answer_accepted=False,
-                confidence=0.0,
-                reason="",
-            )
-        )
-    )
+    source = PilotSurveyAnswerGateSource(llm=FakeGateLLM({"verdict": "valid"}))
 
     source.contribute(bb)
 
@@ -273,7 +265,7 @@ def test_answer_gate_falls_back_to_heuristic_when_llm_verdict_is_uninformative()
     transitions = bb.get_transition_proposals()
     assert signal["routing_state"] == "survey_answer"
     assert signal["answer_accepted"] is True
-    assert signal["reason"] == "heuristic_informative_message"
+    assert signal["reason"] == "semantic_gate"
     assert len(transitions) == 1
     assert transitions[0].value == "survey_q2"
 

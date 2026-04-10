@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
-import re
-from typing import Any, Dict, Iterable, Optional, Set, TYPE_CHECKING
+from typing import Any, Dict, Iterable, Literal, Optional, Set, TYPE_CHECKING
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from ..enums import Priority
 from ..knowledge_source import KnowledgeSource
@@ -35,25 +34,31 @@ COMPANY_QUESTION_ACTION_SOURCES = frozenset({
     "FactQuestionSource",
 })
 
-_TRIVIAL_NON_ANSWERS_RE = re.compile(
-    r"^\s*(?:не знаю|хз|затрудняюсь|не понял|не поняла|что\?|почему\?|"
-    r"можно подробнее\??|расскажите подробнее\??|ок|ясно|понятно)\s*$",
-    re.IGNORECASE,
-)
-
-_QUESTION_CUE_RE = re.compile(
-    r"\?|(?:^|\s)(?:как|какие|какой|какая|что|где|когда|почему|зачем|"
-    r"сколько|расскажите|можете|можно ли|поддерживает|есть ли)(?:\s|$)",
-    re.IGNORECASE,
-)
-
 
 class PilotSurveyAnswerGateResult(BaseModel):
     """Structured LLM verdict for whether the current survey question is answered."""
 
-    answer_accepted: bool = False
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    model_config = ConfigDict(extra="forbid")
+
+    verdict: Literal["valid", "invalid"] = Field(
+        ...,
+        description="valid when the client message closes the current survey question; invalid otherwise",
+    )
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     reason: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _map_legacy_answer_accepted(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "verdict" not in data and "answer_accepted" in data:
+            migrated = dict(data)
+            migrated["verdict"] = "valid" if migrated.pop("answer_accepted") else "invalid"
+            return migrated
+        return data
+
+    @property
+    def answer_accepted(self) -> bool:
+        return self.verdict == "valid"
 
 
 class PilotSurveyAnswerGateSource(KnowledgeSource):
@@ -192,9 +197,13 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
             question=question,
             answer_gate=answer_gate,
         )
-        if llm_result is not None and not self._is_uninformative_llm_verdict(llm_result):
+        if llm_result is not None:
             return llm_result
-        return self._evaluate_with_heuristic(user_message)
+        return PilotSurveyAnswerGateResult(
+            verdict="invalid",
+            confidence=0.0,
+            reason="llm_verdict_unavailable",
+        )
 
     def _evaluate_with_llm(
         self,
@@ -211,6 +220,9 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
             "Ты semantic gate для детерминированного опроса по пилоту.\n"
             "Твоя задача: определить, можно ли считать текущий survey-вопрос закрытым.\n"
             "Не отвечай клиенту. Не извлекай поля. Верни только structured verdict.\n\n"
+            "Verdict values:\n"
+            "- valid: сообщение клиента отвечает на текущий survey-вопрос и закрывает его.\n"
+            "- invalid: сообщение клиента не отвечает на текущий survey-вопрос.\n\n"
             f"Survey question:\n{question}\n\n"
             f"Valid if:\n{answer_gate.get('valid_if', '')}\n\n"
             f"Invalid if:\n{answer_gate.get('invalid_if', '')}\n\n"
@@ -247,54 +259,6 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
             except ValidationError:
                 return None
         return None
-
-    @staticmethod
-    def _is_uninformative_llm_verdict(result: PilotSurveyAnswerGateResult) -> bool:
-        reason = str(getattr(result, "reason", "") or "").strip()
-        confidence = float(getattr(result, "confidence", 0.0) or 0.0)
-        if reason:
-            return False
-        return confidence <= 0.0
-
-    @staticmethod
-    def _evaluate_with_heuristic(user_message: str) -> PilotSurveyAnswerGateResult:
-        message = user_message.strip()
-        if not message:
-            return PilotSurveyAnswerGateResult(
-                answer_accepted=False,
-                confidence=0.95,
-                reason="empty_message",
-            )
-
-        lowered = message.lower()
-        if _TRIVIAL_NON_ANSWERS_RE.match(lowered):
-            return PilotSurveyAnswerGateResult(
-                answer_accepted=False,
-                confidence=0.80,
-                reason="trivial_non_answer",
-            )
-
-        question_like = bool(_QUESTION_CUE_RE.search(message))
-        word_count = len(re.findall(r"\w+", message, flags=re.UNICODE))
-        if question_like and word_count <= 8:
-            return PilotSurveyAnswerGateResult(
-                answer_accepted=False,
-                confidence=0.75,
-                reason="short_question_like_message",
-            )
-
-        if word_count >= 3 or any(ch.isdigit() for ch in message):
-            return PilotSurveyAnswerGateResult(
-                answer_accepted=True,
-                confidence=0.72,
-                reason="heuristic_informative_message",
-            )
-
-        return PilotSurveyAnswerGateResult(
-            answer_accepted=False,
-            confidence=0.60,
-            reason="heuristic_low_information",
-        )
 
     @staticmethod
     def _min_confidence(answer_gate: Dict[str, Any]) -> float:
