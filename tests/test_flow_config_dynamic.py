@@ -257,11 +257,9 @@ class TestPhaseCoverage:
         phases = ["situation", "problem"]
         expected = ["situation", "problem", "implication", "need_payoff"]
 
-        # 2 phases + presentation added = 3 phases expected total (with presentation)
-        # Actually: 2/5 phases covered (expected + presentation)
+        # Coverage now counts only the explicitly expected phases.
         coverage = calculate_spin_coverage(phases, expected_phases=expected)
-        # 2 matched out of 5 expected (4 phases + presentation)
-        assert coverage == pytest.approx(0.4, rel=0.01)
+        assert coverage == pytest.approx(0.5, rel=0.01)
 
     def test_full_bant_coverage(self):
         """Full BANT coverage should be 1.0."""

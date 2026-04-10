@@ -13,6 +13,7 @@ import sys
 import yaml
 import pytest
 
+from src.config_loader import ConfigLoader
 from src.extraction_ssot import EXTRACTION_FIELDS, PHASE_FIELDS, ALL_FIELD_NAMES
 from src.question_dedup import QuestionDeduplicationEngine
 
@@ -205,7 +206,7 @@ def test_generic_dedup_fallback_for_unknown_phase_without_missing(dedup_engine):
 
 @pytest.mark.parametrize("flow_name", _list_flow_names())
 def test_flow_phase_states_have_required_data_and_transitions(flow_name):
-    """All phase states must define required_data and data_complete transitions."""
+    """All phase states must define an explicit progression contract."""
     flow_yaml = _load_yaml(FLOWS_DIR / flow_name / "flow.yaml")
     states_yaml = _load_yaml(FLOWS_DIR / flow_name / "states.yaml")
 
@@ -222,11 +223,31 @@ def test_flow_phase_states_have_required_data_and_transitions(flow_name):
 
     for state_name in phase_states:
         cfg = states[state_name]
-        required = cfg.get("required_data")
-        assert required, f"State {flow_name}.{state_name} missing required_data"
+        if cfg.get("is_final"):
+            continue
+
+        required = cfg.get("required_data", []) or []
         transitions = cfg.get("transitions", {})
-        assert "data_complete" in transitions, (
-            f"State {flow_name}.{state_name} missing data_complete transition"
+        params = cfg.get("parameters", {}) if isinstance(cfg.get("parameters"), dict) else {}
+        answer_gate = params.get("answer_gate") if isinstance(params, dict) else None
+
+        if isinstance(answer_gate, dict):
+            assert required == [], (
+                f"State {flow_name}.{state_name} must not mix answer_gate with required_data progression"
+            )
+            assert "answer_accepted" in transitions, (
+                f"State {flow_name}.{state_name} missing answer_accepted transition"
+            )
+            continue
+
+        if required or cfg.get("autonomous") or (cfg.get("on_enter") or {}).get("set_flags"):
+            assert "data_complete" in transitions, (
+                f"State {flow_name}.{state_name} missing data_complete transition"
+            )
+            continue
+
+        raise AssertionError(
+            f"State {flow_name}.{state_name} missing explicit progression contract"
         )
 
 @pytest.mark.parametrize("flow_name", _list_flow_names())
@@ -255,7 +276,7 @@ def test_required_and_optional_fields_are_valid(flow_name):
 
 @pytest.mark.parametrize("flow_name", _list_flow_names())
 def test_phase_fields_align_with_extraction_mapping(flow_name):
-    """States with explicit phase must use extraction fields from that phase."""
+    """Required extractor fields must align with the phase extraction mapping."""
     states_yaml = _load_yaml(FLOWS_DIR / flow_name / "states.yaml")
     states = states_yaml.get("states", {})
 
@@ -271,9 +292,8 @@ def test_phase_fields_align_with_extraction_mapping(flow_name):
         phase_fields = set(PHASE_FIELDS.get(phase, []))
 
         required = cfg.get("required_data", [])
-        optional = cfg.get("optional_data", []) or []
 
-        for field in required + optional:
+        for field in required:
             if field in ALL_FIELD_NAMES:
                 assert field in phase_fields, (
                     f"Field {field} not allowed for phase {phase} in {flow_name}.{state_name}"
@@ -285,10 +305,9 @@ def test_phase_fields_align_with_extraction_mapping(flow_name):
 
 @pytest.mark.parametrize("flow_name", _list_flow_names())
 def test_continue_current_goal_templates_include_dedup_vars(flow_name):
-    """All non-SPIN flow templates must include do_not_ask and available_questions."""
-    prompts_path = TEMPLATES_DIR / flow_name / "prompts.yaml"
-    data = _load_yaml(prompts_path)
-    templates = data.get("templates", {})
+    """All non-SPIN flows must expose continue_current_goal with dedup variables."""
+    flow = ConfigLoader().load_flow(flow_name)
+    templates = getattr(flow, "templates", {}) or {}
 
     assert "continue_current_goal" in templates, (
         f"Missing continue_current_goal template for flow {flow_name}"

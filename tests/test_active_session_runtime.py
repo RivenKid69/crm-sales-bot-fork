@@ -185,6 +185,56 @@ class TestSessionManagerActiveRuntime:
         manager.get_or_create("s1", llm=mock_llm, client_id="c1")
         assert manager.touch("s1", client_id="c1", is_final=None) is True
 
+    def test_restart_session_with_status_replaces_active_flow_with_fresh_bot(self, mock_llm, tmp_path):
+        manager, _ = _mk_manager(tmp_path)
+        first = manager.get_or_create_with_status(
+            "s1",
+            llm=mock_llm,
+            client_id="c1",
+            flow_name="autonomous",
+        )
+        first.bot.state_machine.state = "autonomous_discovery"
+
+        restarted = manager.restart_session_with_status(
+            "s1",
+            llm=mock_llm,
+            client_id="c1",
+            flow_name="pilot_survey",
+        )
+        cached = manager.get_or_create_with_status(
+            "s1",
+            llm=mock_llm,
+            client_id="c1",
+            flow_name="pilot_survey",
+        )
+
+        assert restarted.source == "restart"
+        assert restarted.bot is not first.bot
+        assert restarted.bot._flow.name == "pilot_survey"
+        assert restarted.bot.state_machine.state == "survey_consent"
+        assert cached.bot is restarted.bot
+
+    def test_get_or_create_with_status_uses_default_flow_only_for_new_session(self, mock_llm, tmp_path):
+        manager, _ = _mk_manager(tmp_path)
+        first = manager.get_or_create_with_status(
+            "s1",
+            llm=mock_llm,
+            client_id="c1",
+            default_flow_name="pilot_survey",
+        )
+        cached = manager.get_or_create_with_status(
+            "s1",
+            llm=mock_llm,
+            client_id="c1",
+            default_flow_name="autonomous",
+        )
+
+        assert first.source == "new"
+        assert first.bot._flow.name == "pilot_survey"
+        assert cached.source == "cache"
+        assert cached.bot is first.bot
+        assert cached.bot._flow.name == "pilot_survey"
+
     def test_close_all_sessions_serializes_cached_dialogs(self, mock_llm, tmp_path):
         manager, buf = _mk_manager(tmp_path)
         manager.get_or_create("s1", llm=mock_llm, client_id="c1")
@@ -306,6 +356,8 @@ class _FakeApiBot:
     def __init__(self):
         self.process_calls = []
         self.hydrated = 0
+        self.start_calls = 0
+        self.start_message = ""
         self.state_machine = SimpleNamespace(is_final=lambda: False)
 
     def process(self, text, *, media_turn_context=None):
@@ -315,6 +367,10 @@ class _FakeApiBot:
     def hydrate_external_memory(self, *, profile_data=None, media_cards=None):
         self.hydrated += 1
 
+    def build_outbound_start_message(self):
+        self.start_calls += 1
+        return self.start_message
+
 
 class _FakeApiManager:
     def __init__(self, bot, *, serialize_result=0, acquire_source_sequence=None):
@@ -322,11 +378,13 @@ class _FakeApiManager:
         self.serialize_result = serialize_result
         self.acquire_source_sequence = list(acquire_source_sequence or ["new", "cache"])
         self.calls = 0
+        self.restart_calls = 0
         self.touches = []
         self.serialize_calls = []
         self.run_jobs = []
         self.flush_calls = []
         self.acquire_kwargs = []
+        self.restart_kwargs = []
 
     def serialize_inactive_final_sessions(self, idle_seconds):
         self.serialize_calls.append(idle_seconds)
@@ -345,6 +403,11 @@ class _FakeApiManager:
             else self.acquire_source_sequence[-1]
         )
         return SimpleNamespace(bot=self.bot, source=source)
+
+    def restart_session_with_status(self, *args, **kwargs):
+        self.restart_calls += 1
+        self.restart_kwargs.append(dict(kwargs))
+        return SimpleNamespace(bot=self.bot, source="restart")
 
     def touch(self, session_id, *, client_id=None, is_final=None):
         self.touches.append((session_id, client_id, is_final))
@@ -758,3 +821,141 @@ class TestApiActiveRuntime:
         assert bootstrap_calls == []
         assert saved_profiles == []
         assert saved_media == []
+
+    def test_process_request_outbound_start_uses_requested_flow_and_skips_user_turn(self, monkeypatch):
+        _ensure_fastapi_stubs()
+        import src.api as api_mod
+
+        bot = _FakeApiBot()
+        bot.start_message = "Здравствуйте! Хотим коротко уточнить, как у вас проходит пилот. Вам сейчас удобно?"
+        manager = _FakeApiManager(bot, acquire_source_sequence=["new"])
+        bootstrap_calls = []
+
+        monkeypatch.setattr(api_mod, "_session_manager", manager)
+        monkeypatch.setattr(api_mod, "_llm", object())
+        monkeypatch.setattr(api_mod, "_bootstrap_bot_memory", lambda *_args, **_kwargs: bootstrap_calls.append(True))
+        monkeypatch.setattr(api_mod, "_save_user_profile", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(api_mod, "_save_media_knowledge", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(
+            api_mod,
+            "prepare_autonomous_incoming_message",
+            lambda **_kwargs: (_ for _ in ()).throw(AssertionError("prepare_autonomous_incoming_message should not run for outbound start")),
+        )
+
+        req = api_mod.ProcessRequest(
+            session_id="pilot-session",
+            user_id="77710107606",
+            flow_name="pilot_survey",
+            start=True,
+            message=api_mod.MessagePayload(text=""),
+        )
+
+        result = api_mod._process_message_request(req)
+
+        assert result["answer"] == bot.start_message
+        assert result["meta"]["flow_name"] == "pilot_survey"
+        assert result["meta"]["start"] is True
+        assert manager.run_jobs == [("pilot-session", "77710107606")]
+        assert manager.acquire_kwargs[0]["flow_name"] == "pilot_survey"
+        assert bot.process_calls == []
+        assert bot.start_calls == 1
+        assert bootstrap_calls == [True]
+        assert manager.touches == [("pilot-session", "77710107606", False)]
+
+    def test_process_request_start_pilot_command_restarts_flow_and_skips_user_turn(self, monkeypatch):
+        _ensure_fastapi_stubs()
+        import src.api as api_mod
+
+        bot = _FakeApiBot()
+        bot.start_message = "Здравствуйте! Это отдел контроля качества Wipon.\n\nВам сейчас удобно начать опрос?"
+        manager = _FakeApiManager(bot, acquire_source_sequence=["cache"])
+
+        monkeypatch.setattr(api_mod, "_session_manager", manager)
+        monkeypatch.setattr(api_mod, "_llm", object())
+        monkeypatch.setattr(api_mod, "_bootstrap_bot_memory", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(api_mod, "_save_user_profile", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(api_mod, "_save_media_knowledge", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(
+            api_mod,
+            "prepare_autonomous_incoming_message",
+            lambda **_kwargs: (_ for _ in ()).throw(AssertionError("prepare_autonomous_incoming_message should not run for /start_pilot")),
+        )
+
+        req = api_mod.ProcessRequest(
+            channel="api",
+            session_id="test_10",
+            user_id="77710993639@c.us",
+            message=api_mod.MessagePayload(text="/start_pilot"),
+        )
+
+        result = api_mod._process_message_request(req)
+
+        assert result["answer"] == bot.start_message
+        assert result["meta"]["flow_name"] == "pilot_survey"
+        assert result["meta"]["start"] is True
+        assert manager.run_jobs == [("test_10", "77710993639@c.us")]
+        assert manager.calls == 0
+        assert manager.restart_calls == 1
+        assert manager.restart_kwargs[0]["flow_name"] == "pilot_survey"
+        assert manager.restart_kwargs[0]["assume_locked"] is True
+        assert bot.process_calls == []
+        assert bot.start_calls == 1
+        assert manager.touches == [("test_10", "77710993639@c.us", False)]
+
+    def test_process_request_without_explicit_flow_keeps_active_flow(self, monkeypatch):
+        _ensure_fastapi_stubs()
+        import src.api as api_mod
+
+        bot = _FakeApiBot()
+        bot._flow = SimpleNamespace(name="pilot_survey")
+        manager = _FakeApiManager(bot, acquire_source_sequence=["cache"])
+
+        monkeypatch.setattr(api_mod, "_session_manager", manager)
+        monkeypatch.setattr(api_mod, "_llm", object())
+        monkeypatch.setattr(api_mod, "_bootstrap_bot_memory", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(api_mod, "_save_user_profile", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(api_mod, "_save_media_knowledge", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(
+            api_mod,
+            "prepare_autonomous_incoming_message",
+            lambda **_kwargs: SimpleNamespace(
+                text="Да, удобно, давайте.",
+                media_used=False,
+                used_attachments=[],
+                skipped_attachments=[],
+                media_turn_context=None,
+            ),
+        )
+
+        req = api_mod.ProcessRequest(
+            channel="api",
+            session_id="test_10",
+            user_id="77710993639@c.us",
+            message=api_mod.MessagePayload(text="Да, удобно, давайте."),
+        )
+
+        result = api_mod._process_message_request(req)
+
+        assert result["meta"]["flow_name"] == "pilot_survey"
+        assert manager.acquire_kwargs[0]["flow_name"] is None
+        assert manager.acquire_kwargs[0]["default_flow_name"] == "autonomous"
+        assert manager.restart_calls == 0
+        assert bot.process_calls == [("Да, удобно, давайте.", None)]
+
+    def test_process_request_outbound_start_rejects_nonempty_user_message(self, monkeypatch):
+        _ensure_fastapi_stubs()
+        import src.api as api_mod
+
+        monkeypatch.setattr(api_mod, "_llm", object())
+        monkeypatch.setattr(api_mod, "_session_manager", _FakeApiManager(_FakeApiBot()))
+
+        req = api_mod.ProcessRequest(
+            session_id="pilot-session",
+            user_id="77710107606",
+            flow_name="pilot_survey",
+            start=True,
+            message=api_mod.MessagePayload(text="Здравствуйте"),
+        )
+
+        with pytest.raises(api_mod.APIError, match="must not include user text or attachments"):
+            api_mod._process_message_request(req)

@@ -76,6 +76,8 @@ DEFAULT_USER_AGENT = os.environ.get(
     "CRM-Sales-Bot-Live-E2E/1.0 (+real-payload-sula)",
 )
 DEFAULT_CLIENT_IP = os.environ.get("E2E_CLIENT_IP", "203.0.113.77")
+DEFAULT_REQUEST_MODE = os.environ.get("E2E_REQUEST_MODE", "auto")
+DEFAULT_FLOW_NAME = os.environ.get("E2E_FLOW_NAME", "")
 DEBUG_TRACE_HEADER = "X-E2E-Debug-Trace"
 DEBUG_TRACE_ENABLED_VALUE = "1"
 
@@ -123,6 +125,16 @@ def parse_args() -> argparse.Namespace:
         help="Полный URL process endpoint. По умолчанию: %(default)s",
     )
     parser.add_argument(
+        "--request-mode",
+        choices=("auto", "sula", "default"),
+        default=DEFAULT_REQUEST_MODE,
+        help=(
+            "Какой формат тела запроса использовать. "
+            "`sula` — legacy Sula payload, `default` — каноничный ProcessRequest, "
+            "`auto` переключается на `default`, если задан flow_name или outbound-start."
+        ),
+    )
+    parser.add_argument(
         "--prod-like",
         action="store_true",
         help="Включить режим, максимально похожий на реальный внешний Sula-клиент.",
@@ -141,6 +153,19 @@ def parse_args() -> argparse.Namespace:
         "--session",
         default="",
         help="Если задан, принудительно подменяет session во всех событиях.",
+    )
+    parser.add_argument(
+        "--flow-name",
+        default=DEFAULT_FLOW_NAME,
+        help="Явный flow_name для каноничного ProcessRequest. Например: pilot_survey.",
+    )
+    parser.add_argument(
+        "--outbound-start",
+        action="store_true",
+        help=(
+            "Перед первым пользовательским ходом отправить отдельный ProcessRequest со start=true. "
+            "Используется для flow вроде pilot_survey."
+        ),
     )
     parser.add_argument(
         "--phone",
@@ -291,6 +316,15 @@ def apply_prod_like_defaults(args: argparse.Namespace) -> None:
         args.expected_model = ""
 
 
+def resolve_request_mode(args: argparse.Namespace) -> str:
+    mode = str(args.request_mode or "auto").strip().lower()
+    if mode in {"sula", "default"}:
+        return mode
+    if str(args.flow_name or "").strip() or bool(args.outbound_start):
+        return "default"
+    return "sula"
+
+
 def parse_extra_headers(raw_headers: list[str]) -> dict[str, str]:
     parsed: dict[str, str] = {}
     for raw in raw_headers:
@@ -433,6 +467,79 @@ def fetch_json_or_text(response: requests.Response) -> Any:
         return response.json()
     except Exception:
         return response.text
+
+
+def build_default_process_payload(
+    event: dict[str, Any],
+    *,
+    flow_name: str,
+    start: bool,
+) -> dict[str, Any]:
+    return {
+        "session_id": event["session"],
+        "user_id": event["cleint_phone"],
+        "flow_name": str(flow_name or ""),
+        "start": bool(start),
+        "message": {
+            "text": "" if start else event["client_text"],
+            "timestamp_ms": int(event["timestamp"]),
+        },
+    }
+
+
+def build_turn_requests(
+    events: list[dict[str, Any]],
+    *,
+    flow_name: str,
+    request_mode: str,
+    outbound_start: bool,
+) -> list[dict[str, Any]]:
+    if not events:
+        return []
+
+    requests_to_send: list[dict[str, Any]] = []
+    if outbound_start:
+        if request_mode != "default":
+            raise ValueError("outbound-start поддерживается только в request-mode=default")
+        first = events[0]
+        start_event = {
+            "id": f"{first['id']}_start",
+            "timestamp": max(0, int(first["timestamp"]) - 1),
+            "session": first["session"],
+            "client_text": "",
+            "cleint_phone": first["cleint_phone"],
+            "kind": "outbound_start",
+        }
+        requests_to_send.append(
+            {
+                "kind": "outbound_start",
+                "event": start_event,
+                "payload": build_default_process_payload(
+                    start_event,
+                    flow_name=flow_name,
+                    start=True,
+                ),
+            }
+        )
+
+    for event in events:
+        kind = "user_turn"
+        if request_mode == "default":
+            payload = build_default_process_payload(
+                event,
+                flow_name=flow_name,
+                start=False,
+            )
+        else:
+            payload = [event]
+        requests_to_send.append(
+            {
+                "kind": kind,
+                "event": event,
+                "payload": payload,
+            }
+        )
+    return requests_to_send
 
 
 def ensure_output_dir(path_arg: str) -> Path:
@@ -616,6 +723,9 @@ def render_markdown(
     preflight_data: dict[str, Any],
     run_id: str,
     events: list[dict[str, Any]],
+    request_mode: str,
+    flow_name: str,
+    outbound_start: bool,
     trace: list[dict[str, Any]],
 ) -> str:
     preflight_skipped = bool(preflight_data.get("skipped"))
@@ -630,6 +740,9 @@ def render_markdown(
         f"- Process URL: `{process_url}`",
         f"- Run ID: `{run_id}`",
         f"- Total turns: `{len(events)}`",
+        f"- Request mode: `{request_mode}`",
+        f"- Flow name: `{flow_name or '<default>'}`",
+        f"- Outbound start: `{bool(outbound_start)}`",
         f"- Generated at: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`",
         "",
         "## Preflight",
@@ -653,10 +766,11 @@ def render_markdown(
                 f"- Session: `{item['request_event']['session']}`",
                 f"- Phone: `{item['request_event']['cleint_phone']}`",
                 f"- Timestamp: `{item['request_event']['timestamp']}`",
+                f"- Request kind: `{item.get('request_kind', 'user_turn')}`",
                 f"- HTTP status: `{item['status_code']}`",
                 f"- Latency ms: `{item['latency_ms']}`",
                 "",
-                f"Client: {item['request_event']['client_text']}",
+                f"Client: {item['request_event']['client_text'] or '<outbound_start>'}",
                 "",
                 f"Bot: {item['ai_text'] or '<empty>'}",
                 "",
@@ -669,6 +783,7 @@ def render_markdown(
 def main() -> int:
     args = parse_args()
     apply_prod_like_defaults(args)
+    request_mode = resolve_request_mode(args)
     output_dir = ensure_output_dir(args.output_dir)
     run_id = make_run_id()
     events = apply_run_identity(
@@ -677,6 +792,12 @@ def main() -> int:
         append_run_id_to_session=args.append_run_id_to_session,
         randomize_event_ids=args.randomize_event_ids,
         rebase_timestamps_to_now=args.rebase_timestamps_to_now,
+    )
+    turn_requests = build_turn_requests(
+        events,
+        flow_name=str(args.flow_name or "").strip(),
+        request_mode=request_mode,
+        outbound_start=bool(args.outbound_start),
     )
     base_headers = build_base_headers(args)
 
@@ -701,7 +822,8 @@ def main() -> int:
             print(f"[preflight] health={preflight_data['health_status']} ready={preflight_data['ready_status']}")
 
         previous_timestamp = None
-        for turn_number, event in enumerate(events, start=1):
+        for turn_number, turn in enumerate(turn_requests, start=1):
+            event = turn["event"]
             if previous_timestamp is not None and args.respect_input_gaps:
                 raw_gap = max(0, int(event["timestamp"]) - int(previous_timestamp))
                 sleep_ms = min(raw_gap, max(0, args.max_gap_sleep_ms))
@@ -711,6 +833,10 @@ def main() -> int:
                 time.sleep(args.inter_turn_delay_ms / 1000.0)
 
             payload = [event]
+            if request_mode == "default":
+                payload = turn["payload"]
+            else:
+                payload = turn["payload"]
             request_headers = dict(base_headers)
             request_headers["X-Request-ID"] = f"live-e2e-{run_id}-turn-{turn_number:02d}"
             sent_at = datetime.now().isoformat(timespec="seconds")
@@ -737,6 +863,7 @@ def main() -> int:
             trace_item = {
                 "turn": turn_number,
                 "request_headers": request_headers,
+                "request_kind": turn["kind"],
                 "request_event": event,
                 "request_payload": payload,
                 "sent_at": sent_at,
@@ -769,9 +896,12 @@ def main() -> int:
             "run_id": run_id,
             "prod_like": bool(args.prod_like),
             "process_url": args.process_url,
+            "request_mode": request_mode,
+            "flow_name": str(args.flow_name or ""),
+            "outbound_start": bool(args.outbound_start),
             "expected_model": args.expected_model,
             "output_dir": str(output_dir),
-            "turns_sent": len(events),
+            "turns_sent": len(turn_requests),
             "session_ids": sorted({event["session"] for event in events}),
             "phones": sorted({event["cleint_phone"] for event in events}),
             "user_agent": args.user_agent,
@@ -800,6 +930,9 @@ def main() -> int:
                 preflight_data=preflight_data,
                 run_id=run_id,
                 events=events,
+                request_mode=request_mode,
+                flow_name=str(args.flow_name or ""),
+                outbound_start=bool(args.outbound_start),
                 trace=trace,
             ),
             encoding="utf-8",

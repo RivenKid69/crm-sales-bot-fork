@@ -326,6 +326,25 @@ class TestFeatureFlagIntegration:
 
         assert result.was_modified or result.processed == response
 
+    def test_generator_runtime_no_longer_rewrites_generated_openings(self):
+        """Runtime should keep generated phrasing intact and rely on prompt guardrails."""
+        from src.feature_flags import flags
+        from src.generator import ResponseGenerator
+
+        generator = ResponseGenerator(llm=MagicMock())
+        response = "Понимаю, как это может замедлить работу на старте."
+
+        flags.set_override("response_diversity", True)
+        try:
+            processed = generator._apply_diversity(
+                response,
+                {"state": "survey_q6", "intent": "problem_shared", "frustration_level": 0},
+            )
+        finally:
+            flags.clear_override("response_diversity")
+
+        assert processed == response
+
 # =============================================================================
 # CONFIGURATION TESTS
 # =============================================================================

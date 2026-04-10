@@ -1,5 +1,5 @@
 """
-REST API обёртка для CRM Sales Bot (Production — autonomous flow).
+REST API обёртка для CRM Sales Bot.
 Пайплайн: WIPON → n8n → Redis → POST /api/v1/process → ответ
 
 Запуск: API_KEY=<secret> uvicorn src.api:app --host 127.0.0.1 --port 8000
@@ -60,6 +60,9 @@ ACTIVE_SESSION_FINAL_IDLE_SECONDS = int(
 ACTIVE_SESSION_SWEEP_INTERVAL_SECONDS = float(
     os.environ.get("ACTIVE_SESSION_SWEEP_INTERVAL_SECONDS", "60")
 )
+DEFAULT_PROCESS_FLOW_NAME = "autonomous"
+OUTBOUND_START_SUPPORTED_FLOWS = frozenset({"pilot_survey"})
+PILOT_SURVEY_START_COMMANDS = frozenset({"/start_pilot"})
 
 _llm = None
 _session_manager: SessionManager | None = None
@@ -807,6 +810,8 @@ class ProcessRequest(BaseModel):
     channel: str = "whatsapp"
     session_id: str
     user_id: str
+    flow_name: str = ""
+    start: bool = False
     message: MessagePayload
     context: ContextPayload = Field(default_factory=ContextPayload)
 
@@ -886,18 +891,66 @@ def _render_sula_response(response: dict, normalized: dict, wrap_in_list: bool) 
     return [payload] if wrap_in_list else payload
 
 
+def _resolve_request_flow_name(req: ProcessRequest) -> str | None:
+    explicit = str(getattr(req, "flow_name", "") or "").strip()
+    if explicit:
+        return explicit
+
+    meta = getattr(getattr(req, "context", None), "meta", None)
+    if isinstance(meta, dict):
+        meta_flow = str(meta.get("flow_name") or meta.get("flow") or "").strip()
+        if meta_flow:
+            return meta_flow
+
+    return None
+
+
+def _bot_flow_name(bot, fallback: str | None = None) -> str:
+    flow = getattr(bot, "_flow", None)
+    flow_name = getattr(flow, "name", None)
+    return str(flow_name or fallback or DEFAULT_PROCESS_FLOW_NAME)
+
+
+def _is_pilot_survey_start_command(req: ProcessRequest) -> bool:
+    if req.start:
+        return False
+    if req.message.attachments:
+        return False
+    text = str(req.message.text or "").strip().lower()
+    return text in PILOT_SURVEY_START_COMMANDS
+
+
 def _process_message_request(req: ProcessRequest) -> dict:
-    if not req.message.text.strip() and not req.message.attachments:
+    start_pilot_command = _is_pilot_survey_start_command(req)
+    requested_flow = "pilot_survey" if start_pilot_command else _resolve_request_flow_name(req)
+    outbound_start_requested = bool(req.start or start_pilot_command)
+
+    if req.start:
+        if req.message.text.strip() or req.message.attachments:
+            raise APIError(
+                400,
+                "BAD_REQUEST",
+                "Outbound start request must not include user text or attachments",
+            )
+        if requested_flow not in OUTBOUND_START_SUPPORTED_FLOWS:
+            raise APIError(
+                400,
+                "BAD_REQUEST",
+                f"Outbound start is supported only for flows: {sorted(OUTBOUND_START_SUPPORTED_FLOWS)}",
+            )
+    elif not start_pilot_command and not req.message.text.strip() and not req.message.attachments:
         raise APIError(400, "BAD_REQUEST", "message.text must not be empty when attachments are absent")
 
     start = time.time()
-    prepared_message = prepare_autonomous_incoming_message(
-        user_text=req.message.text,
-        attachments=[item.model_dump(exclude_none=True) for item in req.message.attachments],
-        llm=_llm,
-    )
-    if not prepared_message.text.strip() and not prepared_message.media_used:
-        raise APIError(400, "BAD_REQUEST", "message must contain text or a supported attachment")
+    prepared_message = None
+    if not outbound_start_requested:
+        prepared_message = prepare_autonomous_incoming_message(
+            user_text=req.message.text,
+            attachments=[item.model_dump(exclude_none=True) for item in req.message.attachments],
+            llm=_llm,
+        )
+        if not prepared_message.text.strip() and not prepared_message.media_used:
+            raise APIError(400, "BAD_REQUEST", "message must contain text or a supported attachment")
 
     if _session_manager is None:
         raise APIError(503, "SERVICE_UNAVAILABLE", "Session manager is not initialized")
@@ -912,20 +965,52 @@ def _process_message_request(req: ProcessRequest) -> dict:
             idle_seconds=ACTIVE_SESSION_FINAL_IDLE_SECONDS,
         )
 
-    def _run_turn() -> tuple[dict, int]:
-        acquire = _session_manager.get_or_create_with_status(
-            req.session_id,
-            llm=_llm,
-            client_id=req.user_id,
-            flow_name="autonomous",
-            config_name="default",
-            enable_tracing=True,
-            assume_locked=True,
-        )
+    def _run_turn() -> tuple[dict, int, str]:
+        if start_pilot_command:
+            acquire = _session_manager.restart_session_with_status(
+                req.session_id,
+                llm=_llm,
+                client_id=req.user_id,
+                flow_name=requested_flow,
+                config_name="default",
+                enable_tracing=True,
+                assume_locked=True,
+            )
+        else:
+            acquire = _session_manager.get_or_create_with_status(
+                req.session_id,
+                llm=_llm,
+                client_id=req.user_id,
+                flow_name=requested_flow,
+                default_flow_name=DEFAULT_PROCESS_FLOW_NAME,
+                config_name="default",
+                enable_tracing=True,
+                assume_locked=True,
+            )
         bot = acquire.bot
+        actual_flow_name = _bot_flow_name(bot, requested_flow)
         use_cross_session_memory = _should_use_cross_session_memory(req.channel)
         if acquire.source == "new" and use_cross_session_memory:
             _bootstrap_bot_memory(bot, user_id=req.user_id)
+
+        if outbound_start_requested:
+            try:
+                response = bot.build_outbound_start_message()
+            except RuntimeError as err:
+                raise APIError(409, "CONFLICT", str(err)) from err
+            if not response:
+                raise APIError(
+                    400,
+                    "BAD_REQUEST",
+                    f"Flow '{requested_flow}' does not support outbound start messages",
+                )
+            processing_ms = int((time.time() - start) * 1000)
+            _session_manager.touch(
+                req.session_id,
+                client_id=req.user_id,
+                is_final=bot.state_machine.is_final(),
+            )
+            return {"response": response, "decision_trace": None}, processing_ms, actual_flow_name
 
         media_turn_context = prepared_message.media_turn_context
         if media_turn_context is not None:
@@ -950,9 +1035,9 @@ def _process_message_request(req: ProcessRequest) -> dict:
         if use_cross_session_memory:
             _save_user_profile(req.session_id, req.user_id, bot)
             _save_media_knowledge(req.session_id, req.user_id, bot)
-        return result, processing_ms
+        return result, processing_ms, actual_flow_name
 
-    result, processing_ms = _session_manager.run_session_job(
+    result, processing_ms, actual_flow_name = _session_manager.run_session_job(
         req.session_id,
         client_id=req.user_id,
         job=_run_turn,
@@ -970,10 +1055,12 @@ def _process_message_request(req: ProcessRequest) -> dict:
         "meta": {
             "model": settings.llm.model,
             "processing_ms": processing_ms,
+            "flow_name": actual_flow_name,
+            "start": bool(outbound_start_requested),
             "kb_used": kb_used,
-            "media_used": prepared_message.media_used,
-            "attachments_used": len(prepared_message.used_attachments),
-            "attachments_skipped": len(prepared_message.skipped_attachments),
+            "media_used": prepared_message.media_used if prepared_message is not None else False,
+            "attachments_used": len(prepared_message.used_attachments) if prepared_message is not None else 0,
+            "attachments_skipped": len(prepared_message.skipped_attachments) if prepared_message is not None else 0,
         },
     }
 
@@ -1008,11 +1095,11 @@ def ready():
 @app.post("/api/v1/process/sula", dependencies=[Depends(verify_api_key)])
 async def process_message(request: Request):
     """
-    Обработка одного хода autonomous-диалога через live in-memory session runtime.
+    Обработка одного хода диалога через live in-memory session runtime.
 
     На hot path:
     1. Найти или создать живую сессию по `(session_id, user_id)`.
-    2. Выполнить ход под per-session lock без snapshot roundtrip на каждый запрос.
+    2. Выполнить outbound-start или обычный ход под per-session lock без snapshot roundtrip на каждый запрос.
     3. Обновить профиль/медиа-память и вернуть `{answer, meta}`.
 
     Snapshot используется только как cold-restore / idle-final fallback и при shutdown.

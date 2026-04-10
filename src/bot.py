@@ -77,7 +77,9 @@ from src.media_turn_context import (
     scrub_media_extracted_data,
     scrub_media_fact_list,
 )
+from src.pilot_survey_response_plan import build_pilot_survey_response_plan
 from src.response_routing_contract import (
+    AUTONOMOUS_RESPONSE_TEMPLATE_KEYS,
     build_response_routing_context,
     is_autonomous_response_context,
 )
@@ -115,6 +117,11 @@ from src.decision_trace import (
 
 
 MEDIA_PROFILE_SAFE_FIELDS: Set[str] = set(MEDIA_PROFILE_SAFE_FIELDS_SET)
+PILOT_SURVEY_TRAILING_QUESTION_RE = re.compile(
+    r"^(?:подскажите|скажите|уточните|какой|какая|какие|каково|сколько|"
+    r"что|где|когда|почему|зачем|можете|можно ли|хотите)\b",
+    re.IGNORECASE,
+)
 
 
 class _LegacyHistoryCompatView(MutableSequence):
@@ -445,6 +452,214 @@ class SalesBot:
         self._decision_traces = []
 
         logger.info("SalesBot reset", conversation_id=self.conversation_id)
+
+    def build_outbound_start_message(self) -> str:
+        """
+        Build deterministic outbound greeting for pilot_survey without a synthetic user turn.
+
+        For regular flows this returns an empty string. The caller can send the
+        returned text before waiting for the first client response.
+        """
+        if not (self._flow and self._flow.name == "pilot_survey"):
+            return ""
+
+        entry_state = self._flow.get_entry_point("default")
+        if len(self.transcript) > 0:
+            raise RuntimeError(
+                "pilot_survey outbound start is allowed only before the first committed turn"
+            )
+        if self.state_machine.state not in {entry_state, "greeting"}:
+            raise RuntimeError(
+                "pilot_survey outbound start cannot reset an active survey session"
+            )
+        if self.last_bot_message and self.state_machine.state == entry_state:
+            return self.last_bot_message
+        if self.state_machine.state != entry_state:
+            self.state_machine.transition_to(
+                next_state=entry_state,
+                action="pilot_survey_start",
+                source="pilot_survey_outbound_start",
+            )
+        else:
+            self.state_machine.current_phase = self._flow.get_phase_for_state(entry_state)
+
+        entry_config = self._flow.states.get(entry_state, {})
+        params = entry_config.get("_resolved_params", {}) if isinstance(entry_config, dict) else {}
+        greeting = self._build_pilot_survey_outbound_greeting(
+            str(self._flow.variables.get("outbound_greeting") or "")
+        )
+        question = str(params.get("deterministic_question") or "").strip()
+        response = "\n\n".join(part for part in (greeting, question) if part)
+        if response:
+            self.last_bot_message = response
+        return response
+
+    def _build_pilot_survey_outbound_greeting(self, source_text: str) -> str:
+        return self._rewrite_pilot_survey_text(
+            source_text=source_text,
+            purpose="pilot_survey_outbound_greeting_rewrite",
+            prompt_intro=(
+                "Ты готовишь первое исходящее сообщение для клиента в pilot survey.\n"
+                "Нужно переформулировать исходный текст по-русски, сохранив весь смысл.\n"
+                "Обязательные требования:\n"
+                "- сохрани точные якоря: Wipon, Forte Bank, 5 дней, 8 быстрых вопросов;\n"
+                "- не добавляй новые факты, обещания, ссылки, контакты или скидки;\n"
+                "- не сокращай смысл и не теряй приглашение начать опрос;\n"
+                "- выдай только готовый текст сообщения без кавычек, пояснений и служебных пометок."
+            ),
+            validator=self._is_valid_pilot_survey_outbound_greeting,
+        )
+
+    def _rewrite_pilot_survey_final_phrase(self, source_text: str) -> str:
+        return self._rewrite_pilot_survey_text(
+            source_text=source_text,
+            purpose="pilot_survey_final_phrase_rewrite",
+            prompt_intro=(
+                "Ты готовишь очень короткое финальное сообщение после завершения pilot survey.\n"
+                "Нужно переформулировать исходный текст по-русски, сохранив смысл благодарности за ответы.\n"
+                "Обязательные требования:\n"
+                "- сохрани короткий формат и смысл благодарности за ответы;\n"
+                "- не добавляй новые факты, обещания, ссылки, контакты или скидки;\n"
+                "- не превращай сообщение в длинное прощание;\n"
+                "- выдай только готовый текст сообщения без кавычек, пояснений и служебных пометок."
+            ),
+            validator=self._is_valid_pilot_survey_final_phrase,
+        )
+
+    def _rewrite_pilot_survey_text(
+        self,
+        *,
+        source_text: str,
+        purpose: str,
+        prompt_intro: str,
+        validator,
+    ) -> str:
+        text = str(source_text or "").strip()
+        if not text:
+            return ""
+
+        llm = getattr(self.generator, "llm", None)
+        generate = getattr(llm, "generate", None)
+        if not callable(generate):
+            return text
+
+        prompt = f"{prompt_intro}\n\nИсходный текст:\n{text}\n"
+
+        try:
+            rewritten = str(
+                generate(
+                    prompt,
+                    allow_fallback=False,
+                    purpose=purpose,
+                )
+                or ""
+            ).strip()
+        except TypeError:
+            rewritten = str(generate(prompt) or "").strip()
+        except Exception as exc:
+            logger.warning("pilot survey text rewrite failed", error=str(exc), purpose=purpose)
+            return text
+
+        cleaned = rewritten.strip().strip("\"' \n\t").strip("«»")
+        if validator(cleaned, fallback=text):
+            return cleaned
+
+        logger.warning(
+            "pilot survey text rewrite rejected",
+            reason="missing_required_anchors_or_too_short",
+            purpose=purpose,
+        )
+        return text
+
+    def _prepare_pilot_survey_response_plan_for_delivery(self, plan):
+        final_phrase = str((plan.metadata or {}).get("final_phrase") or "").strip()
+        if not final_phrase:
+            return plan
+
+        rewritten_final_phrase = self._rewrite_pilot_survey_final_phrase(final_phrase)
+        if rewritten_final_phrase == final_phrase:
+            return plan
+
+        metadata = dict(plan.metadata or {})
+        metadata["final_phrase"] = rewritten_final_phrase
+        direct_response = plan.direct_response
+        suffix = plan.suffix
+        if str(direct_response or "").strip() == final_phrase:
+            direct_response = rewritten_final_phrase
+        if str(suffix or "").strip() == final_phrase:
+            suffix = rewritten_final_phrase
+        return replace(
+            plan,
+            direct_response=direct_response,
+            suffix=suffix,
+            metadata=metadata,
+        )
+
+    @staticmethod
+    def _strip_pilot_survey_follow_up_questions(response: str) -> str:
+        text = str(response or "").strip()
+        if not text:
+            return ""
+
+        parts = [
+            part.strip()
+            for part in re.split(r"(?<=[.!?])\s+", text)
+            if str(part or "").strip()
+        ]
+        if not parts:
+            return text
+
+        trimmed = list(parts)
+        while trimmed:
+            tail = trimmed[-1].strip()
+            if tail.endswith("?") or PILOT_SURVEY_TRAILING_QUESTION_RE.match(tail):
+                trimmed.pop()
+                continue
+            break
+
+        cleaned = " ".join(trimmed).strip()
+        return cleaned or text
+
+    @staticmethod
+    def _is_valid_pilot_survey_outbound_greeting(candidate: str, *, fallback: str) -> bool:
+        text = str(candidate or "").strip()
+        source = str(fallback or "").strip()
+        if not text or not source:
+            return False
+        if text == source:
+            return False
+        if len(text) < max(120, int(len(source) * 0.65)):
+            return False
+
+        lowered = text.casefold()
+        required_markers = ("wipon", "forte bank", "5", "8")
+        if any(marker not in lowered for marker in required_markers):
+            return False
+        if "опрос" not in lowered and "вопрос" not in lowered:
+            return False
+        if not text.endswith("?"):
+            return False
+        return True
+
+    @staticmethod
+    def _is_valid_pilot_survey_final_phrase(candidate: str, *, fallback: str) -> bool:
+        text = str(candidate or "").strip()
+        source = str(fallback or "").strip()
+        if not text or not source:
+            return False
+        if text == source:
+            return False
+        if len(text) < max(8, int(len(source) * 0.6)):
+            return False
+
+        lowered = text.casefold()
+        if "спасибо" not in lowered and "благодар" not in lowered:
+            return False
+        if len(text) > 80:
+            return False
+        if text[-1] not in ".!?":
+            return False
+        return True
 
     @property
     def history(self) -> MutableSequence[Dict[str, str]]:
@@ -2736,7 +2951,7 @@ class SalesBot:
         # Phase 5: Apply DialoguePolicy overlay if enabled
         # =================================================================
         policy_override = None
-        if flags.context_policy_overlays:
+        if flags.context_policy_overlays and not (self._flow and self._flow.name == "pilot_survey"):
             policy_override = self.dialogue_policy.maybe_override(sm_result, context_envelope)
         if policy_override and policy_override.has_override:
             logger.info(
@@ -2917,11 +3132,13 @@ class SalesBot:
             if action in structural_actions or action == "ask_clarification":
                 route_media_grounding_allowed = False
             current_state = self.state_machine.state
-            keep_greeting_action = (action == "greet_back" and current_state == "greeting")
+            keep_autonomous_template_action = (
+                action in AUTONOMOUS_RESPONSE_TEMPLATE_KEYS
+                and (action != "greet_back" or current_state == "greeting")
+            )
             if (
                 action not in structural_actions
-                and action != "autonomous_respond"
-                and not keep_greeting_action
+                and not keep_autonomous_template_action
             ):
                 logger.info(
                     "Autonomous action normalization: action -> autonomous_respond",
@@ -3086,6 +3303,24 @@ class SalesBot:
             requested_action=action,
             response_mode=context.get("response_mode", context.get("media_route_mode")),
         )
+        pilot_survey_plan = build_pilot_survey_response_plan(
+            flow=self._flow,
+            sm_result=sm_result,
+            context_signals=self._orchestrator.blackboard.get_context_signals(),
+            transcript=self.transcript,
+            action=action,
+        )
+        if pilot_survey_plan:
+            pilot_survey_plan = self._prepare_pilot_survey_response_plan_for_delivery(
+                pilot_survey_plan
+            )
+            context["question_mode"] = "suppress"
+            context["question_instruction"] = (
+                "Клиент сейчас в детерминированном pilot survey. "
+                "Ответь только на свободный вопрос клиента и НЕ задавай своих вопросов: "
+                "следующий survey-вопрос будет добавлен системой после генерации."
+            )
+            context["pilot_survey_response_plan"] = pilot_survey_plan.metadata
 
         # FIX: Record the final state for phase coverage tracking
         if next_state not in visited_states:
@@ -3138,6 +3373,25 @@ class SalesBot:
                 "Soft close triggered by objection handler",
                 objection_type=objection_info.get("objection_type"),
                 attempt_number=objection_info.get("attempt_number")
+            )
+        elif pilot_survey_plan and not fallback_response:
+            response_start = time.time()
+            if pilot_survey_plan.generator_required:
+                response = self.generator.generate(action, context)
+                generator_used = True
+                if (pilot_survey_plan.metadata or {}).get("company_answer_appended"):
+                    response = self._strip_pilot_survey_follow_up_questions(response)
+                response = pilot_survey_plan.compose(response)
+            else:
+                response = pilot_survey_plan.compose()
+                generator_used = False
+            response_elapsed = (time.time() - response_start) * 1000
+            cta_result = CTAResult(
+                original_response=response,
+                cta=None,
+                final_response=response,
+                cta_added=False,
+                skip_reason="pilot_survey_response_plan",
             )
         elif pre_gen and not fallback_response and action in ("autonomous_respond", "continue_current_goal"):
             pre_generated_template_key = self.generator._resolve_postprocess_template_key(
@@ -3516,7 +3770,8 @@ class SalesBot:
             response_embedding=_response_embedding,
             media_cards_to_store=current_media_cards,
             reason_codes=list(sm_result.get("reason_codes", [])),
-            source_branch="generator_response",
+            source_branch="pilot_survey_response" if pilot_survey_plan else "generator_response",
+            metadata=pilot_survey_plan.metadata if pilot_survey_plan else None,
         )
 
         # 5. Record metrics

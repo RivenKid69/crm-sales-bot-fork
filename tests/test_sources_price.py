@@ -355,6 +355,73 @@ class TestPriceQuestionSource:
         source.contribute(bb2)
         assert bb2.get_action_proposals()[0].metadata["has_pricing_data"] is True
 
+    def test_autonomous_price_question_uses_explicit_pricing_route(self, source):
+        bb = create_blackboard(
+            state="autonomous_discovery",
+            intent="price_question",
+            states={
+                "autonomous_discovery": {
+                    "autonomous": True,
+                    "goal": "Discovery",
+                    "phase": "discovery",
+                    "rules": {},
+                },
+                "_limits": {"max_consecutive_objections": 3, "max_total_objections": 5},
+            },
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_action_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "answer_with_pricing"
+        assert proposals[0].metadata["rule_source"] == "autonomous_explicit_route"
+        signals = bb.get_context_signals()
+        assert len(signals) == 1
+        assert signals[0]["price_intent_detected"] is True
+
+    def test_autonomous_pricing_details_uses_details_route(self, source):
+        bb = create_blackboard(
+            state="autonomous_discovery",
+            intent="pricing_details",
+            states={
+                "autonomous_discovery": {
+                    "autonomous": True,
+                    "goal": "Discovery",
+                    "phase": "discovery",
+                    "rules": {},
+                },
+                "_limits": {"max_consecutive_objections": 3, "max_total_objections": 5},
+            },
+        )
+
+        source.contribute(bb)
+
+        proposals = bb.get_action_proposals()
+        assert len(proposals) == 1
+        assert proposals[0].value == "answer_pricing_details"
+        assert proposals[0].metadata["rule_source"] == "autonomous_explicit_route"
+        signals = bb.get_context_signals()
+        assert len(signals) == 1
+        assert signals[0]["category"] == "pricing_details"
+
+    def test_autonomous_closing_still_skips_price_source(self, source):
+        bb = create_blackboard(
+            state="autonomous_closing",
+            intent="price_question",
+            states={
+                "autonomous_closing": {
+                    "autonomous": True,
+                    "goal": "Closing",
+                    "phase": "closing",
+                    "rules": {},
+                },
+                "_limits": {"max_consecutive_objections": 3, "max_total_objections": 5},
+            },
+        )
+
+        assert source.should_contribute(bb) is False
+
 class TestPriceQuestionSourceIntentManagement:
     """Test PriceQuestionSource intent management."""
 

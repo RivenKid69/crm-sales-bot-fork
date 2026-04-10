@@ -641,6 +641,8 @@ class EnhancedRetrievalPipeline:
                     kb=kb,
                     recently_used_keys=recently_used,
                     collected_data=collected_data,
+                    user_message=user_message,
+                    intent=intent,
                 )
 
         retriever = get_retriever()
@@ -856,6 +858,8 @@ class EnhancedRetrievalPipeline:
             kb=kb,
             recently_used_keys=state_recently_used,
             collected_data=collected_data,
+            user_message=user_message,
+            intent=intent,
         )
         remaining = self.max_kb_chars - len(query_facts_text)
         if query_facts_text:

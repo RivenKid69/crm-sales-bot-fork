@@ -64,6 +64,7 @@ BUILTIN_SOURCE_NAMES = (
     "DisambiguationSource",
     "PriceQuestionSource",
     "FactQuestionSource",
+    "PilotSurveyAnswerGateSource",
     "DataCollectorSource",
     "IntentPatternGuardSource",
     "ObjectionGuardSource",
@@ -93,6 +94,7 @@ def _get_builtin_source_specs() -> List[Dict[str, Any]]:
     from .sources.intent_processor import IntentProcessorSource
     from .sources.objection_guard import ObjectionGuardSource
     from .sources.objection_return import ObjectionReturnSource
+    from .sources.pilot_survey_answer_gate import PilotSurveyAnswerGateSource
     from .sources.phase_exhausted import PhaseExhaustedSource
     from .sources.price_question import PriceQuestionSource
     from .sources.stall_guard import StallGuardSource
@@ -134,6 +136,13 @@ def _get_builtin_source_specs() -> List[Dict[str, Any]]:
             "priority_order": 15,
             "config_key": "fact_question_source",
             "description": "Handles fact-based questions (features, integrations, technical, etc.)",
+        },
+        {
+            "source_class": PilotSurveyAnswerGateSource,
+            "name": "PilotSurveyAnswerGateSource",
+            "priority_order": 17,
+            "config_key": "pilot_survey_answer_gate",
+            "description": "Semantic answer gate for deterministic pilot survey states",
         },
         {
             "source_class": DataCollectorSource,

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "pilot_survey_consent_accept",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Да, удобно, давайте пройдём опрос."
+  },
+  {
+    "id": "pilot_survey_q1_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "В целом зарегистрировать кассу и подключить систему было легко, только шаг с подтверждением кассы сначала был непонятен."
+  },
+  {
+    "id": "pilot_survey_q2_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Да, инструкцию по настройке получили, она была понятная и в целом достаточная."
+  },
+  {
+    "id": "pilot_survey_q3_company_question",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Подскажите, пожалуйста, сколько будет стоить обслуживание после пилота?"
+  },
+  {
+    "id": "pilot_survey_q3_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Нет, в техподдержку во время настройки не обращались."
+  },
+  {
+    "id": "pilot_survey_q4_mixed_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Терминалом пользуемся и владелец, и кассир, сотрудников уже добавили через веб-кабинет. И еще подскажите, какая будет абонплата после пилота?"
+  },
+  {
+    "id": "pilot_survey_q5_unclear_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Не сразу."
+  },
+  {
+    "id": "pilot_survey_q5_clarified_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Не получилось сразу, потому что сначала не могли быстро найти нужный товар в каталоге."
+  },
+  {
+    "id": "pilot_survey_q6_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Чаще используем каталог с товарами и категориями."
+  },
+  {
+    "id": "pilot_survey_q7_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Да, товары и категории в каталог добавляли, в целом это было удобно и понятно."
+  },
+  {
+    "id": "pilot_survey_q8_answer",
+    "session": "BOT_PILOT_SURVEY_LIVE",
+    "cleint_phone": "77710107606",
+    "client_text": "Нет, ошибок или зависаний при проведении оплаты не было."
+  }
+]

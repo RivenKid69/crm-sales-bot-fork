@@ -8,6 +8,7 @@ proposals to the Blackboard during dialogue processing.
 
 Each source has a single responsibility:
 - PriceQuestionSource: Handles price-related questions with combinable actions
+- PilotSurveyAnswerGateSource: Gates deterministic pilot survey progression
 - DataCollectorSource: Tracks data completeness and proposes transitions
 - ObjectionGuardSource: Monitors objection limits per persona (Этап 7)
 - ObjectionReturnSource: Returns to previous phase after objection handling
@@ -17,6 +18,7 @@ Each source has a single responsibility:
 """
 
 from src.blackboard.sources.price_question import PriceQuestionSource
+from src.blackboard.sources.pilot_survey_answer_gate import PilotSurveyAnswerGateSource
 from src.blackboard.sources.data_collector import DataCollectorSource
 from src.blackboard.sources.objection_guard import ObjectionGuardSource
 from src.blackboard.sources.objection_return import ObjectionReturnSource
@@ -28,6 +30,7 @@ from src.blackboard.sources.autonomous_decision import AutonomousDecisionSource
 
 __all__ = [
     "PriceQuestionSource",
+    "PilotSurveyAnswerGateSource",
     "DataCollectorSource",
     "ObjectionGuardSource",
     "ObjectionReturnSource",

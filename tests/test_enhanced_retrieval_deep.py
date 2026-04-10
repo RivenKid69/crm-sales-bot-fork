@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.generator import ResponseGenerator
+from src.knowledge.autonomous_kb import load_facts_for_state
 from src.knowledge.base import KnowledgeBase, KnowledgeSection
 from src.knowledge.enhanced_retrieval import (
     ComplexityDetector,
@@ -52,7 +53,13 @@ class DummyAutonomousFlow:
     templates = {
         "custom_action": {
             "template": "{company_info}\n{retrieved_facts}\n{retrieved_urls}",
-        }
+        },
+        "autonomous_respond": {
+            "template": "{company_info}\n{retrieved_facts}\n{retrieved_urls}",
+        },
+        "answer_with_facts": {
+            "template": "{company_info}\n{retrieved_facts}\n{retrieved_urls}",
+        },
     }
 
     def get_template(self, action: str):
@@ -299,6 +306,8 @@ class TestEnhancedPipelineDeep:
 
         def fake_loader(**kwargs):
             captured["recently_used"] = set(kwargs["recently_used_keys"])
+            captured["user_message"] = kwargs["user_message"]
+            captured["intent"] = kwargs["intent"]
             return "", [], []
 
         monkeypatch.setattr(er, "load_facts_for_state", fake_loader)
@@ -315,6 +324,105 @@ class TestEnhancedPipelineDeep:
 
         assert "faq/seen" in captured["recently_used"]
         assert "pricing/tariffs" in captured["recently_used"]
+        assert captured["user_message"] == "Цена тарифа"
+        assert captured["intent"] == "price_question"
+
+
+class TestAutonomousKBBackfillAnchors:
+    def test_pricing_anchor_survives_when_pricing_category_is_last(self):
+        flow = SimpleNamespace(
+            states={
+                "autonomous_discovery": {
+                    "kb_categories": ["products", "features", "faq", "pricing"],
+                }
+            }
+        )
+        kb = KnowledgeBase(
+            company_name="Wipon",
+            company_description="CRM",
+            sections=[
+                KnowledgeSection(
+                    category="products",
+                    topic="overview",
+                    keywords=["продукт", "касса"],
+                    facts="P" * 3800,
+                    priority=10,
+                ),
+                KnowledgeSection(
+                    category="features",
+                    topic="reports",
+                    keywords=["отчёты", "аналитика"],
+                    facts="F" * 3800,
+                    priority=9,
+                ),
+                KnowledgeSection(
+                    category="faq",
+                    topic="general",
+                    keywords=["faq", "вопросы"],
+                    facts="Q" * 3800,
+                    priority=8,
+                ),
+                KnowledgeSection(
+                    category="pricing",
+                    topic="tariffs",
+                    keywords=["тариф", "цена", "mini", "lite", "standart", "pro"],
+                    facts="Mini — 5 000. Lite — 150 000. Standart — 220 000. Pro — 500 000.",
+                    priority=6,
+                ),
+            ],
+        )
+
+        facts, _, keys = load_facts_for_state(
+            state="autonomous_discovery",
+            flow_config=flow,
+            kb=kb,
+            recently_used_keys=set(),
+            user_message="Какие тарифы и сколько стоят?",
+            intent="price_question",
+        )
+
+        assert "pricing/tariffs" in keys
+        assert "[pricing/tariffs]" in facts
+
+    def test_seen_pricing_anchor_is_kept_when_category_was_recently_used(self):
+        flow = SimpleNamespace(
+            states={
+                "autonomous_discovery": {
+                    "kb_categories": ["products", "pricing"],
+                }
+            }
+        )
+        kb = KnowledgeBase(
+            company_name="Wipon",
+            company_description="CRM",
+            sections=[
+                KnowledgeSection(
+                    category="products",
+                    topic="overview",
+                    keywords=["продукт", "касса"],
+                    facts="P" * 9800,
+                    priority=10,
+                ),
+                KnowledgeSection(
+                    category="pricing",
+                    topic="tariffs",
+                    keywords=["тариф", "цена", "mini", "lite", "standart", "pro"],
+                    facts="Mini — 5 000. Lite — 150 000. Standart — 220 000. Pro — 500 000.",
+                    priority=6,
+                ),
+            ],
+        )
+
+        _, _, keys = load_facts_for_state(
+            state="autonomous_discovery",
+            flow_config=flow,
+            kb=kb,
+            recently_used_keys={"pricing/tariffs"},
+            user_message="Это все тарифы?",
+            intent="pricing_details",
+        )
+
+        assert "pricing/tariffs" in keys
 
 
 class TestGeneratorDeepIntegration:

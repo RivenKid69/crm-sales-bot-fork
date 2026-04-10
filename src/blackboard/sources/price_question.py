@@ -95,6 +95,10 @@ class PriceQuestionSource(KnowledgeSource):
         "pricing_comparison": "compare_pricing",
         "budget_question": "discuss_budget",
     }
+    AUTONOMOUS_EXPLICIT_ACTIONS: Dict[str, str] = {
+        "price_question": "answer_with_pricing",
+        "pricing_details": "answer_pricing_details",
+    }
 
     def __init__(
         self,
@@ -195,7 +199,7 @@ class PriceQuestionSource(KnowledgeSource):
         envelope = getattr(ctx, 'context_envelope', None)
         if envelope is not None:
             secondary = getattr(envelope, 'secondary_intents', None)
-            if secondary:
+            if isinstance(secondary, (list, tuple, set)):
                 return list(secondary)
         return []
 
@@ -273,7 +277,9 @@ class PriceQuestionSource(KnowledgeSource):
                     self._log_contribution(reason="Intent not price-related")
                     return
 
-        # Autonomous states: provide context only; do not dictate action.
+        # Autonomous states: keep the context signal, and explicitly route only the
+        # canonical pricing answer actions. This reuses the existing action taxonomy
+        # instead of introducing autonomous-only pricing actions.
         is_autonomous = self._is_autonomous_context(ctx)
         if is_autonomous:
             envelope = getattr(ctx, "context_envelope", None)
@@ -299,6 +305,27 @@ class PriceQuestionSource(KnowledgeSource):
                     "detection_source": detection_source,
                 },
             )
+            autonomous_action = self.AUTONOMOUS_EXPLICIT_ACTIONS.get(intent)
+            if autonomous_action:
+                has_pricing = bool(ctx.collected_data.get("pricing_tier"))
+                blackboard.propose_action(
+                    action=autonomous_action,
+                    priority=Priority.HIGH,
+                    combinable=True,
+                    reason_code="price_question_priority",
+                    source_name=self.name,
+                    metadata={
+                        "original_intent": intent,
+                        "has_pricing_data": has_pricing,
+                        "rule_source": "autonomous_explicit_route",
+                        "detection_source": detection_source,
+                    },
+                )
+                self._log_contribution(
+                    action=autonomous_action,
+                    reason=f"Autonomous explicit pricing route: {intent} ({detection_source})",
+                )
+                return
             self._log_contribution(
                 reason=f"Autonomous context signal only: {intent} ({detection_source})"
             )

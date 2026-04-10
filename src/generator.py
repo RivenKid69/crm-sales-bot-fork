@@ -18,7 +18,6 @@ from src.knowledge.retriever import get_retriever
 from src.settings import settings
 from src.logger import logger
 from src.feature_flags import flags
-from src.response_diversity import diversity_engine
 from src.question_dedup import question_dedup_engine
 from src.terminal_requirements import (
     is_terminal_field_present,
@@ -54,6 +53,7 @@ from src.generator_autonomous import (
 )
 from src.media_turn_context import MediaTurnContext, freeze_media_turn_context
 from src.response_routing_contract import (
+    AUTONOMOUS_RESPONSE_TEMPLATE_KEYS,
     build_response_routing_context,
     is_autonomous_response_context,
     normalize_response_mode,
@@ -2884,12 +2884,14 @@ class ResponseGenerator:
         # not override the autonomous LLM action unless an upstream source explicitly
         # selected an autonomous template.
         if is_autonomous_flow:
+            if action == "greet_back":
+                if intent == "greeting" and state == "greeting":
+                    return "greet_back"
+                return "autonomous_respond"
+            if action in AUTONOMOUS_RESPONSE_TEMPLATE_KEYS:
+                return action
             passthrough_actions = {
                 "continue_current_goal",
-                "answer_with_facts",
-                "soft_close",
-                "close",
-                "escalate_to_human",
                 "guard_soft_close",
                 "guard_offer_options",
                 "guard_skip_phase",
@@ -2898,8 +2900,6 @@ class ResponseGenerator:
             }
             if action in passthrough_actions:
                 return action
-            if intent == "greeting" and state == "greeting":
-                return "greet_back"
             # Farewell in any state: use handle_farewell template (not autonomous_respond)
             if intent == "farewell" and action in {"acknowledge_farewell", "handle_farewell", "polite_farewell"}:
                 return "handle_farewell"
@@ -3198,6 +3198,9 @@ class ResponseGenerator:
                     flow_config=self._flow,
                     kb=_kb,
                     recently_used_keys=recently_used,
+                    collected_data=working_context.get("collected_data", {}),
+                    user_message=user_message,
+                    intent=intent,
                 )
             company_info = f"{_kb.company_name}: {_kb.company_description}"
         else:
@@ -3764,6 +3767,9 @@ class ResponseGenerator:
                     flow_config=self._flow,
                     kb=_kb,
                     recently_used_keys=recently_used,
+                    collected_data=context.get("collected_data", {}),
+                    user_message=user_message,
+                    intent=intent,
                 )
 
             _company_info = f"{_kb.company_name}: {_kb.company_description}"
@@ -4333,6 +4339,11 @@ class ResponseGenerator:
             variables["do_not_ask"] = (
                 f"{_existing_dna}\n{_no_followup_rule}" if _existing_dna else _no_followup_rule
             )
+
+        explicit_question_instruction = str(context.get("question_instruction") or "").strip()
+        if explicit_question_instruction:
+            variables["question_instruction"] = explicit_question_instruction
+            variables["available_questions"] = ""
 
         # --- Pain context (isolated parallel search) ---
         # Только для autonomous flow. Не зависит от intent/state.
@@ -4991,63 +5002,22 @@ class ResponseGenerator:
 
     def _apply_diversity(self, response: str, context: Dict) -> str:
         """
-        Применить post-processing для разнообразия ответов.
+        Post-generation opener rewrites are intentionally disabled.
 
-        Заменяет монотонные вступления (например, "Понимаю") на альтернативы.
-        Управляется feature flag `response_diversity`.
+        Mechanical replacements after generation were the root cause of broken
+        Russian like "Окей. Как это..." and "Хорошо. Ваше желание...".
+        We now rely on prompt-level wording constraints as the single source of
+        truth and keep the generated sentence intact.
 
         Args:
             response: Оригинальный ответ
             context: Контекст генерации (intent, state, frustration_level)
 
         Returns:
-            Обработанный ответ
+            Исходный ответ без post-generation opener rewrite
         """
-        if not flags.response_diversity:
-            return response
-
-        try:
-            state = str(context.get("state", "") or "")
-            # Autonomous flow relies on a stable high-trust voice; avoid opener rewrites.
-            if state.startswith("autonomous_") or state == "greeting":
-                return response
-
-            # In stress/conflict turns, keep wording stable and avoid "playful"
-            # opening rewrites that can look dismissive.
-            intent = str(context.get("intent", context.get("last_intent", "")) or "")
-            frustration = int(context.get("frustration_level", 0) or 0)
-            if (
-                frustration >= 3
-                or intent in {"request_brevity", "price_question", "rejection_soft", "farewell"}
-                or intent.startswith("objection_")
-            ):
-                return response
-
-            # Формируем контекст для diversity engine
-            diversity_context = {
-                "intent": intent,
-                "state": context.get("state", ""),
-                "frustration_level": context.get("frustration_level", 0),
-            }
-
-            result = diversity_engine.process_response(response, diversity_context)
-
-            if result.was_modified and flags.response_diversity_logging:
-                logger.info(
-                    "Response diversity applied",
-                    modification_type=result.modification_type,
-                    opening_used=result.opening_used,
-                    category=result.category_used,
-                    original_start=response[:40],
-                    new_start=result.processed[:40],
-                )
-
-            return result.processed
-
-        except Exception as e:
-            # Graceful degradation: return original on error
-            logger.warning(f"Response diversity failed: {e}")
-            return response
+        _ = context
+        return response
 
     # =========================================================================
     # Apology Post-Processing (SSoT: src/apology_ssot.py)

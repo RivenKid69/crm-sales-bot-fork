@@ -1,0 +1,225 @@
+# =============================================================================
+# PILOT SURVEY STATES
+# =============================================================================
+# SSOT for deterministic question wording, answer-gate contracts, and progression.
+# Survey states intentionally avoid broad sales mixins and required_data-driven
+# progression; movement happens only through transitions.answer_accepted.
+# =============================================================================
+
+states:
+  survey_consent:
+    goal: "Понять, удобно ли клиенту сейчас пройти короткий pilot survey."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      agreement: survey_q1
+      callback_request: survey_declined
+      objection_competitor: survey_declined
+      objection_contract_bound: survey_declined
+      objection_no_need: survey_declined
+      objection_no_time: survey_declined
+      objection_price: survey_declined
+      objection_priority: survey_declined
+      objection_security: survey_declined
+      objection_think: survey_declined
+      objection_timing: survey_declined
+      objection_trust: survey_declined
+      rejection: survey_declined
+      hard_no: survey_declined
+      end_conversation: survey_declined
+      farewell: survey_declined
+      request_human: escalated
+
+  survey_q1:
+    goal: "Понять, насколько просто прошли регистрация кассы и подключение системы."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_q2
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "1/8. Насколько легко было зарегистрировать кассу и подключить систему? Были ли непонятные шаги?"
+      answer_gate:
+        valid_if: "Клиент оценил, насколько легко или сложно прошли регистрация кассы и подключение системы, назвал непонятные шаги или явно сказал, что всё прошло без трудностей."
+        invalid_if: "Клиент не отвечает про регистрацию кассы или подключение системы, только задаёт встречный вопрос, уходит в сторону или пишет бессодержательное 'не знаю'."
+        min_confidence: 0.70
+        clarify: "Коротко уточните, пожалуйста: зарегистрировать кассу и подключить систему было легко или возникли непонятные шаги?"
+
+  survey_q2:
+    goal: "Понять, получил ли клиент понятную и достаточную инструкцию по настройке."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_q3
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "2/8. Получили ли вы инструкцию по настройке? Была ли она понятна и достаточна?"
+      answer_gate:
+        valid_if: "Клиент сказал, получал ли инструкцию по настройке, оценил её понятность и достаточность или явно сказал, что инструкции не было."
+        invalid_if: "Клиент не отвечает про инструкцию по настройке, только спрашивает о продукте, цене, условиях или пишет слишком общо без смысла."
+        min_confidence: 0.70
+        clarify: "Подскажите, пожалуйста: инструкцию по настройке вы получили, и она была понятна и достаточна или чего-то не хватило?"
+
+  survey_q3:
+    goal: "Понять, обращался ли клиент в техподдержку и по какому вопросу."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_q4
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "3/8. Обращались ли вы в техподдержку во время настройки? По какому вопросу?"
+      answer_gate:
+        valid_if: "Клиент сказал, обращался ли он в техподдержку во время настройки, и при обращении назвал тему или проблему; также валиден ответ, что не обращались."
+        invalid_if: "Клиент не отвечает про техподдержку во время настройки и только задаёт вопрос о компании, продукте, цене или условиях."
+        min_confidence: 0.70
+        clarify: "Уточните, пожалуйста: вы обращались в техподдержку во время настройки? Если да, то по какому вопросу?"
+
+  survey_q4:
+    goal: "Понять, кто работает с терминалом и добавляли ли сотрудников."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_q5
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "4/8. Кто использует терминал: сам владелец или кассиры? Добавляли ли сотрудников через веб-кабинет?"
+      answer_gate:
+        valid_if: "Клиент описал, кто работает с терминалом: владелец, кассиры или оба варианта, и/или сказал, добавляли ли сотрудников через веб-кабинет."
+        invalid_if: "Клиент не отвечает про использование терминала или добавление сотрудников и только спрашивает о компании, продукте, цене, функциях или условиях."
+        min_confidence: 0.70
+        clarify: "Коротко уточните, пожалуйста: кто сейчас использует терминал - владелец или кассиры, и добавляли ли сотрудников через веб-кабинет?"
+
+  survey_q5:
+    goal: "Понять, удалось ли провести первую продажу и что мешало, если не удалось."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_q6
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "5/8. Удалось ли сразу провести первую продажу? Если нет - что помешало?"
+      answer_gate:
+        valid_if: "Клиент сказал, удалось ли провести первую продажу, и если не удалось, назвал причину, помеху или блокер; также валиден краткий ответ, что продажу провели сразу."
+        invalid_if: "Клиент не отвечает про первую продажу и только задаёт вопрос о компании, продукте, цене или условиях."
+        min_confidence: 0.70
+        clarify: "Подскажите, пожалуйста: первую продажу удалось провести сразу? Если нет, что именно помешало?"
+
+  survey_q6:
+    goal: "Понять, как клиент чаще проводит продажу: через каталог или свободный ввод суммы."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_q7
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "6/8. Что используете чаще: каталог с товарами и категориями или свободный ввод суммы?"
+      answer_gate:
+        valid_if: "Клиент сказал, чем пользуется чаще: каталогом товаров и категорий, свободным вводом суммы, обоими вариантами или что пока почти не пользовались."
+        invalid_if: "Клиент не отвечает про способ проведения продажи и только спрашивает о продукте, цене или условиях."
+        min_confidence: 0.70
+        clarify: "Уточните, пожалуйста: при продаже вы чаще используете каталог товаров и категорий или свободный ввод суммы?"
+
+  survey_q7:
+    goal: "Понять, добавлял ли клиент товары и категории и насколько это было удобно."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_q8
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "7/8. Добавляли ли товары и категории в каталог? Было ли это удобно и понятно?"
+      answer_gate:
+        valid_if: "Клиент сказал, добавлял ли товары и категории в каталог, и оценил, насколько это было удобно, понятно или неудобно; также валиден ответ, что пока не добавляли."
+        invalid_if: "Клиент не отвечает про добавление товаров и категорий и только задаёт вопрос о компании, продукте, цене или условиях."
+        min_confidence: 0.70
+        clarify: "Коротко уточните, пожалуйста: товары и категории в каталог добавляли, и это было удобно и понятно или нет?"
+
+  survey_q8:
+    goal: "Понять, были ли ошибки или зависания при проведении оплаты."
+    phase: survey
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions:
+      answer_accepted: survey_complete
+      rejection: soft_close
+      hard_no: soft_close
+      end_conversation: soft_close
+      farewell: soft_close
+      request_human: escalated
+    parameters:
+      deterministic_question: "8/8. Возникали ли ошибки или зависания при проведении оплаты?"
+      answer_gate:
+        valid_if: "Клиент сказал, возникали ли ошибки, зависания или сбои при проведении оплаты, описал проблему или явно сказал, что всё проходило нормально."
+        invalid_if: "Клиент не отвечает про ошибки или зависания при оплате и только задаёт вопрос о компании, продукте, цене или условиях."
+        min_confidence: 0.70
+        clarify: "Подскажите, пожалуйста: при проведении оплаты возникали ошибки или зависания, или всё проходило нормально?"
+
+  survey_complete:
+    goal: "Детерминированно завершить pilot survey."
+    phase: survey
+    is_final: true
+    max_turns_in_state: 0
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions: {}
+    parameters:
+      final_phrase: "Спасибо за ваши ответы!"
+
+  survey_declined:
+    goal: "Мягко завершить pilot survey, если клиенту сейчас неудобно."
+    phase: survey
+    is_final: true
+    max_turns_in_state: 0
+    required_data: []
+    optional_data: []
+    rules: {}
+    transitions: {}
+    parameters:
+      final_phrase: "Хорошо, спасибо. Мы свяжемся с вами позже."

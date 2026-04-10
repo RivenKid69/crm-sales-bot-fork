@@ -167,6 +167,7 @@ class DialogueOrchestrator:
                 "fallback_handler": self._fallback_handler,
             },
             "AutonomousDecisionSource": {"llm": llm},
+            "PilotSurveyAnswerGateSource": {"llm": llm},
         }
 
         self._sources: List[KnowledgeSource] = SourceRegistry.create_sources(

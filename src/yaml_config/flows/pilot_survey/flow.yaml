@@ -1,0 +1,32 @@
+# =============================================================================
+# PILOT SURVEY FLOW
+# =============================================================================
+# Deterministic outbound survey: bot starts with a consent check, then moves to
+# survey_q1 and advances only through transitions.answer_accepted.
+# =============================================================================
+
+flow:
+  name: pilot_survey
+  version: "1.0"
+  description: "Deterministic 8-question pilot follow-up survey with company-question routing"
+
+  variables:
+    entry_state: survey_consent
+    entry_closing_state: survey_q1
+    outbound_greeting: |-
+      Добрый день! Вас приветствует отдел контроля качества Wipon.
+      С момента активации вашей онлайн-кассы с Forte Bank прошло 5 дней. Мы хотели бы убедиться, что процесс подключения был комфортным, а всё работает идеально.
+      Пожалуйста, уделите несколько минут для короткого опроса из 8 быстрых вопросов. Ваша обратная связь поможет нам устранить все лишние барьеры в вашей работе. Вам сейчас удобно?
+
+  phases:
+    order:
+      - survey
+    mapping:
+      survey: survey_consent
+    post_phases_state: survey_complete
+    progress_intents: {}
+    skip_conditions: {}
+
+  entry_points:
+    default: survey_consent
+    escalation: escalated

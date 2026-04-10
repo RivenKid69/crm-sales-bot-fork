@@ -14,6 +14,8 @@ AUTONOMOUS_RESPONSE_TEMPLATE_KEYS = frozenset(
         "continue_current_goal",
         "greet_back",
         "answer_with_facts",
+        "answer_with_pricing",
+        "answer_pricing_details",
         "clarify_one_question",
         "summarize_and_clarify",
         "nudge_progress",

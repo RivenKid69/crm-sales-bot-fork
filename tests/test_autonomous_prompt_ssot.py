@@ -27,6 +27,8 @@ CANONICAL_AUTONOMOUS_TEMPLATE_KEYS = {
     "continue_current_goal",
     "autonomous_media_only",
     "answer_with_facts",
+    "answer_with_pricing",
+    "answer_pricing_details",
     "clarify_one_question",
     "summarize_and_clarify",
     "nudge_progress",
@@ -130,7 +132,13 @@ def test_autonomous_closing_templates_follow_autonomous_policy():
 def test_autonomous_answer_first_and_anti_stall_contract_is_explicit():
     templates = _load_autonomous_templates()
 
-    for template_key in ("answer_with_facts", "autonomous_respond", "continue_current_goal"):
+    for template_key in (
+        "answer_with_facts",
+        "answer_with_pricing",
+        "answer_pricing_details",
+        "autonomous_respond",
+        "continue_current_goal",
+    ):
         template = templates[template_key]["template"]
         assert "первая фраза обязана отвечать" in template
         assert "{unknown_fallback_contract}" in template
@@ -146,6 +154,8 @@ def test_autonomous_unknown_fallback_contract_is_injected_only_via_variable():
 
     for template_key in (
         "answer_with_facts",
+        "answer_with_pricing",
+        "answer_pricing_details",
         "autonomous_respond",
         "autonomous_media_only",
         "continue_current_goal",
@@ -220,6 +230,16 @@ def test_autonomous_validator_accepts_structural_non_template_actions(autonomous
     [
         ("autonomous_respond", _make_context(intent="greeting", state="greeting"), "greet_back"),
         ("autonomous_respond", _make_context(), "autonomous_respond"),
+        (
+            "answer_with_pricing",
+            _make_context(intent="price_question", user_message="Сколько стоит Mini?"),
+            "answer_with_pricing",
+        ),
+        (
+            "answer_pricing_details",
+            _make_context(intent="pricing_details", user_message="Это все тарифы?"),
+            "answer_pricing_details",
+        ),
         ("continue_current_goal", _make_context(), "continue_current_goal"),
         ("close", _make_context(intent="request_contract", state="autonomous_closing"), "close"),
         ("soft_close", _make_context(intent="rejection", state="soft_close"), "soft_close"),

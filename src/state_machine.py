@@ -347,6 +347,8 @@ class StateMachine:
         # Store config for parameterization (always set since v2.0)
         self._config = config
         self._flow = flow
+        self.state = self._get_initial_state()
+        self.current_phase = self._flow.get_phase_for_state(self.state) if self._flow else None
 
         # Validate config/flow compatibility
         self._validate_config_flow(config, flow)
@@ -419,6 +421,12 @@ class StateMachine:
                 f"Config/flow mismatch: config.flow_name='{config_flow}', "
                 f"flow.name='{flow_name}'. States may be inconsistent."
             )
+
+    def _get_initial_state(self) -> str:
+        """Resolve initial state from FlowConfig entry point."""
+        if self._flow and hasattr(self._flow, "get_entry_point"):
+            return self._flow.get_entry_point("default")
+        return "greeting"
 
     # =========================================================================
     # Configuration Properties (from YAML - legacy Python constants deprecated)
@@ -650,9 +658,9 @@ class StateMachine:
 
     def reset(self):
         """Reset for new conversation."""
-        self.state = "greeting"
+        self.state = self._get_initial_state()
         self.collected_data = {}
-        self.current_phase = None
+        self.current_phase = self._flow.get_phase_for_state(self.state) if self._flow else None
         self.circular_flow.reset()
 
         # Phase 4: Reset IntentTracker

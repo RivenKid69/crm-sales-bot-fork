@@ -220,6 +220,7 @@ class SessionManager:
         llm=None,
         client_id: Optional[str] = None,
         flow_name: Optional[str] = None,
+        default_flow_name: Optional[str] = None,
         config_name: Optional[str] = None,
         enable_tracing: bool = False,
     ) -> SessionAcquireResult:
@@ -341,7 +342,7 @@ class SessionManager:
         if bot is None:
             bot = SalesBot(
                 llm=llm,
-                flow_name=flow_name,
+                flow_name=flow_name or default_flow_name,
                 client_id=normalized_client_id,
                 config_name=config_name,
                 enable_tracing=enable_tracing,
@@ -363,12 +364,58 @@ class SessionManager:
             self._sessions[cache_key] = entry
         return SessionAcquireResult(bot=bot, source=source)
 
+    def _restart_session_with_status_locked(
+        self,
+        session_id: str,
+        llm=None,
+        client_id: Optional[str] = None,
+        flow_name: Optional[str] = None,
+        config_name: Optional[str] = None,
+        enable_tracing: bool = False,
+    ) -> SessionAcquireResult:
+        """Replace any cached/restorable session with a fresh bot for the requested flow."""
+        normalized_client_id = self._normalize_client_id(client_id) or None
+        cache_key = self._cache_key(session_id, normalized_client_id)
+        now = self._now()
+
+        # A control command such as /start_pilot is an explicit new dialog start.
+        # Do not restore a previous snapshot into a different flow/state graph.
+        self._buffer.delete(session_id, client_id=normalized_client_id)
+
+        bot = SalesBot(
+            llm=llm,
+            flow_name=flow_name,
+            client_id=normalized_client_id,
+            config_name=config_name,
+            enable_tracing=enable_tracing,
+        )
+        bot.conversation_id = session_id
+
+        entry = SessionEntry(
+            bot=bot,
+            last_activity=now,
+            created_at=now,
+            final_since=now if bot.state_machine.is_final() else None,
+        )
+        with self._cache_lock:
+            self._sessions[cache_key] = entry
+
+        logger.info(
+            "Session restarted with fresh flow",
+            session_id=session_id,
+            client_id=normalized_client_id,
+            flow_name=flow_name,
+            config_name=config_name,
+        )
+        return SessionAcquireResult(bot=bot, source="restart")
+
     def get_or_create_with_status(
         self,
         session_id: str,
         llm=None,
         client_id: Optional[str] = None,
         flow_name: Optional[str] = None,
+        default_flow_name: Optional[str] = None,
         config_name: Optional[str] = None,
         enable_tracing: bool = False,
         *,
@@ -391,6 +438,7 @@ class SessionManager:
                 llm=llm,
                 client_id=normalized_client_id,
                 flow_name=flow_name,
+                default_flow_name=default_flow_name,
                 config_name=config_name,
                 enable_tracing=enable_tracing,
             )
@@ -398,6 +446,42 @@ class SessionManager:
         lock_key = self._session_lock_key(session_id, normalized_client_id)
         with self._lock.lock(lock_key):
             return self._get_or_create_with_status_locked(
+                session_id=session_id,
+                llm=llm,
+                client_id=normalized_client_id,
+                flow_name=flow_name,
+                default_flow_name=default_flow_name,
+                config_name=config_name,
+                enable_tracing=enable_tracing,
+            )
+
+    def restart_session_with_status(
+        self,
+        session_id: str,
+        llm=None,
+        client_id: Optional[str] = None,
+        flow_name: Optional[str] = None,
+        config_name: Optional[str] = None,
+        enable_tracing: bool = False,
+        *,
+        assume_locked: bool = False,
+    ) -> SessionAcquireResult:
+        """Start a fresh in-memory session for an explicit control-command flow switch."""
+        self._ensure_client_id(client_id, session_id)
+        normalized_client_id = self._normalize_client_id(client_id) or None
+        if assume_locked:
+            return self._restart_session_with_status_locked(
+                session_id=session_id,
+                llm=llm,
+                client_id=normalized_client_id,
+                flow_name=flow_name,
+                config_name=config_name,
+                enable_tracing=enable_tracing,
+            )
+
+        lock_key = self._session_lock_key(session_id, normalized_client_id)
+        with self._lock.lock(lock_key):
+            return self._restart_session_with_status_locked(
                 session_id=session_id,
                 llm=llm,
                 client_id=normalized_client_id,
