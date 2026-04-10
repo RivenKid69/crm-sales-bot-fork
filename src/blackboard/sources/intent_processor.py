@@ -7,12 +7,21 @@ from ..knowledge_source import KnowledgeSource
 from ..blackboard import DialogueBlackboard
 from ..enums import Priority
 from src.conditions.state_machine.context import EvaluatorContext
+from src.blackboard.sources.pilot_survey_answer_gate import PILOT_SURVEY_SIGNAL_SOURCE
 
 if TYPE_CHECKING:
     from src.rules.resolver import RuleResolver
     from src.conditions.registry import ConditionRegistry
 
 logger = logging.getLogger(__name__)
+
+PILOT_SURVEY_EXIT_INTENTS = frozenset({
+    "rejection",
+    "hard_no",
+    "end_conversation",
+    "farewell",
+    "request_human",
+})
 
 
 class IntentProcessorSource(KnowledgeSource):
@@ -125,6 +134,17 @@ class IntentProcessorSource(KnowledgeSource):
         ctx = blackboard.get_context()
         intent = ctx.current_intent
 
+        pilot_signal = self._latest_pilot_signal(blackboard, ctx)
+        if pilot_signal and self._should_defer_to_pilot_router(intent, pilot_signal):
+            self._log_contribution(
+                reason=(
+                    "pilot_survey authoritative routing: "
+                    f"skip generic action for intent={intent}, "
+                    f"routing_state={pilot_signal.get('routing_state')}"
+                )
+            )
+            return
+
         # Skip dedicated source intents
         if intent in self.DEDICATED_SOURCE_INTENTS:
             self._log_contribution(
@@ -212,6 +232,30 @@ class IntentProcessorSource(KnowledgeSource):
             action=action,
             reason=f"Rule matched for intent: {intent}"
         )
+
+    @staticmethod
+    def _flow_name(ctx) -> str:
+        flow_config = getattr(ctx, "flow_config", {})
+        if isinstance(flow_config, dict):
+            return str(flow_config.get("name", "") or "")
+        return str(getattr(flow_config, "name", "") or "")
+
+    def _latest_pilot_signal(self, blackboard: DialogueBlackboard, ctx) -> Optional[Dict[str, Any]]:
+        if self._flow_name(ctx) != "pilot_survey":
+            return None
+        for signal in reversed(blackboard.get_context_signals()):
+            if signal.get("source") != PILOT_SURVEY_SIGNAL_SOURCE:
+                continue
+            if str(signal.get("state") or "") != str(ctx.state or ""):
+                continue
+            return dict(signal)
+        return None
+
+    @staticmethod
+    def _should_defer_to_pilot_router(intent: str, signal: Dict[str, Any]) -> bool:
+        if bool(signal.get("answer_accepted")):
+            return True
+        return intent not in PILOT_SURVEY_EXIT_INTENTS
 
     def _evaluate_condition_value(self, condition, eval_ctx):
         """Evaluate condition using shared utility (supports composite dict)."""

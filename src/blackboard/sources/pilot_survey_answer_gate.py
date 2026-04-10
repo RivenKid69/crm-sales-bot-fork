@@ -22,9 +22,7 @@ PILOT_SURVEY_SIGNAL_SOURCE = "pilot_survey_answer_gate"
 ANSWER_ACCEPTED_TRANSITION = "answer_accepted"
 DEFAULT_MIN_CONFIDENCE = 0.70
 
-HARD_STOP_INTENTS = frozenset({
-    "rejection",
-    "hard_no",
+GATE_ABSTAIN_INTENTS = frozenset({
     "end_conversation",
     "farewell",
     "request_human",
@@ -135,14 +133,21 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
             return
 
         turn_intents = self._turn_intents(ctx)
-        if turn_intents & HARD_STOP_INTENTS:
-            self._log_contribution(reason=f"hard-stop intent present: {sorted(turn_intents & HARD_STOP_INTENTS)}")
+        if turn_intents & GATE_ABSTAIN_INTENTS:
+            self._log_contribution(
+                reason=f"hard-stop intent present: {sorted(turn_intents & GATE_ABSTAIN_INTENTS)}"
+            )
             return
 
         company_question_present = self._has_company_question_intent(ctx, turn_intents)
         company_action_present = self._has_company_question_action(blackboard)
 
-        verdict = self._evaluate_answer(ctx=ctx, question=question, answer_gate=answer_gate)
+        verdict = self._evaluate_answer(
+            ctx=ctx,
+            question=question,
+            answer_gate=answer_gate,
+            turn_intents=turn_intents,
+        )
         min_confidence = self._min_confidence(answer_gate)
         answer_accepted = verdict.answer_accepted and verdict.confidence >= min_confidence
         reason = verdict.reason or "semantic_gate"
@@ -198,12 +203,14 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
         ctx: Any,
         question: str,
         answer_gate: Dict[str, Any],
+        turn_intents: Set[str],
     ) -> PilotSurveyAnswerGateResult:
         user_message = str(getattr(ctx, "user_message", "") or "")
         llm_result = self._evaluate_with_llm(
             user_message=user_message,
             question=question,
             answer_gate=answer_gate,
+            turn_intents=turn_intents,
         )
         if llm_result is not None:
             return llm_result
@@ -219,11 +226,13 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
         user_message: str,
         question: str,
         answer_gate: Dict[str, Any],
+        turn_intents: Set[str],
     ) -> Optional[PilotSurveyAnswerGateResult]:
         generate_structured = getattr(self._llm, "generate_structured", None)
         if not callable(generate_structured):
             return None
 
+        intents_hint = ", ".join(sorted(str(intent) for intent in turn_intents if intent)) or "none"
         prompt = (
             "Ты semantic gate для детерминированного опроса по пилоту.\n"
             "Твоя задача: определить, можно ли считать текущий survey-вопрос закрытым.\n"
@@ -233,9 +242,14 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
             "Verdict values:\n"
             "- valid: сообщение клиента отвечает на текущий survey-вопрос и закрывает его.\n"
             "- invalid: сообщение клиента не отвечает на текущий survey-вопрос.\n\n"
+            "Короткие ответы вроде 'да' и 'нет' оценивай относительно текущего survey-вопроса.\n"
+            "Не считай короткое 'да/нет' автоматическим согласием или отказом от разговора.\n"
+            "Считай ответ invalid только если клиент явно не отвечает по смыслу, "
+            "или прямо отказывается продолжать опрос/разговор, просит завершить или передать человеку.\n\n"
             f"Survey question:\n{question}\n\n"
             f"Valid if:\n{answer_gate.get('valid_if', '')}\n\n"
             f"Invalid if:\n{answer_gate.get('invalid_if', '')}\n\n"
+            f"Detected intents for this turn:\n{intents_hint}\n\n"
             "Если в сообщении есть и ответ на survey-вопрос, и отдельный вопрос о компании, "
             "оценивай только наличие ответа на survey-вопрос.\n\n"
             f"Client message:\n{user_message}\n"

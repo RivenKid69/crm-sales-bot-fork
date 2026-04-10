@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from src.blackboard.blackboard import DialogueBlackboard
 from src.blackboard.enums import Priority
 from src.blackboard.orchestrator import DialogueOrchestrator
+from src.blackboard.orchestrator import create_orchestrator
 from src.blackboard.sources.pilot_survey_answer_gate import (
     PilotSurveyAnswerGateResult,
     PilotSurveyAnswerGateSource,
@@ -77,6 +78,15 @@ def _blackboard(
         user_message=message,
     )
     return bb, flow, state_machine
+
+
+def _create_pilot_orchestrator(*, state_machine, flow, config, llm):
+    return create_orchestrator(
+        state_machine=state_machine,
+        flow_config=flow,
+        llm=llm,
+        blackboard_config=config.blackboard,
+    )
 
 
 def _latest_pilot_signal(bb):
@@ -273,6 +283,34 @@ def test_answer_gate_accepts_required_verdict_payload_from_llm():
     assert transitions[0].value == "survey_q2"
 
 
+def test_answer_gate_evaluates_rejection_labeled_binary_reply_as_survey_answer():
+    bb, _, _ = _blackboard(
+        state="survey_q2",
+        intent="rejection",
+        message="Нет",
+    )
+    source = PilotSurveyAnswerGateSource(
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                verdict="valid",
+                confidence=0.92,
+                reason="binary_no_answer",
+            )
+        )
+    )
+
+    source.contribute(bb)
+
+    signal = _latest_pilot_signal(bb)
+    transitions = bb.get_transition_proposals()
+    prompt = source._llm.calls[0]["kwargs"]["prompt"]
+    assert signal["routing_state"] == "survey_answer"
+    assert signal["answer_accepted"] is True
+    assert len(transitions) == 1
+    assert transitions[0].value == "survey_q3"
+    assert "Не считай короткое 'да/нет'" in prompt
+
+
 def test_answer_gate_company_question_stays_on_current_survey_state():
     bb, _, _ = _blackboard(
         intent="price_question",
@@ -434,9 +472,10 @@ def test_response_plan_consent_rejection_returns_declined_final_without_generato
 
 def test_orchestrator_consent_acceptance_enters_first_survey_question():
     config, flow, state_machine = _load_pilot_runtime()
-    orchestrator = DialogueOrchestrator(
+    orchestrator = _create_pilot_orchestrator(
         state_machine=state_machine,
-        flow_config=flow,
+        flow=flow,
+        config=config,
         llm=FakeGateLLM(),
     )
     envelope = SimpleNamespace(
@@ -460,9 +499,10 @@ def test_orchestrator_consent_acceptance_enters_first_survey_question():
 
 def test_orchestrator_consent_callback_request_finishes_without_survey_questions():
     config, flow, state_machine = _load_pilot_runtime()
-    orchestrator = DialogueOrchestrator(
+    orchestrator = _create_pilot_orchestrator(
         state_machine=state_machine,
-        flow_config=flow,
+        flow=flow,
+        config=config,
         llm=FakeGateLLM(),
     )
     envelope = SimpleNamespace(
@@ -505,6 +545,28 @@ def test_response_plan_survey_answer_returns_next_question_without_generator():
     assert plan is not None
     assert plan.generator_required is False
     assert plan.compose().startswith("2/8.")
+
+
+def test_response_plan_unclear_with_acknowledge_and_continue_still_returns_clarify():
+    _, flow, _ = _load_pilot_runtime()
+    signal = {
+        "source": "pilot_survey_answer_gate",
+        "state": "survey_q2",
+        "routing_state": "unclear",
+        "answer_accepted": False,
+    }
+
+    plan = build_pilot_survey_response_plan(
+        flow=flow,
+        sm_result={"next_state": "survey_q2"},
+        context_signals=[signal],
+        transcript=DialogTranscript(),
+        action="acknowledge_and_continue",
+    )
+
+    assert plan is not None
+    assert plan.generator_required is False
+    assert "инструкцию по настройке" in plan.compose()
 
 
 def test_response_plan_survey_answer_last_question_returns_final_phrase_without_generator():
@@ -620,9 +682,10 @@ def test_orchestrator_company_question_in_pilot_survey_keeps_state_and_returns_p
     config, flow, state_machine = _load_pilot_runtime()
     state_machine.state = "survey_q1"
     state_machine.current_phase = flow.get_phase_for_state("survey_q1")
-    orchestrator = DialogueOrchestrator(
+    orchestrator = _create_pilot_orchestrator(
         state_machine=state_machine,
-        flow_config=flow,
+        flow=flow,
+        config=config,
         llm=FakeGateLLM(
             PilotSurveyAnswerGateResult(
                 answer_accepted=False,
@@ -657,9 +720,10 @@ def test_orchestrator_mixed_turn_in_pilot_survey_combines_company_answer_and_tra
     config, flow, state_machine = _load_pilot_runtime()
     state_machine.state = "survey_q1"
     state_machine.current_phase = flow.get_phase_for_state("survey_q1")
-    orchestrator = DialogueOrchestrator(
+    orchestrator = _create_pilot_orchestrator(
         state_machine=state_machine,
-        flow_config=flow,
+        flow=flow,
+        config=config,
         llm=FakeGateLLM(
             PilotSurveyAnswerGateResult(
                 answer_accepted=True,
@@ -688,3 +752,78 @@ def test_orchestrator_mixed_turn_in_pilot_survey_combines_company_answer_and_tra
     assert decision.next_state == "survey_q2"
     assert signal["source"] == "pilot_survey_answer_gate"
     assert signal["routing_state"] == "mixed"
+
+
+def test_orchestrator_rejection_labeled_binary_reply_advances_when_gate_accepts_answer():
+    config, flow, state_machine = _load_pilot_runtime()
+    state_machine.state = "survey_q2"
+    state_machine.current_phase = flow.get_phase_for_state("survey_q2")
+    orchestrator = _create_pilot_orchestrator(
+        state_machine=state_machine,
+        flow=flow,
+        config=config,
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                answer_accepted=True,
+                confidence=0.93,
+                reason="binary_no_answer",
+            )
+        ),
+    )
+    envelope = SimpleNamespace(
+        secondary_intents=[],
+        secondary_intent_confidence={},
+        repeated_question=None,
+        intent_confidence=0.91,
+        last_user_message="Нет",
+    )
+
+    decision = orchestrator.process_turn(
+        intent="rejection",
+        extracted_data={},
+        context_envelope=envelope,
+        user_message="Нет",
+    )
+
+    signal = orchestrator.blackboard.get_context_signals()[-1]
+    assert decision.action == "continue_current_goal"
+    assert decision.next_state == "survey_q3"
+    assert signal["routing_state"] == "survey_answer"
+    assert "intent_transition_rejection" not in decision.reason_codes
+
+
+def test_orchestrator_explicit_rejection_still_soft_closes_when_gate_rejects_answer():
+    config, flow, state_machine = _load_pilot_runtime()
+    state_machine.state = "survey_q2"
+    state_machine.current_phase = flow.get_phase_for_state("survey_q2")
+    orchestrator = _create_pilot_orchestrator(
+        state_machine=state_machine,
+        flow=flow,
+        config=config,
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                answer_accepted=False,
+                confidence=0.96,
+                reason="explicit_exit",
+            )
+        ),
+    )
+    envelope = SimpleNamespace(
+        secondary_intents=[],
+        secondary_intent_confidence={},
+        repeated_question=None,
+        intent_confidence=0.95,
+        last_user_message="Нет, не хочу продолжать опрос.",
+    )
+
+    decision = orchestrator.process_turn(
+        intent="rejection",
+        extracted_data={},
+        context_envelope=envelope,
+        user_message="Нет, не хочу продолжать опрос.",
+    )
+
+    signal = orchestrator.blackboard.get_context_signals()[-1]
+    assert decision.next_state == "soft_close"
+    assert signal["routing_state"] == "unclear"
+    assert "intent_transition_rejection" in decision.reason_codes

@@ -9,7 +9,11 @@ from src.blackboard.sources.pilot_survey_answer_gate import PILOT_SURVEY_SIGNAL_
 from src.dialog_transcript import DialogTranscript, DialogTranscriptTurn
 
 
-NOOP_ACTIONS = frozenset({"continue_current_goal", "continue_conversation"})
+NOOP_ACTIONS = frozenset({
+    "continue_current_goal",
+    "continue_conversation",
+    "acknowledge_and_continue",
+})
 CONSENT_STATE = "survey_consent"
 FIRST_SURVEY_STATE = "survey_q1"
 DECLINED_STATE = "survey_declined"
