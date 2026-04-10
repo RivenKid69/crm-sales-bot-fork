@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Dict, Iterable, Literal, Optional, Set, TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
@@ -33,6 +34,13 @@ COMPANY_QUESTION_ACTION_SOURCES = frozenset({
     "PriceQuestionSource",
     "FactQuestionSource",
 })
+
+_COMPANY_QUESTION_CUE_RE = re.compile(
+    r"\?|(?:^|\s)(?:как|какие|какой|какая|что|где|когда|почему|зачем|"
+    r"сколько|расскажите|подскажите|объясните|можете|можно\s+ли|есть\s+ли|"
+    r"сколько\s+стоит|цена|стоимость|тариф)(?:\s|$)",
+    re.IGNORECASE,
+)
 
 
 class PilotSurveyAnswerGateResult(BaseModel):
@@ -131,7 +139,7 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
             self._log_contribution(reason=f"hard-stop intent present: {sorted(turn_intents & HARD_STOP_INTENTS)}")
             return
 
-        company_question_present = self._has_company_question_intent(turn_intents)
+        company_question_present = self._has_company_question_intent(ctx, turn_intents)
         company_action_present = self._has_company_question_action(blackboard)
 
         verdict = self._evaluate_answer(ctx=ctx, question=question, answer_gate=answer_gate)
@@ -219,7 +227,9 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
         prompt = (
             "Ты semantic gate для детерминированного опроса по пилоту.\n"
             "Твоя задача: определить, можно ли считать текущий survey-вопрос закрытым.\n"
-            "Не отвечай клиенту. Не извлекай поля. Верни только structured verdict.\n\n"
+            "Не отвечай клиенту. Не извлекай поля.\n"
+            "Верни строго JSON object по schema. Не возвращай scalar string.\n"
+            'Правильно: {"verdict":"valid"}. Неправильно: valid.\n\n'
             "Verdict values:\n"
             "- valid: сообщение клиента отвечает на текущий survey-вопрос и закрывает его.\n"
             "- invalid: сообщение клиента не отвечает на текущий survey-вопрос.\n\n"
@@ -288,8 +298,15 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
 
         return intents
 
-    def _has_company_question_intent(self, turn_intents: Set[str]) -> bool:
-        return bool(turn_intents & self._company_question_intents)
+    def _has_company_question_intent(self, ctx: Any, turn_intents: Set[str]) -> bool:
+        if not (turn_intents & self._company_question_intents):
+            return False
+        envelope = getattr(ctx, "context_envelope", None)
+        frame = getattr(envelope, "semantic_frame", None) if envelope else None
+        if isinstance(frame, dict) and frame.get("has_question") is True:
+            return True
+        user_message = str(getattr(ctx, "user_message", "") or "")
+        return bool(_COMPANY_QUESTION_CUE_RE.search(user_message))
 
     @staticmethod
     def _has_company_question_action(blackboard: "DialogueBlackboard") -> bool:

@@ -263,9 +263,12 @@ def test_answer_gate_accepts_required_verdict_payload_from_llm():
 
     signal = _latest_pilot_signal(bb)
     transitions = bb.get_transition_proposals()
+    prompt = source._llm.calls[0]["kwargs"]["prompt"]
     assert signal["routing_state"] == "survey_answer"
     assert signal["answer_accepted"] is True
     assert signal["reason"] == "semantic_gate"
+    assert "Верни строго JSON object" in prompt
+    assert "Неправильно: valid" in prompt
     assert len(transitions) == 1
     assert transitions[0].value == "survey_q2"
 
@@ -332,6 +335,39 @@ def test_answer_gate_mixed_combines_company_answer_with_survey_transition():
     assert signal["routing_state"] == "mixed"
     assert signal["answer_accepted"] is True
     assert signal["company_question_present"] is True
+    assert len(transitions) == 1
+    assert transitions[0].value == "survey_q2"
+
+
+def test_answer_gate_ignores_company_intent_without_question_cue_for_survey_answer():
+    bb, _, _ = _blackboard(
+        intent="question_support",
+        message="Да, было легко зарегистрировать кассу и подключить систему тоже было легко!",
+    )
+    bb.propose_action(
+        action="explain_support_options",
+        priority=Priority.HIGH,
+        combinable=True,
+        reason_code="fact_question_detected",
+        source_name="FactQuestionSource",
+    )
+    source = PilotSurveyAnswerGateSource(
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                verdict="valid",
+                confidence=1.0,
+                reason="q1_answer",
+            )
+        )
+    )
+
+    source.contribute(bb)
+
+    signal = _latest_pilot_signal(bb)
+    transitions = bb.get_transition_proposals()
+    assert signal["routing_state"] == "survey_answer"
+    assert signal["answer_accepted"] is True
+    assert signal["company_question_present"] is False
     assert len(transitions) == 1
     assert transitions[0].value == "survey_q2"
 
