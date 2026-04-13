@@ -163,6 +163,16 @@ class TestMessageLoopDetection:
 
         assert intervention is None
 
+    def test_same_message_across_different_states_does_not_trigger_loop(self):
+        """State progress should suppress exact-repeat loop detection."""
+        guard = ConversationGuard(GuardConfig(max_same_message=2))
+
+        guard.check("survey_q2", "Да", {})
+        can_continue, intervention = guard.check("survey_q3", "Да", {})
+
+        assert can_continue is True
+        assert intervention is None
+
 class TestStateLoopDetection:
     """Tests for state loop detection"""
 

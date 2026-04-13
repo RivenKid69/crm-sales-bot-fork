@@ -362,6 +362,13 @@ class ConversationGuard:
         if len(set(recent)) != 1:
             return False
 
+        # Exact-repeat loop is only meaningful when dialogue has not progressed.
+        # Repeating a short answer across different states/questions is normal in
+        # deterministic surveys and should not trigger generic fallback.
+        recent_states = self._state.state_history[-self.config.max_same_message:]
+        if len(set(recent_states)) != 1:
+            return False
+
         # Price-loop tolerance: in stress tests users can repeat a short
         # "цена?" prompt many times. Triggering fallback too early hurts
         # sales coherence, so allow up to 5 repeats before intervention.

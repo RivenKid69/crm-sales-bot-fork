@@ -287,8 +287,9 @@ TYPO_FIXES: Dict[str, str] = {
     "бля": "",
     "блин": "",
     "блять": "",
-    "нафиг": "",
-    "нахрен": "",
+    # Directed profanity must stay visible for intent classification.
+    "нафиг": "нафиг",
+    "нахрен": "нахрен",
     "пофиг": "неважно",
     "пофигу": "неважно",
     "похрен": "неважно",
@@ -1182,4 +1183,3 @@ class TextNormalizer:
         Использует fuzzy matching по словарю опечаток
         """
         return self.fuzzy_match(word, list(self.typo_fixes.keys()), threshold)
-

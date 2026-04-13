@@ -321,6 +321,17 @@ class TestPriorityPatterns:
         result = self.classifier.classify("Мимо, не интересует")
         assert result["intent"] == "rejection"
 
+    def test_directed_profanity_is_frustration_not_rejection(self):
+        """Грубая ругань без запрета на контакт = frustration_expression, не soft-close rejection."""
+        result = self.classifier.classify("Нет, пошел бы ты нахуй")
+        assert result["intent"] == "frustration_expression"
+
+        result = self.classifier.classify("Пошли вы нахуй")
+        assert result["intent"] == "frustration_expression"
+
+        result = self.classifier.classify("Иди нафиг")
+        assert result["intent"] == "frustration_expression"
+
     # =========================================================================
     # OBJECTION_PRICE
     # =========================================================================

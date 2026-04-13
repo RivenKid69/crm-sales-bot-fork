@@ -51,6 +51,13 @@ class PilotSurveyAnswerGateResult(BaseModel):
         description="valid when the client message closes the current survey question; invalid otherwise",
     )
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    company_question_present: bool = Field(
+        default=False,
+        description=(
+            "true when the same client message also contains a separate "
+            "product/company question or request that should be answered"
+        ),
+    )
     reason: str = ""
 
     @model_validator(mode="before")
@@ -139,15 +146,15 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
             )
             return
 
-        company_question_present = self._has_company_question_intent(ctx, turn_intents)
-        company_action_present = self._has_company_question_action(blackboard)
-
         verdict = self._evaluate_answer(
             ctx=ctx,
             question=question,
             answer_gate=answer_gate,
             turn_intents=turn_intents,
         )
+        company_question_hint = self._has_company_question_intent(ctx, turn_intents)
+        company_question_present = verdict.company_question_present or company_question_hint
+        company_action_present = self._has_company_question_action(blackboard)
         min_confidence = self._min_confidence(answer_gate)
         answer_accepted = verdict.answer_accepted and verdict.confidence >= min_confidence
         reason = verdict.reason or "semantic_gate"
@@ -235,23 +242,33 @@ class PilotSurveyAnswerGateSource(KnowledgeSource):
         intents_hint = ", ".join(sorted(str(intent) for intent in turn_intents if intent)) or "none"
         prompt = (
             "Ты semantic gate для детерминированного опроса по пилоту.\n"
-            "Твоя задача: определить, можно ли считать текущий survey-вопрос закрытым.\n"
+            "Твоя задача: определить, можно ли считать текущий survey-вопрос закрытым, "
+            "и есть ли в том же сообщении отдельный product/company запрос.\n"
             "Не отвечай клиенту. Не извлекай поля.\n"
             "Верни строго JSON object по schema. Не возвращай scalar string.\n"
-            'Правильно: {"verdict":"valid"}. Неправильно: valid.\n\n'
+            'Правильно: {"verdict":"valid","company_question_present":false}. '
+            "Неправильно: valid.\n\n"
             "Verdict values:\n"
             "- valid: сообщение клиента отвечает на текущий survey-вопрос и закрывает его.\n"
             "- invalid: сообщение клиента не отвечает на текущий survey-вопрос.\n\n"
+            "Поле company_question_present:\n"
+            "- true: в этом же сообщении есть отдельный вопрос или запрос о продукте/компании "
+            "(цена, тариф, интеграция, функционал, поддержка и т.п.). Это может быть и в форме "
+            "вопроса, и в декларативной форме вроде 'нужна интеграция с 1С', "
+            "'интересует мобильное приложение', 'нужен API'.\n"
+            "- false: такого отдельного product/company запроса нет.\n\n"
             "Короткие ответы вроде 'да' и 'нет' оценивай относительно текущего survey-вопроса.\n"
             "Не считай короткое 'да/нет' автоматическим согласием или отказом от разговора.\n"
             "Считай ответ invalid только если клиент явно не отвечает по смыслу, "
             "или прямо отказывается продолжать опрос/разговор, просит завершить или передать человеку.\n\n"
+            "Не ставь company_question_present=true только из-за названия intent; "
+            "ориентируйся на смысл клиентского сообщения.\n\n"
             f"Survey question:\n{question}\n\n"
             f"Valid if:\n{answer_gate.get('valid_if', '')}\n\n"
             f"Invalid if:\n{answer_gate.get('invalid_if', '')}\n\n"
             f"Detected intents for this turn:\n{intents_hint}\n\n"
-            "Если в сообщении есть и ответ на survey-вопрос, и отдельный вопрос о компании, "
-            "оценивай только наличие ответа на survey-вопрос.\n\n"
+            "Если в сообщении есть и ответ на survey-вопрос, и отдельный вопрос/запрос о компании, "
+            "заполни оба поля независимо.\n\n"
             f"Client message:\n{user_message}\n"
         )
 

@@ -112,6 +112,33 @@ class TestRejectionWordBoundaries:
         if result is not None:
             assert result[0] != "rejection", f"'{text}' should NOT be rejection, got {result[0]}"
 
+
+class TestDirectedProfanityIsFrustration:
+    """Грубая ругань без stop-contact не должна считаться terminal rejection."""
+
+    @pytest.mark.parametrize("text", [
+        "Нет, пошел бы ты нахуй",
+        "Пошли вы нахуй",
+        "Иди нафиг",
+        "Идите лесом",
+    ])
+    def test_directed_profanity_maps_to_frustration(self, text):
+        result = match_pattern(text)
+        assert result is not None, f"'{text}' should match a pattern"
+        assert result[0] == "frustration_expression", (
+            f"'{text}' should be frustration_expression, got {result[0]}"
+        )
+
+    @pytest.mark.parametrize("text", [
+        "Больше не пишите мне",
+        "Удалите меня из рассылки",
+    ])
+    def test_explicit_no_contact_stays_rejection(self, text):
+        result = match_pattern(text)
+        assert result is not None, f"'{text}' should match a pattern"
+        assert result[0] == "rejection", f"'{text}' should stay rejection, got {result[0]}"
+
+
 class TestOtkazPattern:
     """Тесты для паттерна отказ/отказываюсь."""
 

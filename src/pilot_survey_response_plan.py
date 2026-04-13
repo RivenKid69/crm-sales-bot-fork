@@ -14,6 +14,12 @@ NOOP_ACTIONS = frozenset({
     "continue_conversation",
     "acknowledge_and_continue",
 })
+UNCLEAR_CLARIFY_ACTIONS = NOOP_ACTIONS | frozenset({
+    "ask_clarification",
+    "guard_rephrase",
+    "guard_offer_options",
+    "offer_options",
+})
 CONSENT_STATE = "survey_consent"
 FIRST_SURVEY_STATE = "survey_q1"
 DECLINED_STATE = "survey_declined"
@@ -110,7 +116,7 @@ def build_pilot_survey_response_plan(
         )
 
     if routing_state == "unclear":
-        if str(action or "") not in NOOP_ACTIONS:
+        if str(action or "") not in UNCLEAR_CLARIFY_ACTIONS:
             return None
         direct = _clarify_text(current_params)
         return _plan(

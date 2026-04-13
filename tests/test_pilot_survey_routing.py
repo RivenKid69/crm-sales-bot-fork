@@ -49,6 +49,30 @@ class FakeBotLLM(FakeGateLLM):
         return "Короткий ответ по компании."
 
 
+def _mock_bot_classification(intent: str = "info_provided"):
+    return {
+        "intent": intent,
+        "extracted_data": {},
+        "confidence": 0.95,
+        "method": "mock",
+        "style_modifiers": [],
+        "secondary_signals": [],
+        "semantic_frame": {},
+        "style_separation_applied": False,
+    }
+
+
+def _mock_bot_tone():
+    return {
+        "tone": "neutral",
+        "frustration_level": 0,
+        "tone_instruction": "",
+        "style_instruction": "",
+        "should_apologize": False,
+        "should_offer_exit": False,
+    }
+
+
 def _load_pilot_runtime():
     loader = ConfigLoader()
     config, flow = loader.load_bundle(flow_name="pilot_survey")
@@ -410,6 +434,78 @@ def test_answer_gate_ignores_company_intent_without_question_cue_for_survey_answ
     assert transitions[0].value == "survey_q2"
 
 
+def test_answer_gate_marks_declarative_company_request_as_mixed_when_llm_flags_it():
+    bb, _, _ = _blackboard(
+        state="survey_q2",
+        intent="info_provided",
+        message="Да, инструкция была понятна. Нужна интеграция с 1С",
+        secondary_intents=["question_1c_integration"],
+    )
+    bb.propose_action(
+        action="answer_with_facts",
+        priority=Priority.HIGH,
+        combinable=True,
+        reason_code="fact_question_detected",
+        source_name="FactQuestionSource",
+    )
+    source = PilotSurveyAnswerGateSource(
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                verdict="valid",
+                confidence=0.95,
+                company_question_present=True,
+                reason="survey_answer_with_fact_request",
+            )
+        )
+    )
+
+    source.contribute(bb)
+
+    signal = _latest_pilot_signal(bb)
+    transitions = bb.get_transition_proposals()
+    assert signal["routing_state"] == "mixed"
+    assert signal["answer_accepted"] is True
+    assert signal["company_question_present"] is True
+    assert signal["company_question_action_present"] is True
+    assert len(transitions) == 1
+    assert transitions[0].value == "survey_q3"
+
+
+def test_answer_gate_marks_declarative_company_request_as_company_question_without_survey_answer():
+    bb, _, _ = _blackboard(
+        state="survey_q2",
+        intent="info_provided",
+        message="Мне нужна интеграция с 1С",
+        secondary_intents=["question_1c_integration"],
+    )
+    bb.propose_action(
+        action="answer_with_facts",
+        priority=Priority.HIGH,
+        combinable=True,
+        reason_code="fact_question_detected",
+        source_name="FactQuestionSource",
+    )
+    source = PilotSurveyAnswerGateSource(
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                verdict="invalid",
+                confidence=0.95,
+                company_question_present=True,
+                reason="pure_fact_request",
+            )
+        )
+    )
+
+    source.contribute(bb)
+
+    signal = _latest_pilot_signal(bb)
+    assert signal["routing_state"] == "company_question"
+    assert signal["answer_accepted"] is False
+    assert signal["company_question_present"] is True
+    assert signal["company_question_action_present"] is True
+    assert bb.get_transition_proposals() == []
+
+
 def test_answer_gate_fails_closed_when_company_intent_lacks_company_action():
     bb, _, _ = _blackboard(
         intent="price_question",
@@ -678,6 +774,31 @@ def test_response_plan_unclear_uses_deterministic_clarify_without_transition():
     assert "кто сейчас использует терминал" in plan.compose()
 
 
+def test_response_plan_unclear_overrides_guard_offer_options_with_survey_clarify():
+    _, flow, _ = _load_pilot_runtime()
+    signal = {
+        "source": "pilot_survey_answer_gate",
+        "state": "survey_q3",
+        "routing_state": "unclear",
+        "answer_accepted": False,
+    }
+
+    plan = build_pilot_survey_response_plan(
+        flow=flow,
+        sm_result={"next_state": "survey_q3"},
+        context_signals=[signal],
+        transcript=DialogTranscript(),
+        action="guard_offer_options",
+    )
+
+    assert plan is not None
+    assert plan.generator_required is False
+    assert plan.compose() == (
+        "Уточните, пожалуйста: вы обращались в техподдержку во время настройки? "
+        "Если да, то по какому вопросу?"
+    )
+
+
 def test_orchestrator_company_question_in_pilot_survey_keeps_state_and_returns_pricing_action():
     config, flow, state_machine = _load_pilot_runtime()
     state_machine.state = "survey_q1"
@@ -754,6 +875,82 @@ def test_orchestrator_mixed_turn_in_pilot_survey_combines_company_answer_and_tra
     assert signal["routing_state"] == "mixed"
 
 
+def test_orchestrator_declarative_fact_request_in_mixed_turn_answers_and_advances_survey():
+    config, flow, state_machine = _load_pilot_runtime()
+    state_machine.state = "survey_q2"
+    state_machine.current_phase = flow.get_phase_for_state("survey_q2")
+    orchestrator = _create_pilot_orchestrator(
+        state_machine=state_machine,
+        flow=flow,
+        config=config,
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                verdict="valid",
+                confidence=0.94,
+                company_question_present=True,
+                reason="survey_answer_with_fact_request",
+            )
+        ),
+    )
+    envelope = SimpleNamespace(
+        secondary_intents=["question_1c_integration"],
+        secondary_intent_confidence={"question_1c_integration": 0.9},
+        repeated_question=None,
+        intent_confidence=0.93,
+        last_user_message="Да, инструкция была понятна. Нужна интеграция с 1С",
+    )
+
+    decision = orchestrator.process_turn(
+        intent="info_provided",
+        extracted_data={},
+        context_envelope=envelope,
+        user_message="Да, инструкция была понятна. Нужна интеграция с 1С",
+    )
+
+    signal = orchestrator.blackboard.get_context_signals()[-1]
+    assert decision.action == "answer_with_facts"
+    assert decision.next_state == "survey_q3"
+    assert signal["routing_state"] == "mixed"
+
+
+def test_orchestrator_declarative_fact_request_without_survey_answer_keeps_state():
+    config, flow, state_machine = _load_pilot_runtime()
+    state_machine.state = "survey_q2"
+    state_machine.current_phase = flow.get_phase_for_state("survey_q2")
+    orchestrator = _create_pilot_orchestrator(
+        state_machine=state_machine,
+        flow=flow,
+        config=config,
+        llm=FakeGateLLM(
+            PilotSurveyAnswerGateResult(
+                verdict="invalid",
+                confidence=0.95,
+                company_question_present=True,
+                reason="pure_fact_request",
+            )
+        ),
+    )
+    envelope = SimpleNamespace(
+        secondary_intents=["question_1c_integration"],
+        secondary_intent_confidence={"question_1c_integration": 0.9},
+        repeated_question=None,
+        intent_confidence=0.92,
+        last_user_message="Мне нужна интеграция с 1С",
+    )
+
+    decision = orchestrator.process_turn(
+        intent="info_provided",
+        extracted_data={},
+        context_envelope=envelope,
+        user_message="Мне нужна интеграция с 1С",
+    )
+
+    signal = orchestrator.blackboard.get_context_signals()[-1]
+    assert decision.action == "answer_with_facts"
+    assert decision.next_state == "survey_q2"
+    assert signal["routing_state"] == "company_question"
+
+
 def test_orchestrator_rejection_labeled_binary_reply_advances_when_gate_accepts_answer():
     config, flow, state_machine = _load_pilot_runtime()
     state_machine.state = "survey_q2"
@@ -827,3 +1024,44 @@ def test_orchestrator_explicit_rejection_still_soft_closes_when_gate_rejects_ans
     assert decision.next_state == "soft_close"
     assert signal["routing_state"] == "unclear"
     assert "intent_transition_rejection" in decision.reason_codes
+
+
+def test_sales_bot_repeated_binary_answers_across_survey_states_clarifies_instead_of_generic_options(
+    monkeypatch,
+):
+    llm = FakeBotLLM()
+    llm.results = [
+        PilotSurveyAnswerGateResult(
+            verdict="valid",
+            confidence=0.95,
+            reason="q2_binary_yes",
+        ),
+        PilotSurveyAnswerGateResult(
+            verdict="invalid",
+            confidence=0.95,
+            reason="q3_missing_topic",
+        ),
+    ]
+    bot = SalesBot(llm=llm, flow_name="pilot_survey")
+    bot.state_machine.state = "survey_q2"
+    bot.state_machine.current_phase = "survey"
+
+    monkeypatch.setattr(
+        bot.classifier,
+        "classify",
+        lambda *_args, **_kwargs: _mock_bot_classification(),
+    )
+    monkeypatch.setattr(bot, "_analyze_tone", lambda *_args, **_kwargs: _mock_bot_tone())
+
+    first = bot.process("Да")
+    second = bot.process("Да")
+
+    assert first["action"] == "continue_current_goal"
+    assert first["response"].startswith("3/8.")
+    assert second["action"] == "continue_current_goal"
+    assert second["state"] == "survey_q3"
+    assert second["response"] == (
+        "Уточните, пожалуйста: вы обращались в техподдержку во время настройки? "
+        "Если да, то по какому вопросу?"
+    )
+    assert "Что вас интересует?" not in second["response"]
