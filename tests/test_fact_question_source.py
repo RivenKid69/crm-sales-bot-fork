@@ -286,6 +286,7 @@ class TestContributeSecondaryIntent:
         assert proposal["action"] == "answer_with_facts"
         assert proposal["metadata"]["fact_intent"] == "question_integrations"
         assert proposal["metadata"]["detection_source"] == "secondary"
+        assert proposal["metadata"]["grounding_categories"] == ["integrations"]
 
     def test_primary_takes_precedence_over_secondary(self, source, make_blackboard):
         """Test that primary fact intent takes precedence over secondary."""

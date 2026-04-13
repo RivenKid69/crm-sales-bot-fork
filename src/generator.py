@@ -3776,9 +3776,17 @@ class ResponseGenerator:
         else:
             retriever = get_retriever()
             _company_info = retriever.get_company_info()
+            grounding_intent = str(context.get("grounding_intent") or intent or "")
+            grounding_categories = [
+                str(item).strip()
+                for item in list(context.get("grounding_categories", []) or [])
+                if str(item).strip()
+            ]
             # Определяем категории через LLM (если CategoryRouter включён)
             categories = None
-            if self.category_router and user_message:
+            if grounding_categories:
+                categories = grounding_categories
+            elif self.category_router and user_message:
                 categories = self.category_router.route(user_message)
                 logger.debug(
                     "CategoryRouter selected categories",
@@ -3789,7 +3797,7 @@ class ResponseGenerator:
             # Вызываем retriever с категориями и URLs
             retrieved_facts, retrieved_urls = retriever.retrieve_with_urls(
                 message=user_message,
-                intent=intent,
+                intent=grounding_intent or intent,
                 state=state,
                 categories=categories,
                 top_k=self.retriever_top_k

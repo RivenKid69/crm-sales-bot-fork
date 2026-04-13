@@ -228,6 +228,22 @@ class TestTimeoutDetection:
         assert can_continue is True
         assert intervention is None
 
+    def test_timeout_does_not_soft_close_pilot_survey(self):
+        """pilot_survey is async and should ignore global lifetime timeout."""
+        config = GuardConfig(timeout_seconds=0)
+        guard = ConversationGuard(config)
+
+        can_continue, intervention = guard.check(
+            "survey_q7",
+            "нет было непонятно",
+            {},
+            last_intent="info_provided",
+            flow_name="pilot_survey",
+        )
+
+        assert can_continue is True
+        assert intervention is None
+
 class TestMaxTurnsLimit:
     """Tests for max turns limit"""
 
@@ -252,6 +268,22 @@ class TestMaxTurnsLimit:
         for i in range(5):
             can_continue, intervention = guard.check(f"state{i}", f"msg{i}", {})
             assert can_continue is True
+
+    def test_max_turns_does_not_soft_close_pilot_survey(self):
+        """pilot_survey should not inherit sales max_turns hard-stop."""
+        config = GuardConfig(max_turns=0, timeout_seconds=3600)
+        guard = ConversationGuard(config)
+
+        can_continue, intervention = guard.check(
+            "survey_q7",
+            "да, добавляли",
+            {},
+            last_intent="info_provided",
+            flow_name="pilot_survey",
+        )
+
+        assert can_continue is True
+        assert intervention is None
 
 class TestPhaseExhaustion:
     """Tests for phase exhaustion detection.

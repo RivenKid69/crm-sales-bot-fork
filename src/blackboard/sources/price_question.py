@@ -319,6 +319,7 @@ class PriceQuestionSource(KnowledgeSource):
                         "has_pricing_data": has_pricing,
                         "rule_source": "autonomous_explicit_route",
                         "detection_source": detection_source,
+                        "grounding_categories": ["pricing"],
                     },
                 )
                 self._log_contribution(
@@ -387,6 +388,7 @@ class PriceQuestionSource(KnowledgeSource):
                 "has_pricing_data": has_pricing,
                 "rule_source": rule_source,
                 "detection_source": detection_source,
+                "grounding_categories": ["pricing"],
             }
         )
 

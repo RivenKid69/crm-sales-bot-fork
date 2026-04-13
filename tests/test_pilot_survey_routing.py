@@ -11,6 +11,7 @@ from src.blackboard.sources.pilot_survey_answer_gate import (
 )
 from src.bot import SalesBot
 from src.config_loader import ConfigLoader
+from src.conversation_guard import ConversationGuard
 from src.dialog_transcript import DialogTranscript
 from src.pilot_survey_response_plan import build_pilot_survey_response_plan
 from src.state_machine import StateMachine
@@ -59,6 +60,25 @@ def _mock_bot_classification(intent: str = "info_provided"):
         "secondary_signals": [],
         "semantic_frame": {},
         "style_separation_applied": False,
+    }
+
+
+def _mock_disambiguation_needed_classification():
+    return {
+        "intent": "disambiguation_needed",
+        "confidence": 0.52,
+        "extracted_data": {},
+        "method": "mock",
+        "reasoning": "agreement vs no_problem",
+        "alternatives": [],
+        "disambiguation_options": [
+            {"intent": "agreement", "label": "Продолжить разговор", "confidence": 0.52},
+            {"intent": "no_problem", "label": "Проблем нет", "confidence": 0.48},
+            {"intent": "other", "label": "Другое", "confidence": 0.0},
+        ],
+        "disambiguation_question": "Уточните, пожалуйста:",
+        "original_intent": "agreement",
+        "original_scores": {"agreement": 0.52, "no_problem": 0.48},
     }
 
 
@@ -213,6 +233,96 @@ def test_sales_bot_rewrites_pilot_survey_final_phrase_before_delivery():
     composed = delivered.compose()
 
     assert composed == "Благодарю вас за ответы!"
+
+
+def test_sales_bot_keeps_forced_support_redirect_and_continues_pilot_survey():
+    llm = FakeBotLLM()
+    llm.results = [
+        PilotSurveyAnswerGateResult(
+            verdict="valid",
+            confidence=0.95,
+            reason="survey_q3_answered",
+        )
+    ]
+    bot = SalesBot(llm=llm, flow_name="pilot_survey")
+    bot.transcript.append_turn_internal(
+        user_text="Да, инструкцию получил.",
+        bot_text="3/8. Обращались ли вы в техподдержку во время настройки? По какому вопросу?",
+        intent="info_provided",
+        state="survey_q2",
+        action="continue_current_goal",
+    )
+    bot.state_machine.state = "survey_q3"
+    bot.state_machine.current_phase = "survey"
+    bot.last_bot_message = (
+        "3/8. Обращались ли вы в техподдержку во время настройки? По какому вопросу?"
+    )
+
+    bot.classifier.classify = lambda *_args, **_kwargs: _mock_bot_classification(
+        "misroute_technical_support"
+    )
+    bot._analyze_tone = lambda *_args, **_kwargs: _mock_bot_tone()
+
+    result = bot.process("Да, обращался, но мне не ответили.")
+
+    assert result["action"] == "redirect_misroute_technical_support"
+    assert result["state"] == "survey_q4"
+    assert result["response"] == (
+        "Извините за неудобства. Вы обратились в отдел продаж. "
+        "Пожалуйста, свяжитесь с технической поддержкой: +77070202019.\n\n"
+        "4/8. Кто использует терминал: сам владелец или кассиры? "
+        "Добавляли ли сотрудников через веб-кабинет?"
+    )
+
+
+def test_sales_bot_aged_pilot_survey_session_continues_after_valid_answer(monkeypatch):
+    llm = FakeBotLLM()
+    llm.results = [
+        PilotSurveyAnswerGateResult(
+            verdict="valid",
+            confidence=0.95,
+            reason="survey_q7_answered_after_restore",
+        )
+    ]
+    bot = SalesBot(llm=llm, flow_name="pilot_survey")
+    bot.transcript.append_turn_internal(
+        user_text="Да, первую продажу провели.",
+        bot_text="7/8. Добавляли ли товары и категории в каталог? Было ли это удобно и понятно?",
+        intent="info_provided",
+        state="survey_q6",
+        action="continue_current_goal",
+    )
+    bot.state_machine.state = "survey_q7"
+    bot.state_machine.current_phase = "survey"
+    bot.last_bot_message = (
+        "7/8. Добавляли ли товары и категории в каталог? Было ли это удобно и понятно?"
+    )
+
+    aged_guard_snapshot = bot.guard.to_dict()
+    aged_guard_snapshot["elapsed_seconds"] = 31 * 60
+    aged_guard = ConversationGuard.from_dict(
+        aged_guard_snapshot,
+        config=bot.guard.config,
+    )
+    bot.guard = aged_guard
+    guard_source = bot._orchestrator.get_source("ConversationGuardSource")
+    assert guard_source is not None
+    guard_source._guard = aged_guard
+
+    monkeypatch.setattr(
+        bot.classifier,
+        "classify",
+        lambda *_args, **_kwargs: _mock_bot_classification(),
+    )
+    monkeypatch.setattr(bot, "_analyze_tone", lambda *_args, **_kwargs: _mock_bot_tone())
+
+    result = bot.process("нет было непонятно")
+
+    assert result["action"] == "continue_current_goal"
+    assert result["state"] == "survey_q8"
+    assert result["response"] == (
+        "8/8. Возникали ли ошибки или зависания при проведении оплаты?"
+    )
 
 
 def test_sales_bot_strips_trailing_follow_up_question_from_company_answer():
@@ -1065,3 +1175,132 @@ def test_sales_bot_repeated_binary_answers_across_survey_states_clarifies_instea
         "Если да, то по какому вопросу?"
     )
     assert "Что вас интересует?" not in second["response"]
+
+
+def test_sales_bot_disambiguation_needed_on_valid_pilot_answer_still_advances_survey(
+    monkeypatch,
+):
+    llm = FakeBotLLM()
+    llm.results = [
+        PilotSurveyAnswerGateResult(
+            verdict="valid",
+            confidence=0.95,
+            reason="q2_answer_valid_despite_ambiguous_intent",
+        ),
+    ]
+    bot = SalesBot(llm=llm, flow_name="pilot_survey")
+    bot.state_machine.state = "survey_q2"
+    bot.state_machine.current_phase = "survey"
+    bot.last_bot_message = (
+        "2/8. Получили ли вы инструкцию по настройке? Была ли она понятна и достаточна?"
+    )
+
+    monkeypatch.setattr(
+        bot.classifier,
+        "classify",
+        lambda *_args, **_kwargs: _mock_disambiguation_needed_classification(),
+    )
+    monkeypatch.setattr(bot, "_analyze_tone", lambda *_args, **_kwargs: _mock_bot_tone())
+
+    result = bot.process("Да все ок")
+
+    assert result["action"] == "continue_current_goal"
+    assert result["state"] == "survey_q3"
+    assert result["response"] == (
+        "3/8. Обращались ли вы в техподдержку во время настройки? По какому вопросу?"
+    )
+    assert "Продолжить разговор" not in result["response"]
+
+
+def test_sales_bot_disambiguation_needed_on_invalid_pilot_answer_uses_survey_clarify(
+    monkeypatch,
+):
+    llm = FakeBotLLM()
+    llm.results = [
+        PilotSurveyAnswerGateResult(
+            verdict="invalid",
+            confidence=0.95,
+            reason="q2_answer_missing_instruction_details",
+        ),
+    ]
+    bot = SalesBot(llm=llm, flow_name="pilot_survey")
+    bot.state_machine.state = "survey_q2"
+    bot.state_machine.current_phase = "survey"
+    bot.last_bot_message = (
+        "2/8. Получили ли вы инструкцию по настройке? Была ли она понятна и достаточна?"
+    )
+
+    monkeypatch.setattr(
+        bot.classifier,
+        "classify",
+        lambda *_args, **_kwargs: _mock_disambiguation_needed_classification(),
+    )
+    monkeypatch.setattr(bot, "_analyze_tone", lambda *_args, **_kwargs: _mock_bot_tone())
+
+    result = bot.process("Да")
+
+    assert result["action"] == "continue_current_goal"
+    assert result["state"] == "survey_q2"
+    assert result["response"] == (
+        "Подскажите, пожалуйста: инструкцию по настройке вы получили, и она была "
+        "понятна и достаточна или чего-то не хватило?"
+    )
+    assert "Продолжить разговор" not in result["response"]
+
+
+def test_sales_bot_mixed_company_answer_uses_current_survey_context_for_generation(
+    monkeypatch,
+):
+    from src.feature_flags import flags
+
+    flags.clear_all_overrides()
+    flags.set_override("context_full_envelope", True)
+    try:
+        llm = FakeBotLLM()
+        llm.results = [
+            PilotSurveyAnswerGateResult(
+                verdict="valid",
+                confidence=0.95,
+                company_question_present=True,
+                reason="survey_answer_with_fact_request",
+            ),
+        ]
+        bot = SalesBot(llm=llm, flow_name="pilot_survey")
+        bot.state_machine.state = "survey_q2"
+        bot.state_machine.current_phase = "survey"
+
+        monkeypatch.setattr(
+            bot.classifier,
+            "classify",
+            lambda *_args, **_kwargs: {
+                **_mock_bot_classification(),
+                "secondary_signals": ["question_1c_integration"],
+            },
+        )
+        monkeypatch.setattr(bot, "_analyze_tone", lambda *_args, **_kwargs: _mock_bot_tone())
+
+        captured = {}
+
+        def _capture_generate(action, context, max_retries=None):
+            captured["action"] = action
+            captured["context"] = dict(context)
+            return "Ответ по компании."
+
+        monkeypatch.setattr(bot.generator, "generate", _capture_generate)
+
+        result = bot.process("Да, инструкция понятна. А с 1С есть интеграция?")
+
+        current_goal = bot._flow.states.get("survey_q2", {}).get("goal", "")
+        assert result["action"] == "answer_with_facts"
+        assert result["state"] == "survey_q3"
+        assert captured["action"] == "answer_with_facts"
+        assert captured["context"]["state"] == "survey_q2"
+        assert captured["context"]["goal"] == current_goal
+        assert captured["context"]["grounding_intent"] == "question_1c_integration"
+        assert captured["context"]["grounding_categories"] == ["integrations"]
+        assert result["response"] == (
+            "Ответ по компании.\n\n"
+            "3/8. Обращались ли вы в техподдержку во время настройки? По какому вопросу?"
+        )
+    finally:
+        flags.clear_all_overrides()

@@ -14,21 +14,15 @@ from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
 from src.conditions.state_machine.registry import get_sm_registry
 from src.conditions.state_machine.context import EvaluatorContext
-from src.blackboard.sources.pilot_survey_answer_gate import PILOT_SURVEY_SIGNAL_SOURCE
+from src.blackboard.sources.pilot_survey_answer_gate import (
+    latest_pilot_survey_signal,
+    should_defer_to_pilot_router,
+)
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
 
 logger = logging.getLogger(__name__)
-
-PILOT_SURVEY_EXIT_INTENTS = frozenset({
-    "rejection",
-    "hard_no",
-    "end_conversation",
-    "farewell",
-    "request_human",
-})
-
 
 class TransitionResolverSource(KnowledgeSource):
     """
@@ -100,8 +94,8 @@ class TransitionResolverSource(KnowledgeSource):
         intent = ctx.current_intent
         transitions = ctx.state_config.get("transitions", {})
 
-        pilot_signal = self._latest_pilot_signal(blackboard, ctx)
-        if pilot_signal and self._should_defer_to_pilot_router(intent, pilot_signal):
+        pilot_signal = latest_pilot_survey_signal(blackboard, ctx)
+        if pilot_signal and should_defer_to_pilot_router(intent, pilot_signal):
             self._log_contribution(
                 reason=(
                     "pilot_survey authoritative routing: "
@@ -192,30 +186,6 @@ class TransitionResolverSource(KnowledgeSource):
             transition=next_state,
             reason=f"Intent-based transition: {intent} -> {next_state}"
         )
-
-    @staticmethod
-    def _flow_name(ctx) -> str:
-        flow_config = getattr(ctx, "flow_config", {})
-        if isinstance(flow_config, dict):
-            return str(flow_config.get("name", "") or "")
-        return str(getattr(flow_config, "name", "") or "")
-
-    def _latest_pilot_signal(self, blackboard: 'DialogueBlackboard', ctx) -> Optional[Dict[str, Any]]:
-        if self._flow_name(ctx) != "pilot_survey":
-            return None
-        for signal in reversed(blackboard.get_context_signals()):
-            if signal.get("source") != PILOT_SURVEY_SIGNAL_SOURCE:
-                continue
-            if str(signal.get("state") or "") != str(ctx.state or ""):
-                continue
-            return dict(signal)
-        return None
-
-    @staticmethod
-    def _should_defer_to_pilot_router(intent: str, signal: Dict[str, Any]) -> bool:
-        if bool(signal.get("answer_accepted")):
-            return True
-        return intent not in PILOT_SURVEY_EXIT_INTENTS
 
     def _resolve_transition(
         self,

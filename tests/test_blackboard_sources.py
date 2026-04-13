@@ -436,6 +436,7 @@ class TestPriceQuestionSourceContribute:
 
         proposals = bb.get_action_proposals()
         assert proposals[0].metadata["original_intent"] == "cost_inquiry"
+        assert proposals[0].metadata["grounding_categories"] == ["pricing"]
 
     def test_contribute_metadata_includes_pricing_data_status(self):
         """Test that metadata includes pricing data availability status."""

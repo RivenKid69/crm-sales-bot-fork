@@ -22,6 +22,14 @@ PILOT_SURVEY_SIGNAL_SOURCE = "pilot_survey_answer_gate"
 ANSWER_ACCEPTED_TRANSITION = "answer_accepted"
 DEFAULT_MIN_CONFIDENCE = 0.70
 
+PILOT_SURVEY_EXIT_INTENTS = frozenset({
+    "rejection",
+    "hard_no",
+    "end_conversation",
+    "farewell",
+    "request_human",
+})
+
 GATE_ABSTAIN_INTENTS = frozenset({
     "end_conversation",
     "farewell",
@@ -39,6 +47,36 @@ _COMPANY_QUESTION_CUE_RE = re.compile(
     r"сколько\s+стоит|цена|стоимость|тариф)(?:\s|$)",
     re.IGNORECASE,
 )
+
+
+def latest_pilot_survey_signal(
+    blackboard: "DialogueBlackboard",
+    ctx: Any,
+) -> Optional[Dict[str, Any]]:
+    """Return the latest same-state pilot survey signal, if any."""
+    flow_config = getattr(ctx, "flow_config", {})
+    if isinstance(flow_config, dict):
+        flow_name = str(flow_config.get("name", "") or "")
+    else:
+        flow_name = str(getattr(flow_config, "name", "") or "")
+    if flow_name != "pilot_survey":
+        return None
+
+    current_state = str(getattr(ctx, "state", "") or "")
+    for signal in reversed(blackboard.get_context_signals()):
+        if signal.get("source") != PILOT_SURVEY_SIGNAL_SOURCE:
+            continue
+        if str(signal.get("state") or "") != current_state:
+            continue
+        return dict(signal)
+    return None
+
+
+def should_defer_to_pilot_router(intent: str, signal: Dict[str, Any]) -> bool:
+    """Whether generic routing should defer to pilot survey authoritative routing."""
+    if bool(signal.get("answer_accepted")):
+        return True
+    return intent not in PILOT_SURVEY_EXIT_INTENTS
 
 
 class PilotSurveyAnswerGateResult(BaseModel):

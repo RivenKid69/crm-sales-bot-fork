@@ -76,7 +76,8 @@ class ConversationGuardSource(KnowledgeSource):
 
     Priority: 7 in registry order
         - After GoBackGuardSource (5) — go_back limits checked first
-        - Before DisambiguationSource (8) — frustrated user needs escape, not more questions
+        - Before pilot-survey routing and generic disambiguation
+          so safety exits can preempt both survey routing and extra clarification
 
     Thread Safety:
         Thread-safe — reads context from blackboard, delegates detection to Guard.
@@ -135,6 +136,11 @@ class ConversationGuardSource(KnowledgeSource):
         frustration_level = ctx.frustration_level
         collected_data = dict(ctx.collected_data)
         current_intent = ctx.current_intent
+        flow_config = ctx.flow_config
+        if isinstance(flow_config, dict):
+            flow_name = str(flow_config.get("name", "") or "")
+        else:
+            flow_name = str(getattr(flow_config, "name", "") or "")
 
         # Call guard detection
         can_continue, tier = self._guard.check(
@@ -143,6 +149,7 @@ class ConversationGuardSource(KnowledgeSource):
             collected_data=collected_data,
             frustration_level=frustration_level,
             last_intent=current_intent,
+            flow_name=flow_name,
         )
 
         if tier is None:

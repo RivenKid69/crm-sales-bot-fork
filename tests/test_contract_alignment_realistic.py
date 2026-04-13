@@ -29,12 +29,30 @@ class _FakeRetriever:
         return ("Стоимость зависит от тарифа и внедрения.", [])
 
 
+class _CapturingRetriever(_FakeRetriever):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls = []
+
+    def retrieve_with_urls(self, message: str, intent: str, state: str, categories, top_k: int):
+        self.calls.append(
+            {
+                "message": message,
+                "intent": intent,
+                "state": state,
+                "categories": categories,
+                "top_k": top_k,
+            }
+        )
+        return ("Интеграция с 1С поддерживается.", [])
+
+
 class _ScriptedLLM:
     def __init__(self, responses):
         self._responses = list(responses)
         self.calls = 0
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, **kwargs) -> str:
         self.calls += 1
         if self._responses:
             return self._responses.pop(0)
@@ -138,6 +156,46 @@ def test_generator_end_to_end_pricing_action_with_brevity_and_boundary_validator
     stages = [e.get("stage") for e in meta.get("validation_events", [])]
     assert "retry" in stages
     assert llm.calls == 2  # main generation + boundary retry
+
+
+def test_generator_prefers_grounding_intent_and_categories_for_mixed_fact_turn(monkeypatch):
+    from src.generator import ResponseGenerator
+
+    flags.set_override("response_deduplication", False)
+    flags.set_override("response_diversity", False)
+    flags.set_override("apology_system", False)
+    flags.set_override("response_boundary_validator", False)
+
+    fake_retriever = _CapturingRetriever()
+    monkeypatch.setattr("src.generator.get_retriever", lambda: fake_retriever)
+
+    llm = _ScriptedLLM(responses=["Интеграция с 1С поддерживается."])
+    flow = _FakeFlow(
+        templates={
+            "answer_with_facts": "Ответь по фактам. {retrieved_facts}",
+        }
+    )
+    generator = ResponseGenerator(llm=llm, flow=flow)
+    generator.category_router = SimpleNamespace(route=lambda _message: ["pricing"])
+
+    response = generator.generate(
+        "answer_with_facts",
+        {
+            "intent": "info_provided",
+            "grounding_intent": "question_1c_integration",
+            "grounding_categories": ["integrations"],
+            "state": "survey_q2",
+            "user_message": "Да, инструкция понятна. А с 1С есть интеграция?",
+            "history": [],
+            "collected_data": {},
+            "missing_data": [],
+        },
+    )
+
+    assert response == "Интеграция с 1С поддерживается."
+    assert fake_retriever.calls
+    assert fake_retriever.calls[0]["intent"] == "question_1c_integration"
+    assert fake_retriever.calls[0]["categories"] == ["integrations"]
 
 
 def test_salesbot_process_realistic_pricing_turn_keeps_contracts(monkeypatch):

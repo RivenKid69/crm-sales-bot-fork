@@ -596,6 +596,21 @@ class SalesBot:
         )
 
     @staticmethod
+    def _compose_forced_pilot_survey_response(forced_response: str, plan) -> str:
+        forced_text = str(forced_response or "").strip()
+        if not plan:
+            return forced_text
+
+        survey_follow_up = plan.compose().strip()
+        if not survey_follow_up:
+            return forced_text
+        if not forced_text:
+            return survey_follow_up
+        if forced_text == survey_follow_up:
+            return forced_text
+        return f"{forced_text}\n\n{survey_follow_up}"
+
+    @staticmethod
     def _strip_pilot_survey_follow_up_questions(response: str) -> str:
         text = str(response or "").strip()
         if not text:
@@ -923,7 +938,8 @@ class SalesBot:
                 message=message,
                 collected_data=collected_data,
                 frustration_level=frustration_level,
-                last_intent=last_intent  # Pass intent for informative check
+                last_intent=last_intent,  # Pass intent for informative check
+                flow_name=self._flow.name if self._flow else "",
             )
 
             if not can_continue:
@@ -1752,11 +1768,14 @@ class SalesBot:
         return [lookup[item] for item in wanted if item in lookup]
 
     @staticmethod
-    def _extract_media_route(sm_result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    def _extract_winning_action_metadata(sm_result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         trace = (sm_result or {}).get("resolution_trace", {})
         metadata = trace.get("winning_action_metadata", {}) if isinstance(trace, dict) else {}
-        if not isinstance(metadata, dict):
-            metadata = {}
+        return metadata if isinstance(metadata, dict) else {}
+
+    @classmethod
+    def _extract_media_route(cls, sm_result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        metadata = cls._extract_winning_action_metadata(sm_result)
 
         response_mode = str(metadata.get("response_mode") or "normal_dialog").strip().lower()
         if response_mode not in {"normal_dialog", "media_only", "hybrid"}:
@@ -1775,6 +1794,26 @@ class SalesBot:
             "selected_media_card_ids": selected_ids if response_mode != "normal_dialog" else [],
             "route_reasoning": str(metadata.get("route_reasoning") or ""),
             "route_source": str(metadata.get("route_source") or "fallback"),
+        }
+
+    @classmethod
+    def _extract_response_grounding(
+        cls,
+        sm_result: Optional[Dict[str, Any]],
+        default_intent: str,
+    ) -> Dict[str, Any]:
+        metadata = cls._extract_winning_action_metadata(sm_result)
+        grounding_intent = str(
+            metadata.get("fact_intent") or metadata.get("original_intent") or default_intent or ""
+        ).strip()
+        grounding_categories = [
+            str(item).strip()
+            for item in list(metadata.get("grounding_categories", []) or [])
+            if str(item).strip()
+        ]
+        return {
+            "grounding_intent": grounding_intent,
+            "grounding_categories": grounding_categories,
         }
 
     @staticmethod
@@ -3049,6 +3088,17 @@ class SalesBot:
         next_state = sm_result["next_state"]
         is_final = sm_result["is_final"]
         route_media_grounding_allowed = True
+        pilot_survey_plan = build_pilot_survey_response_plan(
+            flow=self._flow,
+            sm_result=sm_result,
+            context_signals=self._orchestrator.blackboard.get_context_signals(),
+            transcript=self.transcript,
+            action=action,
+        )
+        if pilot_survey_plan:
+            pilot_survey_plan = self._prepare_pilot_survey_response_plan_for_delivery(
+                pilot_survey_plan
+            )
 
         forced_misroute_responses = {
             "misroute_wipon_outage": (
@@ -3081,6 +3131,11 @@ class SalesBot:
         if intent in forced_misroute_responses:
             forced_action, first_turn_response, followup_response = forced_misroute_responses[intent]
             forced_response = first_turn_response if len(self.transcript) == 0 else followup_response
+            if pilot_survey_plan:
+                forced_response = self._compose_forced_pilot_survey_response(
+                    forced_response,
+                    pilot_survey_plan,
+                )
             forced_reason_codes = list(sm_result.get("reason_codes", []))
             forced_reason_codes.append("forced_misroute_response")
             return self._build_forced_process_result(
@@ -3251,9 +3306,12 @@ class SalesBot:
 
         directive_instruction = response_directives.get_instruction() if response_directives else ""
         history_projections = self._build_history_projections()
+        response_grounding = self._extract_response_grounding(sm_result, intent)
         context = {
             "user_message": visible_user_message,
             "intent": intent,
+            "grounding_intent": response_grounding["grounding_intent"],
+            "grounding_categories": response_grounding["grounding_categories"],
             "state": sm_result["next_state"],
             "transcript": self.transcript,
             "history_projections": history_projections,
@@ -3303,17 +3361,14 @@ class SalesBot:
             requested_action=action,
             response_mode=context.get("response_mode", context.get("media_route_mode")),
         )
-        pilot_survey_plan = build_pilot_survey_response_plan(
-            flow=self._flow,
-            sm_result=sm_result,
-            context_signals=self._orchestrator.blackboard.get_context_signals(),
-            transcript=self.transcript,
-            action=action,
-        )
         if pilot_survey_plan:
-            pilot_survey_plan = self._prepare_pilot_survey_response_plan_for_delivery(
-                pilot_survey_plan
-            )
+            if (pilot_survey_plan.metadata or {}).get("company_answer_appended"):
+                pilot_state = str(
+                    (pilot_survey_plan.metadata or {}).get("pilot_survey_state") or current_state
+                )
+                context["state"] = pilot_state
+                context["goal"] = self._flow.states.get(pilot_state, {}).get("goal", "")
+                context["spin_phase"] = self._flow.get_phase_for_state(pilot_state)
             context["question_mode"] = "suppress"
             context["question_instruction"] = (
                 "Клиент сейчас в детерминированном pilot survey. "

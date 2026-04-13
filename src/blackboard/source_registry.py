@@ -117,9 +117,16 @@ def _get_builtin_source_specs() -> List[Dict[str, Any]]:
             "description": "Conversation safety: loops, timeouts, frustration detection",
         },
         {
+            "source_class": PilotSurveyAnswerGateSource,
+            "name": "PilotSurveyAnswerGateSource",
+            "priority_order": 17,
+            "config_key": "pilot_survey_answer_gate",
+            "description": "Semantic answer gate for deterministic pilot survey states",
+        },
+        {
             "source_class": DisambiguationSource,
             "name": "DisambiguationSource",
-            "priority_order": 8,
+            "priority_order": 18,
             "config_key": "disambiguation",
             "description": "Handles disambiguation as blocking Blackboard proposal",
         },
@@ -136,13 +143,6 @@ def _get_builtin_source_specs() -> List[Dict[str, Any]]:
             "priority_order": 15,
             "config_key": "fact_question_source",
             "description": "Handles fact-based questions (features, integrations, technical, etc.)",
-        },
-        {
-            "source_class": PilotSurveyAnswerGateSource,
-            "name": "PilotSurveyAnswerGateSource",
-            "priority_order": 17,
-            "config_key": "pilot_survey_answer_gate",
-            "description": "Semantic answer gate for deterministic pilot survey states",
         },
         {
             "source_class": DataCollectorSource,

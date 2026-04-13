@@ -164,7 +164,8 @@ class ConversationGuard:
         collected_data: Dict,
         frustration_level: Optional[int] = None,
         last_intent: str = "",  # Accept intent for informative check
-        pre_intervention_triggered: bool = False
+        pre_intervention_triggered: bool = False,
+        flow_name: str = "",
     ) -> Tuple[bool, Optional[str]]:
         """
         Проверить состояние диалога и определить нужна ли интервенция.
@@ -178,6 +179,7 @@ class ConversationGuard:
             pre_intervention_triggered: Current-turn tone urgency marker.
                                         Stored for observability only; does not
                                         drive terminal routing.
+            flow_name: Имя активного flow. Нужен для flow-aware lifetime limits.
 
         Returns:
             Tuple[can_continue, intervention_action]
@@ -205,10 +207,11 @@ class ConversationGuard:
             self._state.last_intent = last_intent
 
         # Проверки в порядке критичности
+        lifetime_limits_enabled = self._lifetime_limits_enabled(flow_name)
 
         # 1. Проверка timeout
         elapsed = time.time() - self._state.start_time
-        if elapsed > self.config.timeout_seconds:
+        if lifetime_limits_enabled and elapsed > self.config.timeout_seconds:
             logger.warning(
                 "Conversation timeout",
                 turns=self._state.turn_count,
@@ -217,7 +220,7 @@ class ConversationGuard:
             return False, self.TIER_4
 
         # 2. Проверка max turns
-        if self._state.turn_count > self.config.max_turns:
+        if lifetime_limits_enabled and self._state.turn_count > self.config.max_turns:
             logger.warning(
                 "Max turns exceeded",
                 turns=self._state.turn_count,
@@ -346,6 +349,18 @@ class ConversationGuard:
             "Progress recorded",
             turn=self._state.turn_count
         )
+
+    @staticmethod
+    def _lifetime_limits_enabled(flow_name: str) -> bool:
+        """
+        Whether global lifetime caps should apply to the active flow.
+
+        pilot_survey is an asynchronous, deterministic flow that may span long
+        pauses and snapshot restores. Sales-oriented lifetime caps (timeout,
+        max_turns) are not authoritative there and must not terminally interrupt
+        a valid survey answer mid-run.
+        """
+        return str(flow_name or "") != "pilot_survey"
 
     def _normalize_message(self, message: str) -> str:
         """Нормализация сообщения для сравнения"""

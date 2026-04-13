@@ -567,6 +567,9 @@ class FactQuestionSource(KnowledgeSource):
                 f"Fact intent '{fact_intent}' → {action} (category={category})"
             )
 
+        grounding_category = self._categorize_fact_intent(fact_intent)
+        grounding_categories = [grounding_category] if grounding_category != "other" else []
+
         # Propose action with HIGH priority (but combinable!)
         blackboard.propose_action(
             action=action,
@@ -579,6 +582,7 @@ class FactQuestionSource(KnowledgeSource):
                 "detection_source": detection_source,
                 "primary_intent": primary_intent,
                 "rule_source": rule_source,
+                "grounding_categories": grounding_categories,
             }
         )
 

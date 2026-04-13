@@ -15,6 +15,10 @@ import logging
 
 from ..knowledge_source import KnowledgeSource
 from ..enums import Priority
+from src.blackboard.sources.pilot_survey_answer_gate import (
+    latest_pilot_survey_signal,
+    should_defer_to_pilot_router,
+)
 
 if TYPE_CHECKING:
     from ..blackboard import DialogueBlackboard
@@ -49,6 +53,17 @@ class DisambiguationSource(KnowledgeSource):
             return
 
         ctx = blackboard.get_context()
+        pilot_signal = latest_pilot_survey_signal(blackboard, ctx)
+        if pilot_signal and should_defer_to_pilot_router(blackboard.current_intent, pilot_signal):
+            self._log_contribution(
+                reason=(
+                    "pilot_survey authoritative routing: "
+                    f"skip disambiguation for intent={blackboard.current_intent}, "
+                    f"routing_state={pilot_signal.get('routing_state')}"
+                )
+            )
+            return
+
         envelope = ctx.context_envelope
 
         # Read typed fields from ContextEnvelope (populated by Builder from classification_result)
